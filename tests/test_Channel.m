@@ -1,5 +1,5 @@
 classdef test_Channel < matlab.unittest.TestCase
-    % Visual and shape tests for the Channel class.
+    % Visual and shape tests for the Channel functions.
     % Generates 16-QAM constellations and passes them through various
     % impairment combinations, plotting the result for visual inspection.
 
@@ -28,12 +28,11 @@ classdef test_Channel < matlab.unittest.TestCase
     % ----- helper ---------------------------------------------------
     methods (Access = private)
         function [txSig, symbols] = generateTx(testCase)
-            modem   = QAMModem(testCase.M, testCase.N_pol);
-            k       = modem.bitsPerSymbol;
+            k       = log2(testCase.M);
             Nbits   = k * testCase.N_pol * testCase.Ns;
-            bits    = modem.randomBits(Nbits);
-            symbols = modem.modulate(bits);
-            txSig   = modem.rectPulse(symbols, testCase.SpS);
+            bits    = qam_randomBits(Nbits);
+            symbols = qam_modulate(bits, testCase.M, testCase.N_pol);
+            txSig   = qam_rectPulse(symbols, testCase.SpS);
         end
 
         function sym = downsample(testCase, sig)
@@ -46,53 +45,42 @@ classdef test_Channel < matlab.unittest.TestCase
     methods (Test)
         function testAWGNOutputShape(testCase)
             [txSig, ~] = generateTx(testCase);
-            ch = Channel(testCase.L, testCase.SNR_dB, testCase.SpS, ...
-                         testCase.Rs, testCase.D, testCase.CWL, ...
-                         testCase.DGDSpec, testCase.N_pmd, testCase.LW);
-            rxSig = ch.add_awgn(txSig);
+            rxSig = channel_add_awgn(txSig, testCase.SNR_dB);
             testCase.verifySize(rxSig, size(txSig), ...
                 'AWGN output size must match input size.');
         end
 
         function testPhaseNoiseOutputShape(testCase)
             [txSig, ~] = generateTx(testCase);
-            ch = Channel(testCase.L, testCase.SNR_dB, testCase.SpS, ...
-                         testCase.Rs, testCase.D, testCase.CWL, ...
-                         testCase.DGDSpec, testCase.N_pmd, testCase.LW);
-            rxSig = ch.add_phase_noise(txSig);
+            rxSig = channel_add_phase_noise(txSig, testCase.Rs, testCase.LW);
             testCase.verifySize(rxSig, size(txSig), ...
                 'Phase-noise output size must match input size.');
         end
 
         function testCDOutputShape(testCase)
             [txSig, ~] = generateTx(testCase);
-            ch = Channel(testCase.L, testCase.SNR_dB, testCase.SpS, ...
-                         testCase.Rs, testCase.D, testCase.CWL, ...
-                         testCase.DGDSpec, testCase.N_pmd, testCase.LW);
-            rxSig = ch.add_chromatic_dispersion(txSig);
+            rxSig = channel_add_chromatic_dispersion(txSig, ...
+                testCase.L, testCase.SpS, testCase.Rs, testCase.D, testCase.CWL);
             testCase.verifySize(rxSig, size(txSig), ...
                 'CD output size must match input size.');
         end
 
         function testPMDOutputShape(testCase)
             [txSig, ~] = generateTx(testCase);
-            ch = Channel(testCase.L, testCase.SNR_dB, testCase.SpS, ...
-                         testCase.Rs, testCase.D, testCase.CWL, ...
-                         testCase.DGDSpec, testCase.N_pmd, testCase.LW);
-            rxSig = ch.add_pmd(txSig);
+            rxSig = channel_add_pmd(txSig, testCase.L, testCase.SpS, ...
+                testCase.Rs, testCase.DGDSpec, testCase.N_pmd);
             testCase.verifySize(rxSig, size(txSig), ...
                 'PMD output size must match input size.');
         end
 
         function testAllImpairOutputShape(testCase)
             [txSig, ~] = generateTx(testCase);
-            ch = Channel(testCase.L, testCase.SNR_dB, testCase.SpS, ...
-                         testCase.Rs, testCase.D, testCase.CWL, ...
-                         testCase.DGDSpec, testCase.N_pmd, testCase.LW);
-            rxSig = ch.add_awgn(txSig);
-            rxSig = ch.add_phase_noise(rxSig);
-            rxSig = ch.add_chromatic_dispersion(rxSig);
-            rxSig = ch.add_pmd(rxSig);
+            rxSig = channel_add_awgn(txSig, testCase.SNR_dB);
+            rxSig = channel_add_phase_noise(rxSig, testCase.Rs, testCase.LW);
+            rxSig = channel_add_chromatic_dispersion(rxSig, ...
+                testCase.L, testCase.SpS, testCase.Rs, testCase.D, testCase.CWL);
+            rxSig = channel_add_pmd(rxSig, testCase.L, testCase.SpS, ...
+                testCase.Rs, testCase.DGDSpec, testCase.N_pmd);
             testCase.verifySize(rxSig, size(txSig), ...
                 'Combined-impairment output size must match input size.');
         end
@@ -102,39 +90,40 @@ classdef test_Channel < matlab.unittest.TestCase
     methods (Test)
         function testVisualConstellations(testCase)
             [txSig, symbols] = generateTx(testCase);
-            ch = Channel(testCase.L, testCase.SNR_dB, testCase.SpS, ...
-                         testCase.Rs, testCase.D, testCase.CWL, ...
-                         testCase.DGDSpec, testCase.N_pmd, testCase.LW);
 
             % --- 1. AWGN only ---
             rng(42);
-            rx_awgn = ch.add_awgn(txSig);
+            rx_awgn = channel_add_awgn(txSig, testCase.SNR_dB);
             sym_awgn = downsample(testCase, rx_awgn);
 
             % --- 2. AWGN + phase noise ---
             rng(42);
-            rx_pn = ch.add_awgn(txSig);
-            rx_pn = ch.add_phase_noise(rx_pn);
+            rx_pn = channel_add_awgn(txSig, testCase.SNR_dB);
+            rx_pn = channel_add_phase_noise(rx_pn, testCase.Rs, testCase.LW);
             sym_pn = downsample(testCase, rx_pn);
 
             % --- 3. AWGN + chromatic dispersion ---
             rng(42);
-            rx_cd = ch.add_awgn(txSig);
-            rx_cd = ch.add_chromatic_dispersion(rx_cd);
+            rx_cd = channel_add_awgn(txSig, testCase.SNR_dB);
+            rx_cd = channel_add_chromatic_dispersion(rx_cd, ...
+                testCase.L, testCase.SpS, testCase.Rs, testCase.D, testCase.CWL);
             sym_cd = downsample(testCase, rx_cd);
 
             % --- 4. AWGN + PMD ---
             rng(42);
-            rx_pmd = ch.add_awgn(txSig);
-            rx_pmd = ch.add_pmd(rx_pmd);
+            rx_pmd = channel_add_awgn(txSig, testCase.SNR_dB);
+            rx_pmd = channel_add_pmd(rx_pmd, testCase.L, testCase.SpS, ...
+                testCase.Rs, testCase.DGDSpec, testCase.N_pmd);
             sym_pmd = downsample(testCase, rx_pmd);
 
             % --- 5. All combined ---
             rng(42);
-            rx_all = ch.add_awgn(txSig);
-            rx_all = ch.add_phase_noise(rx_all);
-            rx_all = ch.add_chromatic_dispersion(rx_all);
-            rx_all = ch.add_pmd(rx_all);
+            rx_all = channel_add_awgn(txSig, testCase.SNR_dB);
+            rx_all = channel_add_phase_noise(rx_all, testCase.Rs, testCase.LW);
+            rx_all = channel_add_chromatic_dispersion(rx_all, ...
+                testCase.L, testCase.SpS, testCase.Rs, testCase.D, testCase.CWL);
+            rx_all = channel_add_pmd(rx_all, testCase.L, testCase.SpS, ...
+                testCase.Rs, testCase.DGDSpec, testCase.N_pmd);
             sym_all = downsample(testCase, rx_all);
 
             % --- Plot ---

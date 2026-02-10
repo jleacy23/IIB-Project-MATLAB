@@ -1,5 +1,5 @@
 classdef test_CarrierRecovery < matlab.unittest.TestCase
-    % Tests for CarrierRecovery (Viterbi-Viterbi).
+    % Tests for carrier recovery (Viterbi-Viterbi).
     % Applies AWGN + phase noise, runs VV carrier recovery, plots
     % before/after constellations and checks BER.
 
@@ -23,11 +23,6 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
 
         % Carrier recovery
         NTaps   = 15
-        CordicIts = 16
-
-        % Fixed-point settings
-        WL      = 12
-        FL      = 4
 
         % Pass / fail
         BER_THRESHOLD = 5e-2
@@ -42,30 +37,17 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
     % ================================================================
     methods (Test)
 
-        % -------- 4-QAM, floating point -----------------------------
-        function testQPSK_Float(testCase)
+        % -------- 4-QAM -----------------------------
+        function testQPSK(testCase)
             M = 4;
-            [rxSym, crSym, BER] = runScenario(testCase, M, false);
+            [rxSym, crSym, BER] = runScenario(testCase, M);
             plotBeforeAfter(testCase, rxSym, crSym, ...
-                '4-QAM  |  VV  |  Float', M, BER);
+                '4-QAM  |  VV', M, BER);
 
             testCase.verifyTrue(all(isfinite(crSym(:))), ...
                 'Carrier-recovery output contains NaN/Inf.');
             testCase.verifyLessThan(BER, testCase.BER_THRESHOLD, ...
-                sprintf('4-QAM float BER %.2e exceeds threshold.', BER));
-        end
-
-        % -------- 4-QAM, fixed point --------------------------------
-        function testQPSK_FixedPoint(testCase)
-            M = 4;
-            [rxSym, crSym, BER] = runScenario(testCase, M, true);
-            plotBeforeAfter(testCase, rxSym, crSym, ...
-                '4-QAM  |  VV  |  Fixed Point', M, BER);
-
-            testCase.verifyTrue(all(isfinite(crSym(:))), ...
-                'Carrier-recovery output contains NaN/Inf.');
-            testCase.verifyLessThan(BER, testCase.BER_THRESHOLD, ...
-                sprintf('4-QAM fixed-point BER %.2e exceeds threshold.', BER));
+                sprintf('4-QAM BER %.2e exceeds threshold.', BER));
         end
     end
 
@@ -74,42 +56,34 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
     % ================================================================
     methods (Access = private)
 
-        function [rxSym, crSym, BER] = runScenario(testCase, M, useFixedPoint)
+        function [rxSym, crSym, BER] = runScenario(testCase, M)
             rng(42);
 
             % --- Tx ---
-            modem  = QAMModem(M, testCase.N_pol);
-            k      = modem.bitsPerSymbol;
+            k      = log2(M);
             Nbits  = k * testCase.N_pol * testCase.Ns;
-            txBits = modem.randomBits(Nbits);
-            symbols = modem.modulate(txBits);
+            txBits = qam_randomBits(Nbits);
+            symbols = qam_modulate(txBits, M, testCase.N_pol);
 
             % --- Channel: AWGN + phase noise ---
-            ch = Channel(testCase.L, testCase.SNR_dB, testCase.SpS, ...
-                         testCase.Rs, testCase.D, testCase.CWL, ...
-                         testCase.DGDSpec, testCase.N_pmd, testCase.LW);
-            rxSym = ch.add_awgn(symbols);
-            rxSym = ch.add_phase_noise(rxSym);
+            rxSym = channel_add_awgn(symbols, testCase.SNR_dB);
+            rxSym = channel_add_phase_noise(rxSym, testCase.Rs, testCase.LW);
 
             % --- Carrier Recovery (Viterbi-Viterbi) ---
             symEnergy = mean(abs(symbols(:)).^2);
-            cr = CarrierRecovery(testCase.Linewidth, testCase.Rs, ...
-                                 testCase.SNR_dB, symEnergy, ...
-                                 testCase.N_pol, testCase.NTaps, ...
-                                 testCase.WL, testCase.FL, ...
-                                 testCase.CordicIts, ...
-                                 useFixedPoint);
-            crSym = cr.ViterbiViterbi(rxSym, useFixedPoint);
-            crSym = double(crSym);
+            VVFilter  = cr_genVVFilter(testCase.Linewidth, testCase.Rs, ...
+                testCase.SNR_dB, symEnergy, testCase.N_pol, testCase.NTaps);
+            crSym = cr_viterbiViterbi(rxSym, testCase.N_pol, testCase.NTaps, ...
+                VVFilter);
 
             % --- Demodulate & BER ---
-            decidedSyms = modem.decideSymbols(crSym);
-            rxBits      = modem.symbolsToBits(decidedSyms);
+            decidedSyms = qam_decideSymbols(crSym, M, testCase.N_pol);
+            rxBits      = qam_symbolsToBits(decidedSyms, M);
 
             nErrors = sum(txBits ~= rxBits);
             BER     = nErrors / length(txBits);
-            fprintf('%d-QAM (FxP=%d) BER = %.2e  (%d / %d)\n', ...
-                     M, useFixedPoint, BER, nErrors, length(txBits));
+            fprintf('%d-QAM BER = %.2e  (%d / %d)\n', ...
+                     M, BER, nErrors, length(txBits));
         end
 
         function plotBeforeAfter(testCase, rxSym, crSym, titleStr, M, BER)

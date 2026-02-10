@@ -1,10 +1,5 @@
 classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
-    % Visual tests for AdaptiveEqualizer: AWGN+PMD then adaptive EQ.
-    % Four scenarios are plotted:
-    %   1. 4-QAM,  CMA only,       floating point
-    %   2. 16-QAM, CMA+RDE,        floating point
-    %   3. 4-QAM,  CMA only,       fixed point
-    %   4. 16-QAM, CMA+RDE,        fixed point
+    % Visual tests for adaptive equalizer: AWGN+PMD then adaptive EQ.
 
     properties (Constant)
         N_pol   = 2
@@ -26,10 +21,6 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
         Mu      = 1e-3
         N1      = 2000          % single-spike re-init iteration
         NOut    = 500           % discard transient
-
-        % Fixed-point settings
-        WL      = 16
-        FL      = 12
     end
 
     methods (TestMethodSetup)
@@ -41,117 +32,45 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
     % ================================================================
     methods (Test)
 
-        % -------- 4-QAM CMA (floating point) -----------------------
-        function testQPSK_CMA_Float(testCase)
+        % -------- 4-QAM CMA -----------------------
+        function testQPSK_CMA(testCase)
             M = 4;
-            paramDE.Eq          = 'CMA';
-            paramDE.NTaps       = testCase.NTaps;
-            paramDE.Mu          = testCase.Mu;
-            paramDE.SingleSpike = true;
-            paramDE.N1          = testCase.N1;
-            paramDE.NOut        = testCase.NOut;
-
-            [rxSym, eqSym] = runScenario(testCase, M, paramDE, false);
+            [rxSym, eqSym] = runScenario(testCase, M, 'CMA', ...
+                testCase.NTaps, testCase.Mu, true, testCase.N1, [], ...
+                testCase.NOut);
             plotBeforeAfter(testCase, rxSym, eqSym, ...
-                '4-QAM  |  CMA  |  Float', M, 'AWGN + PMD');
+                '4-QAM  |  CMA', M, 'AWGN + PMD');
 
             testCase.verifyTrue(all(isfinite(eqSym(:))), ...
                 'Equalizer output contains NaN/Inf.');
         end
 
-        % -------- 16-QAM CMA+RDE (floating point) ------------------
-        function test16QAM_CMARERDE_Float(testCase)
+        % -------- 16-QAM CMA+RDE ------------------
+        function test16QAM_CMARERDE(testCase)
             M = 16;
-            paramDE.Eq          = 'CMA+RDE';
-            paramDE.NTaps       = testCase.NTaps;
-            paramDE.Mu          = testCase.Mu;
-            paramDE.SingleSpike = true;
-            paramDE.N1          = testCase.N1;
-            paramDE.N2          = 4000;     % switch CMA->RDE
-            paramDE.NOut        = testCase.NOut;
-
-            [rxSym, eqSym] = runScenario(testCase, M, paramDE, false);
+            [rxSym, eqSym] = runScenario(testCase, M, 'CMA+RDE', ...
+                testCase.NTaps, testCase.Mu, true, testCase.N1, 4000, ...
+                testCase.NOut);
             plotBeforeAfter(testCase, rxSym, eqSym, ...
-                '16-QAM  |  CMA+RDE  |  Float', M, 'AWGN + PMD');
+                '16-QAM  |  CMA+RDE', M, 'AWGN + PMD');
 
             testCase.verifyTrue(all(isfinite(eqSym(:))), ...
                 'Equalizer output contains NaN/Inf.');
         end
 
-        % -------- 4-QAM CMA (fixed point) --------------------------
-        function testQPSK_CMA_FixedPoint(testCase)
-            M = 4;
-            paramDE.Eq          = 'CMA';
-            paramDE.NTaps       = testCase.NTaps;
-            paramDE.Mu          = testCase.Mu;
-            paramDE.SingleSpike = true;
-            paramDE.N1          = testCase.N1;
-            paramDE.NOut        = testCase.NOut;
-
-            [rxSym, eqSym] = runScenario(testCase, M, paramDE, true);
-            plotBeforeAfter(testCase, rxSym, eqSym, ...
-                '4-QAM  |  CMA  |  Fixed Point', M, 'AWGN + PMD');
-
-            testCase.verifyTrue(all(isfinite(eqSym(:))), ...
-                'Equalizer output contains NaN/Inf.');
-        end
-
-        % -------- 16-QAM CMA+RDE (fixed point) ---------------------
-        function test16QAM_CMARERDE_FixedPoint(testCase)
+        % -------- 16-QAM CMA+RDE + phase noise -----
+        function test16QAM_CMARERDE_PhaseNoise(testCase)
             M = 16;
-            paramDE.Eq          = 'CMA+RDE';
-            paramDE.NTaps       = testCase.NTaps;
-            paramDE.Mu          = testCase.Mu;
-            paramDE.SingleSpike = true;
-            paramDE.N1          = testCase.N1;
-            paramDE.N2          = 4000;
-            paramDE.NOut        = testCase.NOut;
-
-            [rxSym, eqSym] = runScenario(testCase, M, paramDE, true);
+            [rxSym, eqSym] = runScenario(testCase, M, 'CMA+RDE', ...
+                testCase.NTaps, testCase.Mu, true, testCase.N1, 4000, ...
+                testCase.NOut, true);
             plotBeforeAfter(testCase, rxSym, eqSym, ...
-                '16-QAM  |  CMA+RDE  |  Fixed Point', M, 'AWGN + PMD');
+                '16-QAM  |  CMA+RDE  |  PN', M, 'AWGN + PMD + Phase Noise');
 
             testCase.verifyTrue(all(isfinite(eqSym(:))), ...
                 'Equalizer output contains NaN/Inf.');
         end
 
-        % -------- 16-QAM CMA+RDE + phase noise (floating point) -----
-        function test16QAM_CMARERDE_PhaseNoise_Float(testCase)
-            M = 16;
-            paramDE.Eq          = 'CMA+RDE';
-            paramDE.NTaps       = testCase.NTaps;
-            paramDE.Mu          = testCase.Mu;
-            paramDE.SingleSpike = true;
-            paramDE.N1          = testCase.N1;
-            paramDE.N2          = 4000;
-            paramDE.NOut        = testCase.NOut;
-
-            [rxSym, eqSym] = runScenario(testCase, M, paramDE, false, true);
-            plotBeforeAfter(testCase, rxSym, eqSym, ...
-                '16-QAM  |  CMA+RDE  |  Float + PN', M, 'AWGN + PMD + Phase Noise');
-
-            testCase.verifyTrue(all(isfinite(eqSym(:))), ...
-                'Equalizer output contains NaN/Inf.');
-        end
-
-        % -------- 16-QAM CMA+RDE + phase noise (fixed point) --------
-        function test16QAM_CMARERDE_PhaseNoise_FixedPoint(testCase)
-            M = 16;
-            paramDE.Eq          = 'CMA+RDE';
-            paramDE.NTaps       = testCase.NTaps;
-            paramDE.Mu          = testCase.Mu;
-            paramDE.SingleSpike = true;
-            paramDE.N1          = testCase.N1;
-            paramDE.N2          = 4000;
-            paramDE.NOut        = testCase.NOut;
-
-            [rxSym, eqSym] = runScenario(testCase, M, paramDE, true, true);
-            plotBeforeAfter(testCase, rxSym, eqSym, ...
-                '16-QAM  |  CMA+RDE  |  FxP + PN', M, 'AWGN + PMD + Phase Noise');
-
-            testCase.verifyTrue(all(isfinite(eqSym(:))), ...
-                'Equalizer output contains NaN/Inf.');
-        end
     end
 
     % ================================================================
@@ -159,41 +78,36 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
     % ================================================================
     methods (Access = private)
 
-        function [rxSym, eqSym] = runScenario(testCase, M, paramDE, useFixedPoint, addPhaseNoise)
-            if nargin < 5
+        function [rxSym, eqSym] = runScenario(testCase, M, Eq, ...
+                NTaps, Mu, SingleSpike, N1, N2, NOut, addPhaseNoise)
+            if nargin < 10
                 addPhaseNoise = false;
             end
             rng(42);
 
             % --- Tx ---
-            modem  = QAMModem(M, testCase.N_pol);
-            k      = modem.bitsPerSymbol;
+            k      = log2(M);
             Nbits  = k * testCase.N_pol * testCase.Ns;
-            bits   = modem.randomBits(Nbits);
-            symbols = modem.modulate(bits);
-            txSig  = modem.rectPulse(symbols, testCase.SpS);
+            bits   = qam_randomBits(Nbits);
+            symbols = qam_modulate(bits, M, testCase.N_pol);
+            txSig  = qam_rectPulse(symbols, testCase.SpS);
 
             % --- Channel: AWGN + PMD (+ optional phase noise) ---
-            linewidth = 0;
+            rxSig = channel_add_awgn(txSig, testCase.SNR_dB);
             if addPhaseNoise
-                linewidth = 100e3;   % 100 kHz
+                linewidth = 100e4;   % 1 MHz
+                rxSig = channel_add_phase_noise(rxSig, testCase.Rs, linewidth);
             end
-            ch = Channel(testCase.L, testCase.SNR_dB, testCase.SpS, ...
-                         testCase.Rs, testCase.D, testCase.CWL, ...
-                         testCase.DGDSpec, testCase.N_pmd, linewidth);
-            rxSig = ch.add_awgn(txSig);
-            rxSig = ch.add_pmd(rxSig);
-            if addPhaseNoise
-                rxSig = ch.add_phase_noise(rxSig);
-            end
+            rxSig = channel_add_pmd(rxSig, testCase.L, testCase.SpS, ...
+                testCase.Rs, testCase.DGDSpec, testCase.N_pmd);
+
 
             % --- Downsample before EQ for reference constellation ---
             rxSym = rxSig(1:testCase.SpS:end, :);
 
             % --- Adaptive Equalizer ---
-            aeq   = AdaptiveEqualizer(paramDE, testCase.WL, testCase.FL);
-            eqSig = aeq.equalize(rxSig, testCase.SpS, useFixedPoint);
-            eqSig = double(eqSig);
+            eqSig = adeq_equalize(rxSig, testCase.SpS, Eq, NTaps, Mu, ...
+                SingleSpike, N1, N2, NOut);
 
             eqSym = eqSig;   % already at symbol rate after equalize
         end

@@ -22,6 +22,17 @@ function v = cr_viterbiViterbi(x, NPol, NTaps, VVFilter)
     end
 
     % Phase correction
-    ThetaML = ThetaML4 / 4 - pi/4;
-    v = x .* exp(-1j*ThetaML);
+    ThetaML = ThetaML4 / 4 - pi/4; % Scale back down and rotate by pi/4 to align with constellation
+
+    % Unwrap phase
+    ThetaPU = zeros(size(ThetaML));
+    ThetaPrev = zeros(1, NPol);
+
+    for i = 1:size(ThetaML, 1)
+        n = floor(1/2 + (ThetaPrev - ThetaML(i,:)) / (pi/2));
+        ThetaPU(i,:) = ThetaML(i,:) + n * (pi/2);
+        ThetaPrev = ThetaPU(i,:);
+    end
+
+    v = x .* exp(-1j*ThetaPU);
 end

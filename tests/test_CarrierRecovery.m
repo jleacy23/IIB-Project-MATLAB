@@ -5,7 +5,7 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
 
     properties (Constant)
         N_pol   = 2
-        Ns      = 8192          % symbols per polarisation
+        Ns      = 2^15          % symbols per polarisation
         SpS     = 1             % symbol-rate processing (no pulse shaping)
 
         % System
@@ -49,6 +49,32 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
             testCase.verifyLessThan(BER, testCase.BER_THRESHOLD, ...
                 sprintf('4-QAM BER %.2e exceeds threshold.', BER));
         end
+
+        % -------- 4-QAM fixed-point (fixed16) ------
+        function testQPSK_Fxp16(testCase)
+            M = 4;
+            [rxSym, crSym, BER] = runScenarioFxp(testCase, M, 'fixed16');
+            plotBeforeAfter(testCase, rxSym, crSym, ...
+                '4-QAM  |  VV FXP fixed16', M, BER);
+
+            testCase.verifyTrue(all(isfinite(crSym(:))), ...
+                'FXP carrier-recovery output contains NaN/Inf.');
+            testCase.verifyLessThan(BER, testCase.BER_THRESHOLD, ...
+                sprintf('4-QAM FXP16 BER %.2e exceeds threshold.', BER));
+        end
+
+        % -------- 4-QAM fixed-point (fixed32) ------
+        function testQPSK_Fxp32(testCase)
+            M = 4;
+            [rxSym, crSym, BER] = runScenarioFxp(testCase, M, 'fixed32');
+            plotBeforeAfter(testCase, rxSym, crSym, ...
+                '4-QAM  |  VV FXP fixed32', M, BER);
+
+            testCase.verifyTrue(all(isfinite(crSym(:))), ...
+                'FXP carrier-recovery output contains NaN/Inf.');
+            testCase.verifyLessThan(BER, testCase.BER_THRESHOLD, ...
+                sprintf('4-QAM FXP32 BER %.2e exceeds threshold.', BER));
+        end
     end
 
     % ================================================================
@@ -84,6 +110,77 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
             BER     = nErrors / length(txBits);
             fprintf('%d-QAM BER = %.2e  (%d / %d)\n', ...
                      M, BER, nErrors, length(txBits));
+        end
+
+        function [rxSym, crSym, BER] = runScenarioFxp(testCase, M, config)
+            rng(42);
+
+            % --- Types ---
+            T = cr_viterbiViterbi_fxp_types(config);
+
+            % --- Tx ---
+            k      = log2(M);
+            Nbits  = k * testCase.N_pol * testCase.Ns;
+            txBits = qam_randomBits(Nbits);
+            symbols = qam_modulate(txBits, M, testCase.N_pol);
+
+            % --- Channel: AWGN + phase noise ---
+            rxSym = channel_add_awgn(symbols, testCase.SNR_dB);
+            rxSym = channel_add_phase_noise(rxSym, testCase.Rs, testCase.LW);
+
+            % --- VV filter ---
+            symEnergy = mean(abs(symbols(:)).^2);
+            VVFilter  = cr_genVVFilter(testCase.Linewidth, testCase.Rs, ...
+                testCase.SNR_dB, symEnergy, testCase.N_pol, testCase.NTaps);
+
+            % --- Cast inputs to fi (shared by MATLAB and MEX) ---
+            rxSym_fi    = cast(rxSym,    'like', T.x);
+            VVFilter_fi = cast(VVFilter, 'like', T.w);
+
+            % % --- MATLAB fixed-point carrier recovery ---
+            % crSym_ML = cr_viterbiViterbi_fxp(rxSym_fi, testCase.N_pol, ...
+            %     testCase.NTaps, VVFilter_fi, T);
+
+            % --- MEX fixed-point carrier recovery ---
+            crSym_MEX = cr_viterbiViterbi_fxp_mex(rxSym_fi, testCase.N_pol, ...
+                testCase.NTaps, VVFilter_fi, T);
+
+            % % --- Verify MATLAB and MEX are bit-exact ---
+            % verifyFxpMexMatchesMatlab(testCase, crSym_ML, crSym_MEX, ...
+            %     sprintf('%d-QAM %s', M, config));
+
+            crSym_dbl = double(crSym_MEX);
+
+            % --- Phase ambiguity resolution ---
+            %  VV has pi/2 phase ambiguity for QPSK.  Try all four
+            %  rotations and pick the one with minimum BER.
+            bestBER = Inf;
+            bestSym = crSym_dbl;
+            for kk = 0:3
+                rotated     = crSym_dbl .* exp(-1j * kk * pi/2);
+                decidedSyms = qam_decideSymbols(rotated, M, testCase.N_pol);
+                rxBits      = qam_symbolsToBits(decidedSyms, M);
+                nErrors     = sum(txBits ~= rxBits);
+                thisBER     = nErrors / length(txBits);
+                if thisBER < bestBER
+                    bestBER = thisBER;
+                    bestSym = rotated;
+                end
+            end
+
+            BER   = bestBER;
+            crSym = bestSym;
+            fprintf('%d-QAM FXP (%s) BER = %.2e\n', M, config, BER);
+        end
+
+        function verifyFxpMexMatchesMatlab(testCase, eqML, eqMEX, tag)
+            %VERIFYFXPMEXMATCHESMATLAB  Check MATLAB fxp and MEX are bit-exact.
+            mlDbl  = double(eqML);
+            mexDbl = double(eqMEX);
+            maxErr = max(abs(mlDbl(:) - mexDbl(:)));
+            fprintf('  [%s] max |MATLAB-MEX| = %g\n', tag, maxErr);
+            testCase.verifyEqual(mexDbl, mlDbl, ...
+                sprintf('[%s] MEX output differs from MATLAB fxp.', tag));
         end
 
         function plotBeforeAfter(testCase, rxSym, crSym, titleStr, M, BER)

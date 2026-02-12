@@ -77,9 +77,11 @@ function y = adeq_equalize(x, SpS, Eq, NTaps, Mu, SingleSpike, N1, N2, NOut)
 
         % Update coefficients
         if CMAFlag
-            [w1V,w1H,w2V,w2H] = adeq_cma_update( ...
-                xV(:,i), xH(:,i), y1(i), y2(i), ...
-                w1V, w1H, w2V, w2H, R_CMA, Mu);
+            % CMA update
+            w1V = w1V + Mu*xV(:,i)*(R_CMA - abs(y1(i)).^2)*conj(y1(i));
+            w1H = w1H + Mu*xH(:,i)*(R_CMA - abs(y1(i)).^2)*conj(y1(i));
+            w2V = w2V + Mu*xV(:,i)*(R_CMA - abs(y2(i)).^2)*conj(y2(i));
+            w2H = w2H + Mu*xH(:,i)*(R_CMA - abs(y2(i)).^2)*conj(y2(i));
 
             % Switch CMA -> RDE
             if CMAtoRDE && i == N2
@@ -88,9 +90,14 @@ function y = adeq_equalize(x, SpS, Eq, NTaps, Mu, SingleSpike, N1, N2, NOut)
             end
 
         elseif RDEFlag
-            [w1V,w1H,w2V,w2H] = adeq_rde_update( ...
-                xV(:,i), xH(:,i), y1(i), y2(i), ...
-                w1V, w1H, w2V, w2H, R_RDE, Mu);
+            % RDE update
+            [~, r1] = min(abs(R_RDE - abs(y1(i))));
+            [~, r2] = min(abs(R_RDE - abs(y2(i))));
+
+            w1V = w1V + Mu*xV(:,i)*(R_RDE(r1)^2 - abs(y1(i)).^2)*conj(y1(i));
+            w1H = w1H + Mu*xH(:,i)*(R_RDE(r1)^2 - abs(y1(i)).^2)*conj(y1(i));
+            w2V = w2V + Mu*xV(:,i)*(R_RDE(r2)^2 - abs(y2(i)).^2)*conj(y2(i));
+            w2H = w2H + Mu*xH(:,i)*(R_RDE(r2)^2 - abs(y2(i)).^2)*conj(y2(i));
         end
 
         % Reinitialisation for SingleSpike

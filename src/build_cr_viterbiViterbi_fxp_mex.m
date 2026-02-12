@@ -33,10 +33,26 @@ NTaps_ex = double(15);
 w_proto  = fi(0, numerictype(T.w), fimath(T.w));
 w_type   = coder.typeof(w_proto, [Inf, 1], [true, false]);
 
+% Pilots — complex fi matrix, variable-length rows, up to 2 columns
+Pilots_type = coder.typeof(x_proto, [Inf, 2], [true, false]);
+
+% P — number of pilots per block (double scalar)
+P_ex = double(8);
+
+% L — block length in symbols (double scalar)
+L_ex = double(256);
+
+% CSThreshold — cycle-slip detection threshold (double scalar)
+CSThreshold_ex = double(pi/3);
+
+% UsePilots — flag (logical scalar)
+UsePilots_ex = logical(true);
+
 % T — struct of fi prototypes
 T_ex = T;
 
-args = {x_type, NPol_ex, NTaps_ex, w_type, T_ex};
+args = {x_type, NPol_ex, NTaps_ex, w_type, Pilots_type, P_ex, L_ex, ...
+        CSThreshold_ex, UsePilots_ex, T_ex};
 
 fprintf('  Input types defined.\n');
 
@@ -55,4 +71,4 @@ codegen('-config', cfg, ...
 fprintf('\n=== MEX build complete ===\n');
 fprintf('Output: %s\n', fullfile(srcDir, ['cr_viterbiViterbi_fxp_mex.' mexext]));
 fprintf('\nCall it exactly like the MATLAB version:\n');
-fprintf('  v = cr_viterbiViterbi_fxp_mex(x, NPol, NTaps, VVFilter, T)\n');
+fprintf('  v = cr_viterbiViterbi_fxp_mex(x, NPol, NTaps, VVFilter, Pilots, P, L, CSThreshold, UsePilots, T)\n');

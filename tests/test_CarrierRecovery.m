@@ -5,13 +5,13 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
 
     properties (Constant)
         N_pol   = 2
-        Ns      = 2^20          % symbols per polarisation
+        Ns      = 2^18          % symbols per polarisation
         SpS     = 1             % symbol-rate processing (no pulse shaping)
 
         % System
         Rs      = 32            % [GBd]
-        SNR_dB  = 20            % [dB]
-        Linewidth = 100e4       % laser linewidth [Hz]
+        SNR_dB  = 15            % [dB]
+        Linewidth = 200e4       % laser linewidth [Hz]
 
         % Channel (unused impairments set to benign values)
         L       = 80            % fibre length [km]
@@ -19,13 +19,13 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
         CWL     = 1550          % [nm]
         DGDSpec = 0             % no PMD
         N_pmd   = 1
-        LW      = 100e4         % phase-noise linewidth [Hz]
+        LW      = 200e4         % phase-noise linewidth [Hz]
 
         % Carrier recovery
         NTaps   = 15
         CR_BlockLen    = 256    % block length L for pilot-aided CS correction
         CR_NPilots     = 8      % pilot symbols P per block
-        CR_CSThreshold = pi/3   % cycle-slip detection threshold [rad]
+        CR_CSThreshold = pi/2   % cycle-slip detection threshold [rad]
 
         % Pass / fail
         BER_THRESHOLD = 5e-2

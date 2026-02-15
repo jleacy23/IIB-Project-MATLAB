@@ -27,8 +27,22 @@ function v = cr_viterbiViterbi(x, NPol, NTaps, VVFilter, Pilots, P, L, CSThresho
             xBlock = x((b-1)*L+1 : min(((b-1)*L+P), size(x,1)), pol);
             PhiRef(b, pol) = angle(PilotBlock' * xBlock);
         end
-    end 
-
+    end
+    
+    % Interpolate block PhiRef for each symbol
+    PhiRefInterp = zeros(size(x));
+    for pol = 1:NPol
+        for b = 1:NBlocks
+            startIdx = (b-1)*L + 1;
+            endIdx = min(b*L, size(x,1));
+            if b < NBlocks
+                nextPhiRef = PhiRef(b+1, pol);
+            else
+                nextPhiRef = PhiRef(b, pol);
+            end
+            PhiRefInterp(startIdx:endIdx, pol) = linspace(PhiRef(b, pol), nextPhiRef, endIdx - startIdx + 1).';
+        end
+    end
     
 
     for pol = 1:NPol
@@ -46,16 +60,16 @@ function v = cr_viterbiViterbi(x, NPol, NTaps, VVFilter, Pilots, P, L, CSThresho
     % Unwrap phase with pilot-aided CS correction
     ThetaBlocks = reshape(ThetaML, L, NBlocks, NPol);
     ThetaBlocksPU = zeros(size(ThetaBlocks));
+    PhiRefBlock = reshape(PhiRefInterp, L, NBlocks, NPol);
     for pol = 1:NPol
         ThetaPrev = 0;
         for b = 1:NBlocks
             ThetaBlock = ThetaBlocks(:, b, pol);
-            PhiRefBlock = PhiRef(b, pol);
             for i = 1:length(ThetaBlock)
                 n = floor(1/2 + (ThetaPrev - ThetaBlock(i)) / (pi/2));
                 ThetaBlocksPU (i, b, pol) = ThetaBlock(i) + n * (pi/2);
                 if UsePilots
-                    ThetaBlocksPU (i, b, pol) = ThetaBlocksPU(i, b, pol) - pi/2 * round((ThetaBlocksPU(i, b, pol) - PhiRefBlock) / CSThreshold);
+                    ThetaBlocksPU (i, b, pol) = ThetaBlocksPU(i, b, pol) - pi/2 * round((ThetaBlocksPU(i, b, pol) - PhiRefBlock(i, b, pol)) / CSThreshold);
                 end
                 ThetaPrev = ThetaBlocksPU(i, b, pol);
             end
@@ -63,5 +77,8 @@ function v = cr_viterbiViterbi(x, NPol, NTaps, VVFilter, Pilots, P, L, CSThresho
     end
 
     ThetaPU = reshape(ThetaBlocksPU, size(ThetaML));
+    % plot ThetaPU for debugging, print if UsePilots is true
+    if UsePilots 
+
     v = x .* exp(-1j*ThetaPU);
 end

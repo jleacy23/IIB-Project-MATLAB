@@ -4,10 +4,11 @@
 %
 %  Prerequisites: MATLAB Coder, Fixed-Point Designer
 %
-%  Usage:  run this script from the project root or from src/.
+%  Usage:  run this script from the project root or from build/.
 
 %% 0 — Ensure src/ is on the MATLAB path
-srcDir = fullfile(fileparts(mfilename('fullpath')));
+buildDir = fileparts(mfilename('fullpath'));
+srcDir   = fullfile(buildDir, '..', 'src');
 addpath(srcDir);
 
 %% 1 — Static code-generation readiness check

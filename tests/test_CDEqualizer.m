@@ -136,5 +136,180 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
                 'Equalized symbol array shape mismatch.');
         end
 
+        % ============================================================
+        %  Fixed-point tests
+        % ============================================================
+
+        % -------- CD only: fxp32 BER check ----------------------------
+        function testCDOnlyBER_Fxp32(testCase)
+            T = cdeq_equalize_fxp_types('fixed32');
+
+            % --- Tx ---
+            k     = log2(testCase.M);
+            Nbits = k * testCase.N_pol * testCase.Ns;
+            txBits   = qam_randomBits(Nbits);
+            symbols  = qam_modulate(txBits, testCase.M, testCase.N_pol);
+            txSig    = qam_rectPulse(symbols, testCase.SpS);
+
+            % --- Channel (CD only) ---
+            rxSig = channel_add_chromatic_dispersion(txSig, ...
+                testCase.L, testCase.SpS, testCase.Rs, testCase.D, testCase.CWL);
+
+            % --- Cast to fi ---
+            rxSig_fi = cast(rxSig, 'like', T.x);
+
+            % --- CD Equalizer (fxp MATLAB) ---
+            eqSig = cdeq_equalize_fxp(rxSig_fi, testCase.D, testCase.L, ...
+                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, ...
+                testCase.NFFT, false, T);
+
+            % --- BER ---
+            eqSymbols   = double(eqSig(1:testCase.SpS:end, :));
+            decidedSyms = qam_decideSymbols(eqSymbols, testCase.M, testCase.N_pol);
+            rxBits      = qam_symbolsToBits(decidedSyms, testCase.M);
+            nErrors = sum(txBits ~= rxBits);
+            BER     = nErrors / length(txBits);
+            fprintf('CD-only FXP32 BER = %.2e  (%d errors / %d bits)\n', ...
+                     BER, nErrors, length(txBits));
+
+            testCase.verifyLessThan(BER, testCase.BER_CD_ONLY, ...
+                sprintf('FXP32 CD-only BER %.2e exceeds threshold %.2e.', ...
+                         BER, testCase.BER_CD_ONLY));
+        end
+
+        % -------- CD only: fxp32 vs float NRMSE ----------------------
+        function testCDOnly_Fxp32_vs_Float(testCase)
+            T = cdeq_equalize_fxp_types('fixed32');
+
+            % --- Tx ---
+            k     = log2(testCase.M);
+            Nbits = k * testCase.N_pol * testCase.Ns;
+            txBits   = qam_randomBits(Nbits);
+            symbols  = qam_modulate(txBits, testCase.M, testCase.N_pol);
+            txSig    = qam_rectPulse(symbols, testCase.SpS);
+
+            % --- Channel (CD only) ---
+            rxSig = channel_add_chromatic_dispersion(txSig, ...
+                testCase.L, testCase.SpS, testCase.Rs, testCase.D, testCase.CWL);
+
+            % --- Float reference ---
+            eqRef = cdeq_equalize(rxSig, testCase.D, testCase.L, ...
+                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, ...
+                testCase.NFFT);
+
+            % --- FXP ---
+            rxSig_fi = cast(rxSig, 'like', T.x);
+            eqFxp    = cdeq_equalize_fxp(rxSig_fi, testCase.D, testCase.L, ...
+                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, ...
+                testCase.NFFT, false, T);
+
+            % --- NRMSE ---
+            nrmse = norm(double(eqFxp) - eqRef) / norm(eqRef);
+            fprintf('CD-only FXP32 vs float NRMSE = %.4e\n', nrmse);
+
+            testCase.verifyLessThan(nrmse, 0.05, ...
+                sprintf('FXP32 NRMSE %.4e exceeds 5%% threshold.', nrmse));
+        end
+
+        % -------- CD only: fxp MEX bit-exact with MATLAB fxp ----------
+        function testCDOnly_Fxp32_MexMatch(testCase)
+            testCase.assumeTrue(exist('cdeq_equalize_fxp_mex', 'file') == 3, ...
+                'cdeq_equalize_fxp_mex not found — run build_cdeq_equalize_fxp_mex first.');
+
+            T = cdeq_equalize_fxp_types('fixed32');
+
+            % --- Tx ---
+            k     = log2(testCase.M);
+            Nbits = k * testCase.N_pol * testCase.Ns;
+            txBits   = qam_randomBits(Nbits);
+            symbols  = qam_modulate(txBits, testCase.M, testCase.N_pol);
+            txSig    = qam_rectPulse(symbols, testCase.SpS);
+
+            % --- Channel (CD only) ---
+            rxSig = channel_add_chromatic_dispersion(txSig, ...
+                testCase.L, testCase.SpS, testCase.Rs, testCase.D, testCase.CWL);
+
+            rxSig_fi = cast(rxSig, 'like', T.x);
+
+            % --- MATLAB fxp ---
+            eqML = cdeq_equalize_fxp(rxSig_fi, testCase.D, testCase.L, ...
+                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, ...
+                testCase.NFFT, false, T);
+
+            % --- MEX fxp ---
+            eqMEX = cdeq_equalize_fxp_mex(rxSig_fi, testCase.D, testCase.L, ...
+                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, ...
+                testCase.NFFT, false, T);
+
+            % --- Verify bit-exact ---
+            testCase.verifyEqual(double(eqMEX), double(eqML), ...
+                'MEX output must be bit-exact with MATLAB fxp output.');
+
+            if isa(eqML, 'embedded.fi') && isa(eqMEX, 'embedded.fi')
+                testCase.verifyEqual(eqMEX.WordLength, eqML.WordLength, ...
+                    'MEX WordLength differs from MATLAB.');
+                testCase.verifyEqual(eqMEX.FractionLength, eqML.FractionLength, ...
+                    'MEX FractionLength differs from MATLAB.');
+            end
+        end
+
+        % -------- CD + AWGN: fxp32 visual comparison -----------------
+        function testCDPlusAWGN_Fxp32(testCase)
+            SNR_dB = 25;
+            T = cdeq_equalize_fxp_types('fixed32');
+
+            % --- Tx ---
+            k     = log2(testCase.M);
+            Nbits = k * testCase.N_pol * testCase.Ns;
+            txBits   = qam_randomBits(Nbits);
+            symbols  = qam_modulate(txBits, testCase.M, testCase.N_pol);
+            txSig    = qam_rectPulse(symbols, testCase.SpS);
+
+            % --- Channel ---
+            rxSig = channel_add_chromatic_dispersion(txSig, ...
+                testCase.L, testCase.SpS, testCase.Rs, testCase.D, testCase.CWL);
+            rxSig = channel_add_awgn(rxSig, SNR_dB);
+
+            % --- Float reference ---
+            eqRef = cdeq_equalize(rxSig, testCase.D, testCase.L, ...
+                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, ...
+                testCase.NFFT);
+
+            % --- FXP ---
+            rxSig_fi = cast(rxSig, 'like', T.x);
+            eqFxp    = cdeq_equalize_fxp(rxSig_fi, testCase.D, testCase.L, ...
+                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, ...
+                testCase.NFFT, false, T);
+
+            eqRefSym = eqRef(1:testCase.SpS:end, :);
+            eqFxpSym = double(eqFxp(1:testCase.SpS:end, :));
+            rxSym    = rxSig(1:testCase.SpS:end, :);
+
+            % --- Plot ---
+            figure('Name', 'CD+AWGN FXP32 Comparison', ...
+                   'Position', [100 100 1400 700]);
+            for p = 1:testCase.N_pol
+                subplot(2, 3, (p-1)*3 + 1);
+                plot(real(rxSym(:,p)), imag(rxSym(:,p)), '.', 'MarkerSize', 2);
+                grid on; axis equal;
+                title(sprintf('Before CD EQ – Pol %d', p));
+
+                subplot(2, 3, (p-1)*3 + 2);
+                plot(real(eqRefSym(:,p)), imag(eqRefSym(:,p)), '.', 'MarkerSize', 2);
+                grid on; axis equal;
+                title(sprintf('Float CD EQ – Pol %d', p));
+
+                subplot(2, 3, (p-1)*3 + 3);
+                plot(real(eqFxpSym(:,p)), imag(eqFxpSym(:,p)), '.', 'MarkerSize', 2);
+                grid on; axis equal;
+                title(sprintf('FXP32 CD EQ – Pol %d', p));
+            end
+            sgtitle(sprintf('16-QAM: CD + AWGN (%d dB)  |  Float vs FXP32', SNR_dB));
+
+            % Sanity checks
+            testCase.verifyTrue(all(isfinite(double(eqFxp(:)))), ...
+                'FXP32 output contains NaN/Inf.');
+        end
+
     end
 end

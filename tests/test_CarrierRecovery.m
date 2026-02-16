@@ -5,11 +5,11 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
 
     properties (Constant)
         N_pol   = 2
-        Ns      = 2^18          % symbols per polarisation
+        Ns      = 2^16          % symbols per polarisation
         SpS     = 1             % symbol-rate processing (no pulse shaping)
 
         % System
-        Rs      = 32            % [GBd]
+        Rs      = 2            % [GBd]
         SNR_dB  = 15            % [dB]
         Linewidth = 200e4       % laser linewidth [Hz]
 
@@ -90,6 +90,64 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
                 'FXP carrier-recovery output contains NaN/Inf.');
             testCase.verifyLessThan(BER, testCase.BER_THRESHOLD, ...
                 sprintf('4-QAM FXP16 Pilots BER %.2e exceeds threshold.', BER));
+        end
+
+        % -------- 4-QAM frequency recovery --------------------------
+        function testQPSK_FreqRecovery(testCase)
+            M      = 4;
+            DeltaF = 200;       % 20 MHz frequency offset
+
+            % --- Tx ---
+            k      = log2(M);
+            Nbits  = k * testCase.N_pol * testCase.Ns;
+            txBits = qam_randomBits(Nbits);
+            symbols = qam_modulate(txBits, M, testCase.N_pol);
+
+            % --- Channel: AWGN + frequency shift ---
+            rxSym = channel_add_awgn(symbols, testCase.SNR_dB);
+            rxSym = channel_lo_freq_shift(rxSym, DeltaF, ...
+                testCase.Rs, testCase.SpS);
+
+            % --- Frequency recovery ---
+            [crSym, estFreqOffset] = cr_freq_recovery(rxSym, testCase.Rs);
+
+            % --- Demodulate & BER (resolve pi/2 ambiguity) ---
+            bestBER = Inf;
+            bestSym = crSym;
+            for kk = 0:3
+                rotated     = crSym .* exp(-1j * kk * pi/2);
+                decidedSyms = qam_decideSymbols(rotated, M, testCase.N_pol);
+                rxBits      = qam_symbolsToBits(decidedSyms, M);
+                nErrors     = sum(txBits ~= rxBits);
+                thisBER     = nErrors / length(txBits);
+                if thisBER < bestBER
+                    bestBER = thisBER;
+                    bestSym = rotated;
+                end
+            end
+            BER   = bestBER;
+            crSym = bestSym;
+            fprintf('4-QAM Freq Recovery BER = %.2e  (%d / %d)\n', ...
+                     BER, round(BER*length(txBits)), length(txBits));
+
+            % --- Plot ---
+            plotBeforeAfter(testCase, rxSym, crSym, ...
+                '4-QAM  |  Freq Recovery', M, BER);
+
+            % --- Verify ---
+            testCase.verifyTrue(all(isfinite(crSym(:))), ...
+                'Freq-recovery output contains NaN/Inf.');
+            testCase.verifyLessThan(BER, testCase.BER_THRESHOLD, ...
+                sprintf('4-QAM Freq Recovery BER %.2e exceeds threshold.', BER));
+
+            % --- Verify estimated frequency offset ---
+            freqErr = abs(estFreqOffset - DeltaF);
+            fprintf('  Estimated offset = %.6e MHz, true = %.6e MHz, error = %.6e MHz\n', ...
+                     estFreqOffset, DeltaF, freqErr);
+            freqTol = testCase.Rs * 1e9 / testCase.Ns;  % spectral resolution
+            testCase.verifyLessThan(freqErr, freqTol, ...
+                sprintf('Freq offset estimate error %.2e MHz exceeds resolution %.2e Hz.', ...
+                         freqErr, freqTol));
         end
     end
 

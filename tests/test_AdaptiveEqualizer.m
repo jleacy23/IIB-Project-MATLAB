@@ -16,6 +16,10 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
         N_pmd   = 10
         LW      = 0             % no phase noise
 
+        % Pulse shaping
+        Rolloff = 0.25
+        Span    = 10
+
         % Adaptive EQ common settings
         NTaps   = 15
         Mu      = 1e-3
@@ -136,7 +140,8 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
             Nbits  = k * testCase.N_pol * testCase.Ns;
             bits   = qam_randomBits(Nbits);
             symbols = qam_modulate(bits, M, testCase.N_pol);
-            txSig  = qam_rectPulse(symbols, testCase.SpS);
+            txSig  = qam_rrcPulse(symbols, testCase.SpS, ...
+                testCase.Rolloff, testCase.Span);
 
             % --- Channel: AWGN + PMD (+ optional phase noise) ---
             rxSig = channel_add_awgn(txSig, testCase.SNR_dB);
@@ -146,6 +151,10 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
             end
             rxSig = channel_add_pmd(rxSig, testCase.L, testCase.SpS, ...
                 testCase.Rs, testCase.DGDSpec, testCase.N_pmd);
+
+            % --- Matched filter ---
+            rxSig = qam_matched_filter(rxSig, testCase.SpS, 'rrc', ...
+                testCase.Rolloff, testCase.Span);
 
             % --- Downsample before EQ for reference constellation ---
             rxSym = rxSig(1:testCase.SpS:end, :);
@@ -171,7 +180,8 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
             Nbits  = k * testCase.N_pol * testCase.Ns;
             bits   = qam_randomBits(Nbits);
             symbols = qam_modulate(bits, M, testCase.N_pol);
-            txSig  = qam_rectPulse(symbols, testCase.SpS);
+            txSig  = qam_rrcPulse(symbols, testCase.SpS, ...
+                testCase.Rolloff, testCase.Span);
 
             % --- Channel: AWGN + PMD (+ optional phase noise) ---
             rxSig = channel_add_awgn(txSig, testCase.SNR_dB);
@@ -181,6 +191,10 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
             end
             rxSig = channel_add_pmd(rxSig, testCase.L, testCase.SpS, ...
                 testCase.Rs, testCase.DGDSpec, testCase.N_pmd);
+
+            % --- Matched filter ---
+            rxSig = qam_matched_filter(rxSig, testCase.SpS, 'rrc', ...
+                testCase.Rolloff, testCase.Span);
 
             % --- Downsample before EQ for reference constellation ---
             rxSym = rxSig(1:testCase.SpS:end, :);

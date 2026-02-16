@@ -95,5 +95,75 @@ classdef test_QAMModem < matlab.unittest.TestCase
             testCase.verifyTrue(all(bits == 0 | bits == 1), ...
                 'randomBits should only produce 0s and 1s.');
         end
+
+        function testPulseShapingPlot(testCase)
+            % Plot matched-filter output for rect and RRC pulse shaping
+            M_  = 4;
+            SpS = 2;
+            Ns  = 64;
+            k   = log2(M_);
+            rolloff = 0.25;
+            span    = 10;
+
+            bits    = qam_randomBits(k * Ns);
+            symbols = qam_modulate(bits, M_, 1);
+
+            % Rectangular
+            txRect = qam_rectPulse(symbols, SpS);
+            rxRect = qam_matched_filter(txRect, SpS, 'rect');
+
+            % RRC
+            txRRC = qam_rrcPulse(symbols, SpS, rolloff, span);
+            rxRRC = qam_matched_filter(txRRC, SpS, 'rrc', rolloff, span);
+
+            t = (0:size(txRect,1)-1).' / SpS;
+
+            figure('Name', 'Matched Filter Output', ...
+                   'Position', [100 100 1200 800]);
+
+            subplot(2,2,1);
+            plot(t, real(txRect), t, real(rxRect), 'LineWidth', 0.8);
+            hold on;
+            stem((0:Ns-1).', real(symbols), 'k', 'MarkerSize', 3);
+            hold off;
+            xlabel('Symbol index'); ylabel('Re');
+            title('Rectangular – real part');
+            legend('Tx (shaped)', 'Rx (matched)', 'Symbols');
+            xlim([0 20]); grid on;
+
+            subplot(2,2,2);
+            plot(t, imag(txRect), t, imag(rxRect), 'LineWidth', 0.8);
+            hold on;
+            stem((0:Ns-1).', imag(symbols), 'k', 'MarkerSize', 3);
+            hold off;
+            xlabel('Symbol index'); ylabel('Im');
+            title('Rectangular – imag part');
+            legend('Tx (shaped)', 'Rx (matched)', 'Symbols');
+            xlim([0 20]); grid on;
+
+            subplot(2,2,3);
+            plot(t, real(txRRC), t, real(rxRRC), 'LineWidth', 0.8);
+            hold on;
+            stem((0:Ns-1).', real(symbols), 'k', 'MarkerSize', 3);
+            hold off;
+            xlabel('Symbol index'); ylabel('Re');
+            title(sprintf('RRC (\\beta=%.2f) – real part', rolloff));
+            legend('Tx (shaped)', 'Rx (matched)', 'Symbols');
+            xlim([0 20]); grid on;
+
+            subplot(2,2,4);
+            plot(t, imag(txRRC), t, imag(rxRRC), 'LineWidth', 0.8);
+            hold on;
+            stem((0:Ns-1).', imag(symbols), 'k', 'MarkerSize', 3);
+            hold off;
+            xlabel('Symbol index'); ylabel('Im');
+            title(sprintf('RRC (\\beta=%.2f) – imag part', rolloff));
+            legend('Tx (shaped)', 'Rx (matched)', 'Symbols');
+            xlim([0 20]); grid on;
+
+            sgtitle('Pulse Shaping & Matched Filter Output (QPSK, 1 pol)');
+
+            testCase.verifyTrue(true);
+        end
     end
 end

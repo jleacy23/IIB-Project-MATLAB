@@ -18,7 +18,7 @@ function w = cr_genVVFilter(Linewidth, Rs, SNR, SymbolEnergy, NPol, NTaps)
     VarDeltaPhi = 2 * pi * Linewidth * Ts;
 
     % Additive noise variance
-    SNRLin = 10^(SNR/10) * 2 * 125e9 / (NPol * Rs_si);
+    SNRLin = 10^(SNR/10) * 2 * 12.5e9 / (NPol * Rs_si);
     VarEta = SymbolEnergy / (2 * SNRLin);
 
     % K matrix
@@ -36,5 +36,5 @@ function w = cr_genVVFilter(Linewidth, Rs, SNR, SymbolEnergy, NPol, NTaps)
     C = SymbolEnergy^4 * 16 * VarDeltaPhi * K + ...
         SymbolEnergy^3 * 16 * VarEta * I;
     w = (ones(L_filt,1)' / C).';
-    w = w / max(w);
+    w = w / sum(w);
 end

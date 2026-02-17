@@ -7,9 +7,9 @@ function P = pipeline_params()
 %   and build_all_mex.  Edit values here; everything else reads from P.
 
     % ---- Modulation -------------------------------------------------
-    P.M       = 16;           % QAM order (4, 16, 64, …)
+    P.M       = 4;           % QAM order (4, 16, 64, …)
     P.N_pol   = 2;            % number of polarisations
-    P.Ns      = 2^14;         % symbols per polarisation
+    P.Ns      = 2^17;         % symbols per polarisation
 
     % ---- Pulse shaping ----------------------------------------------
     P.SpS     = 2;            % samples per symbol
@@ -27,23 +27,19 @@ function P = pipeline_params()
     P.N_pmd   = 10;           % number of PMD sections
 
     % ---- CD Equalizer -----------------------------------------------
-    P.NFFT    = 512;          % FFT block size (power of 2)
+    P.NFFT    = 2^9;          % FFT block size (power of 2)
 
     % ---- Adaptive Equalizer -----------------------------------------
-    P.AEQ_Eq         = 'CMA+RDE';
+    P.AEQ_Eq         = 'CMA';
     P.AEQ_NTaps      = 15;
     P.AEQ_Mu         = 1e-3;
     P.AEQ_SingleSpike = true;
     P.AEQ_N1         = 2000;       % y-pol re-init iteration
     P.AEQ_N2         = 4000;       % CMA→RDE switch iteration
-    P.AEQ_NOut       = 500;        % transient discard
+    P.AEQ_NOut       = 5000;        % transient discard
 
     % ---- Viterbi–Viterbi Carrier Recovery ----------------------------
     P.VV_NTaps       = 15;         % half-width of VV averaging filter
-    P.VV_P           = 8;          % pilots per block
-    P.VV_L           = 256;        % block length [symbols]
-    P.VV_CSThreshold = pi/3;       % cycle-slip threshold [rad]
-    P.VV_UsePilots   = false;
 
     % ---- Fixed-point configuration ----------------------------------
     P.FxpConfig      = 'fixed32';  % 'fixed16' | 'fixed32'

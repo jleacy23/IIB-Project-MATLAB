@@ -62,20 +62,20 @@ function T = adeq_equalize_fxp_types(dt) %#codegen
                 'RoundingMethod',       'Floor', ...
                 'OverflowAction',       'Wrap',  ...
                 'ProductMode',          'SpecifyPrecision', ...
-                'ProductWordLength',     16, ...
+                'ProductWordLength',     32, ...
                 'ProductFractionLength', 8, ...
                 'SumMode',              'SpecifyPrecision', ...
-                'SumWordLength',         16, ...
+                'SumWordLength',         32, ...
                 'SumFractionLength',     8);
 
-            T.x     = fi([], 1, 16, 8, F);   % all types identical
-            T.w     = fi([], 1, 16, 8, F);
-            T.y     = fi([], 1, 16, 8, F);
-            T.acc   = fi([], 1, 16, 8, F);
-            T.err   = fi([], 1, 16, 8, F);
-            T.mu    = fi([], 1, 16, 8, F);
-            T.R_CMA = fi([], 1, 16, 8, F);
-            T.R_RDE = fi([], 1, 16, 8, F);
+            T.x     = fi([], 1, 32, 8, F);   % all types identical
+            T.w     = fi([], 1, 32, 8, F);
+            T.y     = fi([], 1, 32, 8, F);
+            T.acc   = fi([], 1, 32, 8, F);
+            T.err   = fi([], 1, 32, 8, F);
+            T.mu    = fi([], 1, 32, 8, F);
+            T.R_CMA = fi([], 1, 32, 8, F);
+            T.R_RDE = fi([], 1, 32, 8, F);
 
         % ==============================================================
         case 'fixed32'

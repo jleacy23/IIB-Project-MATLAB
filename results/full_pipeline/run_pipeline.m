@@ -44,14 +44,15 @@ function R = run_pipeline(P)
     rxSig = channel_add_pmd(rxSig, P.L, P.SpS, P.Rs, P.DGDSpec, P.N_pmd);
 
     %% ================================================================
-    %  Generate VV filter & pilot symbols (shared)
+    %  Generate VV filter (shared)
     % =================================================================
     SymbolEnergy = 1;   % unit-power constellation
     VVFilter = cr_genVVFilter(P.LW, P.Rs, P.SNR_dB, SymbolEnergy, ...
                               P.N_pol, P.VV_NTaps);
 
-    % Pilot symbols: first P.VV_P symbols of the transmitted sequence
-    Pilots = symbols(1:P.VV_P, :);
+    % The adaptive EQ discards NOut symbols from the front, so the VV
+    % input corresponds to TX symbols (NOut+1 : NOut+Nsym_out).
+    symOffset = P.AEQ_NOut;   % TX symbol index offset
 
     %% ================================================================
     %  PATH A — Floating-point (double)
@@ -82,18 +83,49 @@ function R = run_pipeline(P)
     fprintf('  VV carrier recovery ... ');
     tic;
     vvOut_fl = cr_viterbiViterbi(aeqOut_fl, P.N_pol, P.VV_NTaps, ...
-                                 VVFilter, Pilots, P.VV_P, P.VV_L, ...
-                                 P.VV_CSThreshold, P.VV_UsePilots);
+                                 VVFilter);
     t_vv_fl = toc;
     fprintf('%.3f s\n', t_vv_fl);
 
-    % Decide & compute BER
-    dec_fl  = qam_decideSymbols(vvOut_fl, P.M, P.N_pol);
+    % Decide & compute BER — resolve pi/2 ambiguity + pol swap
+    Nsym_fl  = size(vvOut_fl, 1);
+    refEnd   = min(symOffset + Nsym_fl, P.Ns);
+    Nuse_fl  = refEnd - symOffset;
+    refSym_fl = symbols(symOffset+1 : refEnd, :);
+    rotations = [1, 1j, -1, -1j];
+
+    totalErr_fl  = 0;
+    totalBits_fl = 0;
+    bestRotPerPol_fl = zeros(1, P.N_pol);
+    bestSrcPerPol_fl = zeros(1, P.N_pol);
+    for p = 1:P.N_pol
+        refBitsPol = qam_symbolsToBits(refSym_fl(:,p), P.M);
+        bestPolBER = Inf;
+        for q = 1:P.N_pol          % try both EQ outputs (pol swap)
+            for ri = 1:4           % try all rotations
+                vvRot   = vvOut_fl(1:Nuse_fl, q) * rotations(ri);
+                decRot  = qam_decideSymbols(vvRot, P.M, 1);
+                bitsRot = qam_symbolsToBits(decRot, P.M);
+                polBER  = sum(bitsRot ~= refBitsPol) / numel(refBitsPol);
+                if polBER < bestPolBER
+                    bestPolBER = polBER;
+                    bestRotPerPol_fl(p) = ri;
+                    bestSrcPerPol_fl(p) = q;
+                end
+            end
+        end
+        totalErr_fl  = totalErr_fl  + bestPolBER * numel(refBitsPol);
+        totalBits_fl = totalBits_fl + numel(refBitsPol);
+    end
+    BER_fl = totalErr_fl / totalBits_fl;
+
+    % Apply best rotation per pol for constellation plots
+    for p = 1:P.N_pol
+        vvOut_fl(:,p) = vvOut_fl(:, bestSrcPerPol_fl(p)) * rotations(bestRotPerPol_fl(p));
+    end
+    dec_fl  = qam_decideSymbols(vvOut_fl(1:Nuse_fl, :), P.M, P.N_pol);
     bits_fl = qam_symbolsToBits(dec_fl, P.M);
-    Ncomp   = min(length(bits_fl), length(bits));
-    BER_fl  = sum(bits_fl(1:Ncomp) ~= bits(1:Ncomp)) / Ncomp;
-    fprintf('  BER (float) = %.2e  (%d / %d bits)\n', BER_fl, ...
-            sum(bits_fl(1:Ncomp) ~= bits(1:Ncomp)), Ncomp);
+    fprintf('  BER (float) = %.2e\n', BER_fl);
 
     %% ================================================================
     %  PATH B — Fixed-point (MEX)
@@ -140,29 +172,57 @@ function R = run_pipeline(P)
     % Cast AEQ output for VV
     aeqOut_vv_fi = cast(double(aeqOut_fxp), 'like', T_vv.x);
 
-    % VV filter & pilots in fi
+    % VV filter in fi
     VVFilter_fi = cast(VVFilter, 'like', T_vv.w);
-    Pilots_fi   = cast(Pilots,   'like', T_vv.x);
 
     % Viterbi-Viterbi (MEX)
     fprintf('  VV carrier recovery (MEX) ... ');
     tic;
     vvOut_fxp = cr_viterbiViterbi_fxp_mex(aeqOut_vv_fi, ...
                     double(P.N_pol), double(P.VV_NTaps), ...
-                    VVFilter_fi, Pilots_fi, ...
-                    double(P.VV_P), double(P.VV_L), ...
-                    double(P.VV_CSThreshold), logical(P.VV_UsePilots), ...
-                    T_vv);
+                    VVFilter_fi, T_vv);
     t_vv_fxp = toc;
     fprintf('%.3f s\n', t_vv_fxp);
 
-    % Decide & compute BER
-    dec_fxp  = qam_decideSymbols(double(vvOut_fxp), P.M, P.N_pol);
+    % Decide & compute BER — resolve pi/2 ambiguity + pol swap
+    vvOut_fxp_d = double(vvOut_fxp);
+    Nsym_fxp    = size(vvOut_fxp_d, 1);
+    refEnd_fxp  = min(symOffset + Nsym_fxp, P.Ns);
+    Nuse_fxp    = refEnd_fxp - symOffset;
+    refSym_fxp  = symbols(symOffset+1 : refEnd_fxp, :);
+
+    totalErr_fxp  = 0;
+    totalBits_fxp = 0;
+    bestRotPerPol_fxp = zeros(1, P.N_pol);
+    bestSrcPerPol_fxp = zeros(1, P.N_pol);
+    for p = 1:P.N_pol
+        refBitsPol = qam_symbolsToBits(refSym_fxp(:,p), P.M);
+        bestPolBER = Inf;
+        for q = 1:P.N_pol          % try both EQ outputs (pol swap)
+            for ri = 1:4           % try all rotations
+                vvRot   = vvOut_fxp_d(1:Nuse_fxp, q) * rotations(ri);
+                decRot  = qam_decideSymbols(vvRot, P.M, 1);
+                bitsRot = qam_symbolsToBits(decRot, P.M);
+                polBER  = sum(bitsRot ~= refBitsPol) / numel(refBitsPol);
+                if polBER < bestPolBER
+                    bestPolBER = polBER;
+                    bestRotPerPol_fxp(p) = ri;
+                    bestSrcPerPol_fxp(p) = q;
+                end
+            end
+        end
+        totalErr_fxp  = totalErr_fxp  + bestPolBER * numel(refBitsPol);
+        totalBits_fxp = totalBits_fxp + numel(refBitsPol);
+    end
+    BER_fxp = totalErr_fxp / totalBits_fxp;
+
+    % Apply best rotation per pol for constellation plots
+    for p = 1:P.N_pol
+        vvOut_fxp_d(:,p) = vvOut_fxp_d(:, bestSrcPerPol_fxp(p)) * rotations(bestRotPerPol_fxp(p));
+    end
+    dec_fxp  = qam_decideSymbols(vvOut_fxp_d(1:Nuse_fxp, :), P.M, P.N_pol);
     bits_fxp = qam_symbolsToBits(dec_fxp, P.M);
-    Ncomp_fxp = min(length(bits_fxp), length(bits));
-    BER_fxp   = sum(bits_fxp(1:Ncomp_fxp) ~= bits(1:Ncomp_fxp)) / Ncomp_fxp;
-    fprintf('  BER (fxp)   = %.2e  (%d / %d bits)\n', BER_fxp, ...
-            sum(bits_fxp(1:Ncomp_fxp) ~= bits(1:Ncomp_fxp)), Ncomp_fxp);
+    fprintf('  BER (fxp)   = %.2e\n', BER_fxp);
 
     %% ================================================================
     %  Timing summary
@@ -186,7 +246,6 @@ function R = run_pipeline(P)
 
         cdOut_fxp_d  = double(cdOut_fxp);
         aeqOut_fxp_d = double(aeqOut_fxp);
-        vvOut_fxp_d  = double(vvOut_fxp);
 
         for p = 1:P.N_pol
             figure('Name', sprintf('Pipeline – Pol %d', p), ...
@@ -255,15 +314,19 @@ function R = run_pipeline(P)
     R.fl.dec     = dec_fl;
     R.fl.bits    = bits_fl;
     R.fl.BER     = BER_fl;
+    R.fl.rotPerPol = bestRotPerPol_fl - 1;   % 0..3 = multiples of pi/2
+    R.fl.srcPerPol = bestSrcPerPol_fl;        % which EQ output matched each ref pol
     R.fl.time    = struct('cd', t_cd_fl, 'aeq', t_aeq_fl, 'vv', t_vv_fl);
 
     % FXP path
     R.fxp.cdOut  = cdOut_fxp;
     R.fxp.mfOut  = mfOut_fxp;
     R.fxp.aeqOut = aeqOut_fxp;
-    R.fxp.vvOut  = vvOut_fxp;
+    R.fxp.vvOut  = vvOut_fxp_d;         % already rotated, double
     R.fxp.dec    = dec_fxp;
     R.fxp.bits   = bits_fxp;
     R.fxp.BER    = BER_fxp;
+    R.fxp.rotPerPol = bestRotPerPol_fxp - 1;
+    R.fxp.srcPerPol = bestSrcPerPol_fxp;
     R.fxp.time   = struct('cd', t_cd_fxp, 'aeq', t_aeq_fxp, 'vv', t_vv_fxp);
 end

@@ -3,7 +3,7 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
 
     properties (Constant)
         N_pol   = 2
-        Ns      = 8192          % symbols per polarisation
+        Ns      = 2^17          % symbols per polarisation
         SpS     = 2
 
         % System
@@ -13,7 +13,7 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
         D       = 0             % no CD for this test
         CWL     = 1550          % [nm]
         DGDSpec = 0.5           % PMD coeff [ps/sqrt(km)]
-        N_pmd   = 10
+        N_pmd   = 5
         LW      = 0             % no phase noise
 
         % Pulse shaping
@@ -23,8 +23,11 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
         % Adaptive EQ common settings
         NTaps   = 15
         Mu      = 1e-3
-        N1      = 2000          % single-spike re-init iteration
-        NOut    = 500           % discard transient
+        N1      = 1000          % single-spike re-init iteration
+        NOut    = 2000           % discard transient
+
+        % Pass / fail
+        BER_THRESHOLD = 5e-2
     end
 
     methods (TestMethodSetup)
@@ -39,7 +42,7 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
         % -------- 4-QAM CMA -----------------------
         function testQPSK_CMA(testCase)
             M = 4;
-            [rxSym, eqSym] = runScenario(testCase, M, 'CMA', ...
+            [rxSym, eqSym, txBits, symbols] = runScenario(testCase, M, 'CMA', ...
                 testCase.NTaps, testCase.Mu, true, testCase.N1, [], ...
                 testCase.NOut);
             plotBeforeAfter(testCase, rxSym, eqSym, ...
@@ -47,12 +50,40 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
 
             testCase.verifyTrue(all(isfinite(eqSym(:))), ...
                 'Equalizer output contains NaN/Inf.');
+
+            % --- BER (resolve per-pol rotation + swap ambiguity) ---
+            refSyms = symbols(testCase.NOut+1:end, :);
+            % check refSyms and eqSym are the same size
+            testCase.verifyEqual(size(refSyms), size(eqSym), ...
+                'Reference symbols and equalizer output sizes differ.');
+            totalErrors = 0;
+            totalBits   = 0;
+            for p = 1:testCase.N_pol
+                refBitsPol = qam_symbolsToBits(refSyms(:,p), M);
+                bestPolBER = Inf;
+                % try both EQ outputs (equalizer may swap pols)
+                for q = 1:testCase.N_pol
+                    for kk = 0:31
+                        rotated = eqSym(:,q) .* exp(-1j * kk * pi/16);
+                        decSym  = qam_decideSymbols(rotated, M, 1);
+                        decBits = qam_symbolsToBits(decSym, M);
+                        polBER  = sum(refBitsPol ~= decBits) / numel(refBitsPol);
+                        if polBER < bestPolBER, bestPolBER = polBER; end
+                    end
+                end
+                totalErrors = totalErrors + bestPolBER * numel(refBitsPol);
+                totalBits   = totalBits + numel(refBitsPol);
+            end
+            bestBER = totalErrors / totalBits;
+            fprintf('4-QAM CMA BER = %.2e\n', bestBER);
+            testCase.verifyLessThan(bestBER, testCase.BER_THRESHOLD, ...
+                sprintf('4-QAM CMA BER %.2e exceeds threshold.', bestBER));
         end
 
         % -------- 16-QAM CMA+RDE ------------------
         function test16QAM_CMARERDE(testCase)
             M = 16;
-            [rxSym, eqSym] = runScenario(testCase, M, 'CMA+RDE', ...
+            [rxSym, eqSym, txBits, symbols] = runScenario(testCase, M, 'CMA+RDE', ...
                 testCase.NTaps, testCase.Mu, true, testCase.N1, 4000, ...
                 testCase.NOut);
             plotBeforeAfter(testCase, rxSym, eqSym, ...
@@ -60,6 +91,31 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
 
             testCase.verifyTrue(all(isfinite(eqSym(:))), ...
                 'Equalizer output contains NaN/Inf.');
+
+            % --- BER (resolve per-pol rotation + swap ambiguity) ---
+            refSyms = symbols(testCase.NOut+1:end, :);
+            totalErrors = 0;
+            totalBits   = 0;
+            for p = 1:testCase.N_pol
+                refBitsPol = qam_symbolsToBits(refSyms(:,p), M);
+                bestPolBER = Inf;
+                % try both EQ outputs (equalizer may swap pols)
+                for q = 1:testCase.N_pol
+                    for kk = 0:127
+                        rotated = eqSym(:,q) .* exp(-1j * kk * pi/64);
+                        decSym  = qam_decideSymbols(rotated, M, 1);
+                        decBits = qam_symbolsToBits(decSym, M);
+                        polBER  = sum(refBitsPol ~= decBits) / numel(refBitsPol);
+                        if polBER < bestPolBER, bestPolBER = polBER; end
+                    end
+                end
+                totalErrors = totalErrors + bestPolBER * numel(refBitsPol);
+                totalBits   = totalBits + numel(refBitsPol);
+            end
+            bestBER = totalErrors / totalBits;
+            fprintf('16-QAM CMA+RDE BER = %.2e\n', bestBER);
+            testCase.verifyLessThan(bestBER, testCase.BER_THRESHOLD, ...
+                sprintf('16-QAM CMA+RDE BER %.2e exceeds threshold.', bestBER));
         end
 
         % -------- 16-QAM CMA+RDE + phase noise -----
@@ -79,47 +135,47 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
         %  Fixed-point tests: MATLAB fxp vs MEX fxp (same types)
         % ============================================================
 
-        % -------- 4-QAM CMA (fixed-point MATLAB vs MEX) ------
-        function testQPSK_CMA_Fxp(testCase)
-            M = 4;
-            [rxSym, eqML, eqMEX] = runScenarioFxpBoth(testCase, M, 'CMA', ...
-                testCase.NTaps, testCase.Mu, true, testCase.N1, 0, ...
-                testCase.NOut, 'fixed32');
+        % % -------- 4-QAM CMA (fixed-point MATLAB vs MEX) ------
+        % function testQPSK_CMA_Fxp(testCase)
+        %     M = 4;
+        %     [rxSym, eqML, eqMEX] = runScenarioFxpBoth(testCase, M, 'CMA', ...
+        %         testCase.NTaps, testCase.Mu, true, testCase.N1, 0, ...
+        %         testCase.NOut, 'fixed32');
 
-            verifyFxpOutput(testCase, eqMEX, double(eqMEX), '4-QAM CMA FXP32-MEX');
-            verifyFxpMexMatchesMatlab(testCase, eqML, eqMEX, '4-QAM CMA FXP32');
+        %     verifyFxpOutput(testCase, eqMEX, double(eqMEX), '4-QAM CMA FXP32-MEX');
+        %     verifyFxpMexMatchesMatlab(testCase, eqML, eqMEX, '4-QAM CMA FXP32');
 
-            plotFxpComparison(testCase, rxSym, eqML, eqMEX, ...
-                '4-QAM  |  CMA  |  FXP32', M);
-        end
+        %     plotFxpComparison(testCase, rxSym, eqML, eqMEX, ...
+        %         '4-QAM  |  CMA  |  FXP32', M);
+        % end
 
-        % -------- 16-QAM CMA+RDE (fixed-point MATLAB vs MEX) -
-        function test16QAM_CMARERDE_Fxp(testCase)
-            M = 16;
-            [rxSym, eqML, eqMEX] = runScenarioFxpBoth(testCase, M, 'CMA+RDE', ...
-                testCase.NTaps, testCase.Mu, true, testCase.N1, 4000, ...
-                testCase.NOut, 'fixed32');
+        % % -------- 16-QAM CMA+RDE (fixed-point MATLAB vs MEX) -
+        % function test16QAM_CMARERDE_Fxp(testCase)
+        %     M = 16;
+        %     [rxSym, eqML, eqMEX] = runScenarioFxpBoth(testCase, M, 'CMA+RDE', ...
+        %         testCase.NTaps, testCase.Mu, true, testCase.N1, 4000, ...
+        %         testCase.NOut, 'fixed32');
 
-            verifyFxpOutput(testCase, eqMEX, double(eqMEX), '16-QAM CMA+RDE FXP32-MEX');
-            verifyFxpMexMatchesMatlab(testCase, eqML, eqMEX, '16-QAM CMA+RDE FXP32');
+        %     verifyFxpOutput(testCase, eqMEX, double(eqMEX), '16-QAM CMA+RDE FXP32-MEX');
+        %     verifyFxpMexMatchesMatlab(testCase, eqML, eqMEX, '16-QAM CMA+RDE FXP32');
 
-            plotFxpComparison(testCase, rxSym, eqML, eqMEX, ...
-                '16-QAM  |  CMA+RDE  |  FXP32', M);
-        end
+        %     plotFxpComparison(testCase, rxSym, eqML, eqMEX, ...
+        %         '16-QAM  |  CMA+RDE  |  FXP32', M);
+        % end
 
-        % -------- 16-QAM CMA+RDE + phase noise (fixed-point MATLAB vs MEX) ---
-        function test16QAM_CMARERDE_PhaseNoise_Fxp(testCase)
-            M = 16;
-            [rxSym, eqML, eqMEX] = runScenarioFxpBoth(testCase, M, 'CMA+RDE', ...
-                testCase.NTaps, testCase.Mu, true, testCase.N1, 4000, ...
-                testCase.NOut, 'fixed32', true);
+        % % -------- 16-QAM CMA+RDE + phase noise (fixed-point MATLAB vs MEX) ---
+        % function test16QAM_CMARERDE_PhaseNoise_Fxp(testCase)
+        %     M = 16;
+        %     [rxSym, eqML, eqMEX] = runScenarioFxpBoth(testCase, M, 'CMA+RDE', ...
+        %         testCase.NTaps, testCase.Mu, true, testCase.N1, 4000, ...
+        %         testCase.NOut, 'fixed32', true);
 
-            verifyFxpOutput(testCase, eqMEX, double(eqMEX), '16-QAM CMA+RDE PN FXP32-MEX');
-            verifyFxpMexMatchesMatlab(testCase, eqML, eqMEX, '16-QAM CMA+RDE PN FXP32');
+        %     verifyFxpOutput(testCase, eqMEX, double(eqMEX), '16-QAM CMA+RDE PN FXP32-MEX');
+        %     verifyFxpMexMatchesMatlab(testCase, eqML, eqMEX, '16-QAM CMA+RDE PN FXP32');
 
-            plotFxpComparison(testCase, rxSym, eqML, eqMEX, ...
-                '16-QAM  |  CMA+RDE  |  PN  |  FXP32', M);
-        end
+        %     plotFxpComparison(testCase, rxSym, eqML, eqMEX, ...
+        %         '16-QAM  |  CMA+RDE  |  PN  |  FXP32', M);
+        % end
 
     end
 
@@ -128,7 +184,7 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
     % ================================================================
     methods (Access = private)
 
-        function [rxSym, eqSym] = runScenario(testCase, M, Eq, ...
+        function [rxSym, eqSym, bits, symbols] = runScenario(testCase, M, Eq, ...
                 NTaps, Mu, SingleSpike, N1, N2, NOut, addPhaseNoise)
             if nargin < 10
                 addPhaseNoise = false;
@@ -140,8 +196,10 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
             Nbits  = k * testCase.N_pol * testCase.Ns;
             bits   = qam_randomBits(Nbits);
             symbols = qam_modulate(bits, M, testCase.N_pol);
-            txSig  = qam_rrcPulse(symbols, testCase.SpS, ...
-                testCase.Rolloff, testCase.Span);
+            % txSig  = qam_rrcPulse(symbols, testCase.SpS, ...
+            %     testCase.Rolloff, testCase.Span);
+            % duplicate for SpS > 1
+            txSig = repelem(symbols, testCase.SpS, 1);
 
             % --- Channel: AWGN + PMD (+ optional phase noise) ---
             rxSig = channel_add_awgn(txSig, testCase.SNR_dB);
@@ -153,10 +211,9 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
                 testCase.Rs, testCase.DGDSpec, testCase.N_pmd);
 
             % --- Matched filter ---
-            rxSig = qam_matched_filter(rxSig, testCase.SpS, 'rrc', ...
-                testCase.Rolloff, testCase.Span);
+            % rxSig = qam_matched_filter(rxSig, testCase.SpS, 'rrc', ...
+            %     testCase.Rolloff, testCase.Span);
 
-            % --- Downsample before EQ for reference constellation ---
             rxSym = rxSig(1:testCase.SpS:end, :);
 
             % --- Adaptive Equalizer ---

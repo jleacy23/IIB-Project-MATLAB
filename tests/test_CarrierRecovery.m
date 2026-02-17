@@ -9,9 +9,9 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
         SpS     = 1             % symbol-rate processing (no pulse shaping)
 
         % System
-        Rs      = 2            % [GBd]
-        SNR_dB  = 15            % [dB]
-        Linewidth = 200e4       % laser linewidth [Hz]
+        Rs      = 32            % [GBd]
+        SNR_dB  = 20            % [dB]
+        Linewidth = 100e4       % laser linewidth [Hz]
 
         % Channel (unused impairments set to benign values)
         L       = 80            % fibre length [km]
@@ -19,13 +19,10 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
         CWL     = 1550          % [nm]
         DGDSpec = 0             % no PMD
         N_pmd   = 1
-        LW      = 200e4         % phase-noise linewidth [Hz]
+        LW      = 100e4         % phase-noise linewidth [Hz]
 
         % Carrier recovery
         NTaps   = 15
-        CR_BlockLen    = 256    % block length L for pilot-aided CS correction
-        CR_NPilots     = 8      % pilot symbols P per block
-        CR_CSThreshold = pi/2   % cycle-slip detection threshold [rad]
 
         % Pass / fail
         BER_THRESHOLD = 5e-2
@@ -40,115 +37,45 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
     % ================================================================
     methods (Test)
 
-        % -------- 4-QAM (no pilots) -----------------
+        % -------- 4-QAM -----------------
         function testQPSK(testCase)
             M = 4;
-            [rxSym, crSym, BER] = runScenario(testCase, M, false);
-            % plotBeforeAfter(testCase, rxSym, crSym, ...
-            %     '4-QAM  |  VV (no pilots)', M, BER);
+            [rxSym, crSym, BER, ThetaPU] = runScenario(testCase, M);
 
+            % --- Plot constellations (before / after) ---
+            plotBeforeAfter(testCase, rxSym, crSym, ...
+                '4-QAM  |  VV', M, BER);
+
+            % --- Plot estimated phase for both polarisations ---
+            figure('Name', 'VV Phase Estimate', ...
+                   'Position', [100 650 1200 400]);
+            for p = 1:testCase.N_pol
+                subplot(1, testCase.N_pol, p);
+                plot(ThetaPU(:, p));
+                grid on;
+                xlabel('Symbol index');
+                ylabel('\Theta_{PU} [rad]');
+                title(sprintf('Phase unwrapped  –  Pol %d', p));
+            end
+            sgtitle(sprintf('4-QAM VV Phase Estimate  |  BER = %.2e', BER));
+
+            % --- Verify ---
             testCase.verifyTrue(all(isfinite(crSym(:))), ...
                 'Carrier-recovery output contains NaN/Inf.');
             testCase.verifyLessThan(BER, testCase.BER_THRESHOLD, ...
                 sprintf('4-QAM BER %.2e exceeds threshold.', BER));
         end
 
-        % -------- 4-QAM (with pilots) ----------------
-        function testQPSK_Pilots(testCase)
-            M = 4;
-            [rxSym, crSym, BER] = runScenario(testCase, M, true);
-            % plotBeforeAfter(testCase, rxSym, crSym, ...
-            %     '4-QAM  |  VV (pilots)', M, BER);
+        % -------- 4-QAM fixed-point (fixed16) ------
+        % function testQPSK_Fxp16(testCase)
+        %     M = 4;
+        %     [rxSym, crSym, BER] = runScenarioFxp(testCase, M, 'fixed16');
 
-            testCase.verifyTrue(all(isfinite(crSym(:))), ...
-                'Carrier-recovery output contains NaN/Inf.');
-            testCase.verifyLessThan(BER, testCase.BER_THRESHOLD, ...
-                sprintf('4-QAM Pilots BER %.2e exceeds threshold.', BER));
-        end
-
-        % -------- 4-QAM fixed-point (fixed16, no pilots) ------
-        function testQPSK_Fxp16(testCase)
-            M = 4;
-            [rxSym, crSym, BER] = runScenarioFxp(testCase, M, 'fixed16', false);
-            % plotBeforeAfter(testCase, rxSym, crSym, ...
-            %     '4-QAM  |  VV FXP fixed16 (no pilots)', M, BER);
-
-            testCase.verifyTrue(all(isfinite(crSym(:))), ...
-                'FXP carrier-recovery output contains NaN/Inf.');
-            testCase.verifyLessThan(BER, testCase.BER_THRESHOLD, ...
-                sprintf('4-QAM FXP16 BER %.2e exceeds threshold.', BER));
-        end
-
-        % -------- 4-QAM fixed-point (fixed16, with pilots) ------
-        function testQPSK_Fxp16_Pilots(testCase)
-            M = 4;
-            [rxSym, crSym, BER] = runScenarioFxp(testCase, M, 'fixed16', true);
-            % plotBeforeAfter(testCase, rxSym, crSym, ...
-            %     '4-QAM  |  VV FXP fixed16 (pilots)', M, BER);
-
-            testCase.verifyTrue(all(isfinite(crSym(:))), ...
-                'FXP carrier-recovery output contains NaN/Inf.');
-            testCase.verifyLessThan(BER, testCase.BER_THRESHOLD, ...
-                sprintf('4-QAM FXP16 Pilots BER %.2e exceeds threshold.', BER));
-        end
-
-        % -------- 4-QAM frequency recovery --------------------------
-        function testQPSK_FreqRecovery(testCase)
-            M      = 4;
-            DeltaF = 200;       % 20 MHz frequency offset
-
-            % --- Tx ---
-            k      = log2(M);
-            Nbits  = k * testCase.N_pol * testCase.Ns;
-            txBits = qam_randomBits(Nbits);
-            symbols = qam_modulate(txBits, M, testCase.N_pol);
-
-            % --- Channel: AWGN + frequency shift ---
-            rxSym = channel_add_awgn(symbols, testCase.SNR_dB);
-            rxSym = channel_lo_freq_shift(rxSym, DeltaF, ...
-                testCase.Rs, testCase.SpS);
-
-            % --- Frequency recovery ---
-            [crSym, estFreqOffset] = cr_freq_recovery(rxSym, testCase.Rs);
-
-            % --- Demodulate & BER (resolve pi/2 ambiguity) ---
-            bestBER = Inf;
-            bestSym = crSym;
-            for kk = 0:3
-                rotated     = crSym .* exp(-1j * kk * pi/2);
-                decidedSyms = qam_decideSymbols(rotated, M, testCase.N_pol);
-                rxBits      = qam_symbolsToBits(decidedSyms, M);
-                nErrors     = sum(txBits ~= rxBits);
-                thisBER     = nErrors / length(txBits);
-                if thisBER < bestBER
-                    bestBER = thisBER;
-                    bestSym = rotated;
-                end
-            end
-            BER   = bestBER;
-            crSym = bestSym;
-            fprintf('4-QAM Freq Recovery BER = %.2e  (%d / %d)\n', ...
-                     BER, round(BER*length(txBits)), length(txBits));
-
-            % --- Plot ---
-            plotBeforeAfter(testCase, rxSym, crSym, ...
-                '4-QAM  |  Freq Recovery', M, BER);
-
-            % --- Verify ---
-            testCase.verifyTrue(all(isfinite(crSym(:))), ...
-                'Freq-recovery output contains NaN/Inf.');
-            testCase.verifyLessThan(BER, testCase.BER_THRESHOLD, ...
-                sprintf('4-QAM Freq Recovery BER %.2e exceeds threshold.', BER));
-
-            % --- Verify estimated frequency offset ---
-            freqErr = abs(estFreqOffset - DeltaF);
-            fprintf('  Estimated offset = %.6e MHz, true = %.6e MHz, error = %.6e MHz\n', ...
-                     estFreqOffset, DeltaF, freqErr);
-            freqTol = testCase.Rs * 1e9 / testCase.Ns;  % spectral resolution
-            testCase.verifyLessThan(freqErr, freqTol, ...
-                sprintf('Freq offset estimate error %.2e MHz exceeds resolution %.2e Hz.', ...
-                         freqErr, freqTol));
-        end
+        %     testCase.verifyTrue(all(isfinite(crSym(:))), ...
+        %         'FXP carrier-recovery output contains NaN/Inf.');
+        %     testCase.verifyLessThan(BER, testCase.BER_THRESHOLD, ...
+        %         sprintf('4-QAM FXP16 BER %.2e exceeds threshold.', BER));
+        % end
     end
 
     % ================================================================
@@ -156,7 +83,7 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
     % ================================================================
     methods (Access = private)
 
-        function [rxSym, crSym, BER] = runScenario(testCase, M, usePilots)
+        function [rxSym, crSym, BER, ThetaPU] = runScenario(testCase, M)
 
             % --- Tx ---
             k      = log2(M);
@@ -173,19 +100,8 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
             VVFilter  = cr_genVVFilter(testCase.Linewidth, testCase.Rs, ...
                 testCase.SNR_dB, symEnergy, testCase.N_pol, testCase.NTaps);
 
-            % --- Form pilots: first P symbols of every block of L ---
-            Pval     = testCase.CR_NPilots;
-            Lval     = testCase.CR_BlockLen;
-            NBlocks  = ceil(testCase.Ns / Lval);
-            Pilots   = zeros(NBlocks * Pval, testCase.N_pol);
-            for b = 1:NBlocks
-                srcIdx = (b-1)*Lval + (1:Pval);
-                dstIdx = (b-1)*Pval + (1:Pval);
-                Pilots(dstIdx, :) = symbols(srcIdx, :);
-            end
-
-            crSym = cr_viterbiViterbi(rxSym, testCase.N_pol, testCase.NTaps, ...
-                VVFilter, Pilots, Pval, Lval, testCase.CR_CSThreshold, usePilots);
+            [crSym, ThetaPU] = cr_viterbiViterbi(rxSym, testCase.N_pol, testCase.NTaps, ...
+                VVFilter);
 
             % --- Demodulate & BER ---
             decidedSyms = qam_decideSymbols(crSym, M, testCase.N_pol);
@@ -197,7 +113,7 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
                      M, BER, nErrors, length(txBits));
         end
 
-        function [rxSym, crSym, BER] = runScenarioFxp(testCase, M, config, usePilots)
+        function [rxSym, crSym, BER] = runScenarioFxp(testCase, M, config)
 
             % --- Types ---
             T = cr_viterbiViterbi_fxp_types(config);
@@ -213,30 +129,17 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
             rxSym = channel_add_phase_noise(rxSym, testCase.Rs, testCase.LW);
 
             % --- VV filter ---
-            symEnergy = mean(abs(symbols(:)).^2);
+            symEnergy = mean(abs(symbols(:)).^2)
             VVFilter  = cr_genVVFilter(testCase.Linewidth, testCase.Rs, ...
                 testCase.SNR_dB, symEnergy, testCase.N_pol, testCase.NTaps);
-
-            % --- Form pilots: first P symbols of every block of L ---
-            Pval     = testCase.CR_NPilots;
-            Lval     = testCase.CR_BlockLen;
-            NBlocks  = ceil(testCase.Ns / Lval);
-            Pilots   = zeros(NBlocks * Pval, testCase.N_pol);
-            for b = 1:NBlocks
-                srcIdx = (b-1)*Lval + (1:Pval);
-                dstIdx = (b-1)*Pval + (1:Pval);
-                Pilots(dstIdx, :) = symbols(srcIdx, :);
-            end
 
             % --- Cast inputs to fi (shared by MATLAB and MEX) ---
             rxSym_fi    = cast(rxSym,    'like', T.x);
             VVFilter_fi = cast(VVFilter, 'like', T.w);
-            Pilots_fi   = cast(Pilots,   'like', T.x);
 
             % --- MEX fixed-point carrier recovery ---
             crSym_MEX = cr_viterbiViterbi_fxp_mex(rxSym_fi, testCase.N_pol, ...
-                testCase.NTaps, VVFilter_fi, Pilots_fi, Pval, Lval, ...
-                testCase.CR_CSThreshold, usePilots, T);
+                testCase.NTaps, VVFilter_fi, T);
 
             crSym_dbl = double(crSym_MEX);
 

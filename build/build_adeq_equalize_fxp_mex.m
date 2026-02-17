@@ -8,7 +8,7 @@ function build_adeq_equalize_fxp_mex(P, cfg)
 %     cfg - coder.MexCodeConfig object
 
     srcDir = fullfile(fileparts(mfilename('fullpath')), '..', 'src');
-    fxp = P.FxpConfig;
+    fxp = P.FxpConfig_AEQ;
 
     % clean mex file
     mexFile = fullfile(srcDir, 'adeq_equalize_fxp_mex.mexw64');

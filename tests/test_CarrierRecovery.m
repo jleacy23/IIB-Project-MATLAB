@@ -11,7 +11,7 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
         % System
         Rs      = 32            % [GBd]
         SNR_dB  = 20            % [dB]
-        Linewidth = 100e4       % laser linewidth [Hz]
+        Linewidth = 100e6       % laser linewidth [Hz]
 
         % Channel (unused impairments set to benign values)
         L       = 80            % fibre length [km]
@@ -19,7 +19,7 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
         CWL     = 1550          % [nm]
         DGDSpec = 0             % no PMD
         N_pmd   = 1
-        LW      = 100e4         % phase-noise linewidth [Hz]
+        LW      = 100e6         % phase-noise linewidth [Hz]
 
         % Carrier recovery
         NTaps   = 15

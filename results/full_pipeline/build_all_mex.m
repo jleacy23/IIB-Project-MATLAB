@@ -16,10 +16,11 @@ addpath(thisDir);                      % so pipeline_params is available
 addpath(buildDir);                     % individual build scripts
 
 P = pipeline_params();
-fxp = P.FxpConfig;                     % e.g. 'fixed32'
 
 fprintf('\n========================================\n');
-fprintf('  build_all_mex  |  config = ''%s''\n', fxp);
+fprintf('  build_all_mex\n');
+fprintf('    CD  = ''%s''  |  AEQ = ''%s''  |  VV = ''%s''\n', ...
+        P.FxpConfig_CD, P.FxpConfig_AEQ, P.FxpConfig_VV);
 fprintf('========================================\n');
 
 cfg = coder.config('mex');

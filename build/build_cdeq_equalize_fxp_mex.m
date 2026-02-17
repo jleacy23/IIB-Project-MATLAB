@@ -8,7 +8,7 @@ function build_cdeq_equalize_fxp_mex(P, cfg)
 %     cfg - coder.MexCodeConfig object
 
     srcDir = fullfile(fileparts(mfilename('fullpath')), '..', 'src');
-    fxp = P.FxpConfig;
+    fxp = P.FxpConfig_CD;
 
     % clean mex file
     mexFile = fullfile(srcDir, 'cdeq_equalize_fxp_mex.mexw64');

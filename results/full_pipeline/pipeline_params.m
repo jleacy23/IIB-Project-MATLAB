@@ -25,6 +25,7 @@ function P = pipeline_params()
     P.LW      = 100e3;        % laser linewidth [Hz]  (phase noise)
     P.DGDSpec = 0.5;          % PMD coefficient [ps/sqrt(km)]
     P.N_pmd   = 10;           % number of PMD sections
+    P.ENOBits = 5;            % ADC effective number of bits
 
     % ---- CD Equalizer -----------------------------------------------
     P.NFFT    = 2^9;          % FFT block size (power of 2)
@@ -42,7 +43,9 @@ function P = pipeline_params()
     P.VV_NTaps       = 15;         % half-width of VV averaging filter
 
     % ---- Fixed-point configuration ----------------------------------
-    P.FxpConfig      = 'fixed32';  % 'fixed16' | 'fixed32'
+    P.FxpConfig_CD   = 'fixed32';  % CD equalizer:  'fixed16' | 'fixed32'
+    P.FxpConfig_AEQ  = 'fixed16';  % Adaptive EQ:   'fixed16' | 'fixed32'
+    P.FxpConfig_VV   = 'fixed16';  % VV carrier recovery: 'fixed16' | 'fixed32'
     P.po2Twiddle     = false;      % power-of-2 twiddle factors in FFT
 
     % ---- Output / display --------------------------------------------

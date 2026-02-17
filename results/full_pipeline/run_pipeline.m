@@ -42,6 +42,7 @@ function R = run_pipeline(P)
     rxSig = channel_add_chromatic_dispersion(rxSig, P.L, P.SpS, P.Rs, P.D, P.CWL);
     rxSig = channel_add_phase_noise(rxSig, P.Rs, P.LW);
     rxSig = channel_add_pmd(rxSig, P.L, P.SpS, P.Rs, P.DGDSpec, P.N_pmd);
+    rxSig = channel_adc(rxSig, P.ENOBits);
 
     %% ================================================================
     %  Generate VV filter (shared)
@@ -130,12 +131,13 @@ function R = run_pipeline(P)
     %% ================================================================
     %  PATH B — Fixed-point (MEX)
     % =================================================================
-    fprintf('\n--- Fixed-point MEX path (%s) ---\n', P.FxpConfig);
+    fprintf('\n--- Fixed-point MEX path (CD=%s, AEQ=%s, VV=%s) ---\n', ...
+            P.FxpConfig_CD, P.FxpConfig_AEQ, P.FxpConfig_VV);
 
     % Load types tables
-    T_cd  = cdeq_equalize_fxp_types(P.FxpConfig);
-    T_aeq = adeq_equalize_fxp_types(P.FxpConfig);
-    T_vv  = cr_viterbiViterbi_fxp_types(P.FxpConfig);
+    T_cd  = cdeq_equalize_fxp_types(P.FxpConfig_CD);
+    T_aeq = adeq_equalize_fxp_types(P.FxpConfig_AEQ);
+    T_vv  = cr_viterbiViterbi_fxp_types(P.FxpConfig_VV);
 
     % Cast channel output to fi for the fixed-point path
     rxSig_fi = cast(rxSig, 'like', T_cd.x);
@@ -241,7 +243,8 @@ function R = run_pipeline(P)
     %  Plots — constellation at each stage (float vs fxp, per pol)
     % =================================================================
     if isfield(P, 'Plot') && P.Plot
-        plotTitle = sprintf('%d-QAM  |  SNR %.0f dB  |  %s', P.M, P.SNR_dB, P.FxpConfig);
+        plotTitle = sprintf('%d-QAM  |  SNR %.0f dB  |  CD=%s AEQ=%s VV=%s', ...
+                    P.M, P.SNR_dB, P.FxpConfig_CD, P.FxpConfig_AEQ, P.FxpConfig_VV);
         ms = 1;  % marker size
 
         cdOut_fxp_d  = double(cdOut_fxp);

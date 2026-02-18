@@ -90,9 +90,9 @@ function X = fft_fxp(x, inverse, po2Twiddle, T) %#codegen
     %  IFFT: scale output by 1/N
     %  ----------------------------------------------------------------
     if inverse
-        invN = cast(1.0 / double(N), 'like', T.acc);
+        M = cast(log2(double(N)), 'int32');
         for i = 1:N
-            X(i) = X(i) * invN;
+            X(i) = bitshift(X(i), -M);  % equivalent to X(i) / N with arithmetic shift
         end
     end
 end

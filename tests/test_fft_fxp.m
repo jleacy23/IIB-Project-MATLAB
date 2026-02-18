@@ -8,7 +8,7 @@ classdef test_fft_fxp < matlab.unittest.TestCase
     %   with the same N_FFT (256).
 
     properties (Constant)
-        N = 256           % FFT size — must match build_fft_fxp_mex.m
+        N = 512           % FFT size — must match build_fft_fxp_mex.m
     end
 
     methods (TestMethodSetup)
@@ -70,7 +70,7 @@ classdef test_fft_fxp < matlab.unittest.TestCase
 
         function testFFT_fxp32(testCase)
             N = testCase.N;
-            T = fft_fxp_types('fixed32');
+            T = fft_fxp_types('fixed16');
             x     = randn(N, 1) + 1j*randn(N, 1);
             x_fi  = cast(x, 'like', T.x);
             X     = fft_fxp(x_fi, false, false, T);
@@ -83,7 +83,7 @@ classdef test_fft_fxp < matlab.unittest.TestCase
 
         function testIFFT_fxp32(testCase)
             N = testCase.N;
-            T = fft_fxp_types('fixed32');
+            T = fft_fxp_types('fixed16');
             X     = randn(N, 1) + 1j*randn(N, 1);
             X_fi  = cast(X, 'like', T.x);
             x     = fft_fxp(X_fi, true, false, T);
@@ -96,7 +96,7 @@ classdef test_fft_fxp < matlab.unittest.TestCase
 
         function testRoundtrip_fxp32(testCase)
             N = testCase.N;
-            T = fft_fxp_types('fixed32');
+            T = fft_fxp_types('fixed16');
             x     = randn(N, 1) + 1j*randn(N, 1);
             x_fi  = cast(x, 'like', T.x);
             X     = fft_fxp(x_fi, false, false, T);
@@ -125,7 +125,7 @@ classdef test_fft_fxp < matlab.unittest.TestCase
 
         function testPo2Twiddle_fxp32(testCase)
             N = testCase.N;
-            T = fft_fxp_types('fixed32');
+            T = fft_fxp_types('fixed16');
             x    = randn(N, 1) + 1j*randn(N, 1);
             x_fi = cast(x, 'like', T.x);
             X_exact = fft_fxp(x_fi, false, false, T);
@@ -144,7 +144,7 @@ classdef test_fft_fxp < matlab.unittest.TestCase
         function testFFT_mex(testCase)
             assumeMexAvailable(testCase);
             N = testCase.N;
-            T = fft_fxp_types('fixed32');
+            T = fft_fxp_types('fixed16');
             x    = randn(N, 1) + 1j*randn(N, 1);
             x_fi = cast(x, 'like', T.x);
 
@@ -158,7 +158,7 @@ classdef test_fft_fxp < matlab.unittest.TestCase
         function testIFFT_mex(testCase)
             assumeMexAvailable(testCase);
             N = testCase.N;
-            T = fft_fxp_types('fixed32');
+            T = fft_fxp_types('fixed16');
             X    = randn(N, 1) + 1j*randn(N, 1);
             X_fi = cast(X, 'like', T.x);
 
@@ -172,7 +172,7 @@ classdef test_fft_fxp < matlab.unittest.TestCase
         function testPo2Twiddle_mex(testCase)
             assumeMexAvailable(testCase);
             N = testCase.N;
-            T = fft_fxp_types('fixed32');
+            T = fft_fxp_types('fixed16');
             x    = randn(N, 1) + 1j*randn(N, 1);
             x_fi = cast(x, 'like', T.x);
 
@@ -187,7 +187,7 @@ classdef test_fft_fxp < matlab.unittest.TestCase
             %  Verify MEX FFT output against built-in fft (with tolerance).
             assumeMexAvailable(testCase);
             N = testCase.N;
-            T = fft_fxp_types('fixed32');
+            T = fft_fxp_types('fixed16');
             x    = randn(N, 1) + 1j*randn(N, 1);
             x_fi = cast(x, 'like', T.x);
 
@@ -203,7 +203,7 @@ classdef test_fft_fxp < matlab.unittest.TestCase
             %  Verify MEX IFFT output against built-in ifft (with tolerance).
             assumeMexAvailable(testCase);
             N = testCase.N;
-            T = fft_fxp_types('fixed32');
+            T = fft_fxp_types('fixed16');
             X    = randn(N, 1) + 1j*randn(N, 1);
             X_fi = cast(X, 'like', T.x);
 

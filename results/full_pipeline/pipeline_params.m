@@ -33,7 +33,7 @@ function P = pipeline_params()
     % ---- Adaptive Equalizer -----------------------------------------
     P.AEQ_Eq         = 'CMA';
     P.AEQ_NTaps      = 15;
-    P.AEQ_Mu         = 1e-3;
+    P.AEQ_Mu         = 2e-9;
     P.AEQ_SingleSpike = true;
     P.AEQ_N1         = 2000;       % y-pol re-init iteration
     P.AEQ_N2         = 4000;       % CMA→RDE switch iteration
@@ -43,7 +43,7 @@ function P = pipeline_params()
     P.VV_NTaps       = 15;         % half-width of VV averaging filter
 
     % ---- Fixed-point configuration ----------------------------------
-    P.FxpConfig_CD   = 'fixed32';  % CD equalizer:  'fixed16' | 'fixed32'
+    P.FxpConfig_CD   = 'fixed16';  % CD equalizer:  'fixed16' | 'fixed32'
     P.FxpConfig_AEQ  = 'fixed16';  % Adaptive EQ:   'fixed16' | 'fixed32'
     P.FxpConfig_VV   = 'fixed16';  % VV carrier recovery: 'fixed16' | 'fixed32'
     P.po2Twiddle     = false;      % power-of-2 twiddle factors in FFT

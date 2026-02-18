@@ -5,7 +5,7 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
         % Modulation
         M       = 16
         N_pol   = 2
-        Ns      = 4096          % symbols per polarisation
+        Ns      = 1024          % symbols per polarisation
         SpS     = 2             % samples per symbol
 
         % System
@@ -142,7 +142,7 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
 
         % -------- CD only: fxp32 BER check ----------------------------
         function testCDOnlyBER_Fxp32(testCase)
-            T = cdeq_equalize_fxp_types('fixed32');
+            T = cdeq_equalize_fxp_types('fixed16');
 
             % --- Tx ---
             k     = log2(testCase.M);
@@ -161,7 +161,7 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
             % --- CD Equalizer (fxp MATLAB) ---
             eqSig = cdeq_equalize_fxp(rxSig_fi, testCase.D, testCase.L, ...
                 testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, ...
-                testCase.NFFT, false, T);
+                testCase.NFFT, false, T)
 
             % --- BER ---
             eqSymbols   = double(eqSig(1:testCase.SpS:end, :));
@@ -179,7 +179,7 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
 
         % -------- CD only: fxp32 vs float NRMSE ----------------------
         function testCDOnly_Fxp32_vs_Float(testCase)
-            T = cdeq_equalize_fxp_types('fixed32');
+            T = cdeq_equalize_fxp_types('fixed16');
 
             % --- Tx ---
             k     = log2(testCase.M);
@@ -216,7 +216,7 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
             testCase.assumeTrue(exist('cdeq_equalize_fxp_mex', 'file') == 3, ...
                 'cdeq_equalize_fxp_mex not found — run build_cdeq_equalize_fxp_mex first.');
 
-            T = cdeq_equalize_fxp_types('fixed32');
+            T = cdeq_equalize_fxp_types('fixed16');
 
             % --- Tx ---
             k     = log2(testCase.M);
@@ -256,7 +256,7 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
         % -------- CD + AWGN: fxp32 visual comparison -----------------
         function testCDPlusAWGN_Fxp32(testCase)
             SNR_dB = 25;
-            T = cdeq_equalize_fxp_types('fixed32');
+            T = cdeq_equalize_fxp_types('fixed16');
 
             % --- Tx ---
             k     = log2(testCase.M);

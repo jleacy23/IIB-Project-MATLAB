@@ -1,0 +1,117 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{parskip}
+\usepackage{cleveref}
+
+
+\title{A Comparison of Phase Recovery Algorithms for Energy Efficient Coherent Receivers}
+\author{Joe Leacy}
+
+\begin{document}
+
+\maketitle
+
+\section{Viterbi \& Viterbi}
+Figure \ref{fig:viterbi_viterbi} shows the operation of the Viterbi-Viterbi algorithm. A block of symbols \(\left[z[k-N], z[k-N+1],\dots, z[k], \dots, z[k+N]\right]\) is raised to the
+4th power to remove data dependency and convolved with a maximum-likelihood (ML) filter of length \(L = 2N + 1\) to compute \(\hat{\theta}_\mathrm{ML}[k]\).
+A phase unwrapper is applied to reflect the unbounded Wiener phase noise, then the unwrapped phase correction is applied
+to \(z[k]\). Here \(M = 4\) for QAM.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{viterbi_viterbi.png}
+    \caption{Viterbi \& Viterbi algorithm block diagram}
+    \label{fig:viterbi_viterbi}
+\end{figure}
+An energy efficient hardware implementation of this algorithm avoids multipliers where possible. The ML filter is known beforehand
+so the multiplications can be replaced with fixed additions and shifts. Computing the argument of the filter output
+and the phase correction can be implemented with CORDIC. The unwrapped phase is computed as
+\[\hat{\theta}_\mathrm{PU}[k] = \hat{\theta}_\mathrm{ML}[k] + n[k]\frac{\pi}{2},\]
+where \(n[k]\ \in \{-1, 0, 1\}\) is calcuated as  
+\[n[k] = \left\lfloor\frac{1}{2} + \frac{\hat{\theta}_\mathrm{PU}[k-1] - \hat{\theta}_\mathrm{ML}[k]}{\pi/2}\right\rfloor.\]
+The floor operation can be implemented efficiently with comparators (negligible cost) \\and division by \(\pi/2\) can be implemented as
+multiplication by \(2/\pi\) with fixed shifts and additions as before. However the 4th power operation requires
+complex multiplications which increase the energy cost. Assuming Gauss's algorithm for complex multiplication,
+the total cost of this algorithm per symbol in terms of real multiplications (RM), real additions (RA), and bit-shifts
+(BS) for \(n\)-bit fixed point precision with \(N_{C}\) CORDIC iterations is shown in Table \ref{tab:viterbi_viterbi_cost}. Note that the number
+of shifts and adds for multiplication by a fixed value would be \(h\) and \(h-1\), where \(h\) is the Hamming weight, but here it is approximated as \(n\) for simplicity.
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lcccc}
+        \toprule
+        Operation & RM & RA & BS \\
+        \midrule
+        4th Power & \(9L\) & \(15L\) & 0 \\
+        ML Filter & 0 & \(2(n-1)L\) & \(nL\) \\
+        ML Phase & 0 & \(3N_C\) & \(2N_C\) \\
+        Phase Unwrapper & 0 & \(3 + 2(n-1)\) & \(2n\) \\
+        Phase Correction & 0 & \(3N_C\) & \(2N_C\) \\
+        Total & 9L & \(2nL + 13L + 6N_C + 2n + 1\) & \(nL + 4N_C + 2n\) \\
+        \bottomrule
+    \end{tabular}
+    \caption{Energy cost of Viterbi-Viterbi algorithm per symbol}
+    \label{tab:viterbi_viterbi_cost}
+\end{table}
+
+\section{Decision-Directed}
+The Decision-Directed algorithm avoids the 4th power operation by using a decision circuit to estimate transmitted
+symbols \(\hat{s}[k]\). Previous estimates are then used to compute the phase correction as shown in Figure \ref{fig:decision_directed}.
+Apart from the decision circuit, it is clear that any complex multiplcations can be avoided by using CORDIC. The ML phase
+is computed as \[\hat{\theta}_\mathrm{ML}[k] = \arg\left(\sum_{i=1}^{L} w_{ML}[i]z[k-i]\hat{s}^*[k-i]\right) = \sum_{i=1}^{L}w_{ML}[i]\{\arg(z[k-i]) - \arg(\hat{s}[k-i])\}\]
+which requires \(2L\) CORDIC operations as well as shifts and additions for the ML filter.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{decision_directed.png}
+    \caption{Decision-Directed algorithm block diagram}
+    \label{fig:decision_directed}
+\end{figure}
+The decision circuit must find the constellation symbol with minimum squared distance to the corrected symbol \(v[k]\). This is calculated as
+\[d_m = \min_{s \in \mathcal{S}} |v[k] - \hat{s}[k]|^2\]
+where \(\mathcal{S}\) is the set of constellation symbols. This appears to require complex multiplications. However, in reality these distances are small and do not require
+high precision to decide correctly so a look-up table (LUT) can be used. The total cost of this algorithm is shown
+in Table \ref{tab:decision_directed_cost}. Here LUT accesses are approximated to cost the same as a real addition for simplicity.
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lcccc}
+        \toprule
+        Operation & RM & RA & BS \\
+        \midrule
+        ML Filter + Phase & 0 & \(6LN_C + (n-1)L + 2L - 1\) & \(nL + 4LN_C\) \\
+        Phase Correction & 0 & \(3N_C\) & \(2N_C\) \\
+        Decision Circuit & 0 & \(|\mathcal{S} |\) & 0 \\
+        Total & 0 & \(nL + 6LN_C + L + 3N_C + |\mathcal{S}| - 1\) & \(nL + 4LN_C + 2N_C\) \\
+        \bottomrule
+    \end{tabular}
+    \caption{Energy cost of Decision-Directed algorithm per symbol}
+    \label{tab:decision_directed_cost}
+\end{table}
+
+\section{Computational Cost}
+As each stage of CORDIC applies a left bit-shift, the accuracy achieved by \(N_C\) iterations is approximately \(N_C\) bits.
+Thus setting sensible values of \(N_C = n = 8\), \(L = 5\), and \(|\mathcal{S}| = 16\) for 16-QAM, the total cost of each algorithm is shown in Table \ref{tab:cost_comparison}.
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lcccc}
+        \toprule
+        Algorithm & RM & RA & BS \\
+        \midrule
+        Viterbi-Viterbi & 45 & 210 & 88 \\
+        Decision-Directed & 0 & 324 & 216 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Energy cost comparison of Viterbi \& Viterbi and Decision-Directed algorithms per symbol}
+    \label{tab:cost_comparison}
+\end{table}
+The exact energy cost of each operation depends on how adders and multipliers are implemented, but the Decision-Directed
+algorithm is likely to incur a lower energy cost.
+\section{Block-Based Estimation}
+Both the Viterbi \& Viterbi and Decision-Directed algorithms can be implemented in a block-based manner to
+reduce the energy cost. Instead of computing a phase estimate and correcting for every symbol, the estimate for one
+symbol can be applied to a block of \(B\) symbols. This reduces the cost of the ML filter and phase correction by a factor of \(B\)
+at the cost of increased phase noise variance.
+
+
+\end{document}

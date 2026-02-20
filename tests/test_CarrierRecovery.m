@@ -5,8 +5,12 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
 
     properties (Constant)
         N_pol   = 2
-        Ns      = 2^16          % symbols per polarisation
-        SpS     = 1             % symbol-rate processing (no pulse shaping)
+        Ns      = 2^17          % symbols per polarisation
+        SpS     = 1
+        BlockLen = 64
+        PilotLen = 8             % symbol-rate processing (no pulse shaping)
+        PilotThreshold = pi
+        UsePilots = true
 
         % System
         Rs      = 32            % [GBd]
@@ -88,8 +92,8 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
             % --- Tx ---
             k      = log2(M);
             Nbits  = k * testCase.N_pol * testCase.Ns;
-            txBits = qam_randomBits(Nbits);
-            symbols = qam_modulate(txBits, M, testCase.N_pol);
+            txBits = qam_randomBits(Nbits, testCase.BlockLen, testCase.PilotLen, M);
+            [symbols, pilots] = qam_modulate(txBits, M, testCase.N_pol, testCase.PilotLen);
 
             % --- Channel: AWGN + phase noise ---
             rxSym = channel_add_awgn(symbols, testCase.SNR_dB);
@@ -101,7 +105,7 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
                 testCase.SNR_dB, symEnergy, testCase.N_pol, testCase.NTaps);
 
             [crSym, ThetaPU] = cr_viterbiViterbi(rxSym, testCase.N_pol, testCase.NTaps, ...
-                VVFilter);
+                VVFilter, testCase.BlockLen, pilots, testCase.PilotThreshold, testCase.UsePilots);
 
             % --- Demodulate & BER ---
             decidedSyms = qam_decideSymbols(crSym, M, testCase.N_pol);
@@ -129,7 +133,7 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
             rxSym = channel_add_phase_noise(rxSym, testCase.Rs, testCase.LW);
 
             % --- VV filter ---
-            symEnergy = mean(abs(symbols(:)).^2)
+            symEnergy = mean(abs(symbols(:)).^2);
             VVFilter  = cr_genVVFilter(testCase.Linewidth, testCase.Rs, ...
                 testCase.SNR_dB, symEnergy, testCase.N_pol, testCase.NTaps);
 

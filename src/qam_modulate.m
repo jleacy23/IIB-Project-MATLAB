@@ -1,4 +1,4 @@
-function symbols = qam_modulate(bits, M, N_pol)
+function [symbols, pilots] = qam_modulate(bits, M, N_pol, P)
 %QAM_MODULATE  Map bits to QAM symbols.
 %
 %   symbols = qam_modulate(bits, M, N_pol)
@@ -7,9 +7,12 @@ function symbols = qam_modulate(bits, M, N_pol)
 %     bits  - column vector of binary bits
 %     M     - QAM constellation order (must be a power of 2)
 %     N_pol - number of polarisations
+%     L     - block length for pilot insertion
+%     P     - number of pilot symbols at the start of every block
 %
 %   Output
 %     symbols - [Ns_pol x N_pol] complex QAM symbols (unit average power)
+%     pilots  - [P x 1] pilot symbols
 
     if mod(log2(M),1) ~= 0
         error('M must be power of 2.');
@@ -32,6 +35,6 @@ function symbols = qam_modulate(bits, M, N_pol)
     syms = qammod(symIdx, M, ...
         'UnitAveragePower', true, ...
         'InputType', 'integer');
-
+    pilots = syms(1:P); % this sequence is repeated every block over both polarisations.
     symbols = reshape(syms, Ns_pol, N_pol);
 end

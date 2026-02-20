@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2026.2.19)  19 FEB 2026 19:48
+This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2026.2.19)  20 FEB 2026 15:16
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -206,12 +206,12 @@ Package pdftex.def Info: viterbi_viterbi.png  used on input line 25.
  [1
 
 {c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map} <./viterbi_viterbi.png>]
-<decision_directed.png, id=17, 921.4425pt x 453.19313pt>
-File: decision_directed.png Graphic file (type png)
-<use decision_directed.png>
-Package pdftex.def Info: decision_directed.png  used on input line 67.
-(pdftex.def)             Requested size: 364.19667pt x 179.1165pt.
- [2 <./decision_directed.png>] [3] (./phase_recovery.aux)
+<blind_phase_search.png, id=17, 806.26219pt x 433.62pt>
+File: blind_phase_search.png Graphic file (type png)
+<use blind_phase_search.png>
+Package pdftex.def Info: blind_phase_search.png  used on input line 63.
+(pdftex.def)             Requested size: 364.19667pt x 195.86824pt.
+ [2 <./blind_phase_search.png>] [3] (./phase_recovery.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
@@ -219,14 +219,14 @@ L3 programming layer <2026-01-19>
  ) 
 Here is how much of TeX's memory you used:
  5632 strings out of 469514
- 107688 string characters out of 5467647
- 551451 words of memory out of 5000000
+ 107691 string characters out of 5467647
+ 552451 words of memory out of 5000000
  34275 multiletter control sequences out of 15000+600000
  632275 words of font info for 55 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 67i,11n,77p,626b,307s stack positions out of 10000i,1000n,20000p,200000b,200000s
-<c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb>
-Output written on phase_recovery.pdf (3 pages, 170811 bytes).
+ 67i,12n,77p,1041b,307s stack positions out of 10000i,1000n,20000p,200000b,200000s
+<c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb>
+Output written on phase_recovery.pdf (3 pages, 187305 bytes).
 PDF statistics:
  64 PDF objects out of 1000 (max. 8388607)
  36 compressed objects within 1 object stream

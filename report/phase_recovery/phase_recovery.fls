@@ -84,11 +84,11 @@ INPUT ./viterbi_viterbi.png
 OUTPUT phase_recovery.pdf
 INPUT ./viterbi_viterbi.png
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map
-INPUT ./decision_directed.png
-INPUT ./decision_directed.png
-INPUT ./decision_directed.png
-INPUT ./decision_directed.png
-INPUT ./decision_directed.png
+INPUT ./blind_phase_search.png
+INPUT ./blind_phase_search.png
+INPUT ./blind_phase_search.png
+INPUT ./blind_phase_search.png
+INPUT ./blind_phase_search.png
 INPUT phase_recovery.aux
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb
@@ -96,6 +96,6 @@ INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfo
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb
+INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb
-INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb

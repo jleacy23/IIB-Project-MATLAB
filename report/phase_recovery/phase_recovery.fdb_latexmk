@@ -1,5 +1,6 @@
 # Fdb version 4
-["pdflatex"] 1771530496.47325 "c:/Users/joele/OneDrive - University of Cambridge/IIB Project/iib_project/report/phase_recovery/phase_recovery.tex" "phase_recovery.pdf" "phase_recovery" 1771530496.90575 0
+["pdflatex"] 1771600572.89194 "c:/Users/joele/OneDrive - University of Cambridge/IIB Project/iib_project/report/phase_recovery/phase_recovery.tex" "phase_recovery.pdf" "phase_recovery" 1771600573.31266 0
+  "blind_phase_search.png" 1771595538 90530 2760b87faafee7eded4b7a7d5890745a ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmbx12.tfm" 1771473562 1324 c910af8c371558dc20f2d7822f66fe64 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmmi12.tfm" 1771473562 1524 4414a8315f39513458b80dfc63bff03a ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmmi6.tfm" 1771473562 1512 f21f83efb36853c0b70002322c1ab3ad ""
@@ -17,9 +18,9 @@
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb" 1771473594 35469 dcf3a5f2fc1862f5952e3ee5eb1d98c4 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb" 1771473594 32722 d7379af29a190c3f453aba36302ff5a9 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb" 1771473594 32362 bc3f3eec7ab7d65fe700963d4017d32c ""
+  "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb" 1771473594 32734 69e00a6b65cedb993666e42eedb3d48f ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb" 1771473594 32726 39f0f9e62e84beb801509898a605dbd5 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb" 1771473594 32569 5e5ddc8df908dea60932f3c484a54c0d ""
-  "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb" 1771473594 32626 5abc8bb2f28aa647d4c70f8ea38cc0d3 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/iftex/iftex.sty" 1771473604 7984 7dbb9280f03c0a315425f1b4f35d43ee ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/iftex/ifvtex.sty" 1771473604 1057 525c2192b5febbd8c1f662c9468335bb ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/ltxcmds/ltxcmds.sty" 1771473612 17865 1a9bd36b4f98178fa551aca822290953 ""
@@ -49,10 +50,9 @@
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1771473634 94259 aec9939469efac8f0cf917369f632359 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/web2c/pdftex/pdflatex.fmt" 1771473652 2236258 469de061e66b12a8022de64287718f0f ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf.cnf" 1771473572 903 164c5b127cd0d6dc91abad2f62421ea2 ""
-  "c:/Users/joele/OneDrive - University of Cambridge/IIB Project/iib_project/report/phase_recovery/phase_recovery.tex" 1771530496 6630 8700b3c8c3c6f9a34a04bc43cb4ea214 ""
-  "decision_directed.png" 1771526173 65216 b54000f7481bcb473279cc82c5005e79 ""
-  "phase_recovery.aux" 1771530496 1952 1493fae6d3eb871cdb1177986c86e3cc "pdflatex"
-  "phase_recovery.tex" 1771530496 6630 8700b3c8c3c6f9a34a04bc43cb4ea214 ""
+  "c:/Users/joele/OneDrive - University of Cambridge/IIB Project/iib_project/report/phase_recovery/phase_recovery.tex" 1771600572 7011 527636ca104be1047b0d52831098166d ""
+  "phase_recovery.aux" 1771600573 2067 1b9297f4973e2a5acb585ca048f25506 "pdflatex"
+  "phase_recovery.tex" 1771600572 7011 527636ca104be1047b0d52831098166d ""
   "viterbi_viterbi.png" 1771520037 19032 456b89b2728b2650e6f0d72a68282d8e ""
   (generated)
   "phase_recovery.aux"

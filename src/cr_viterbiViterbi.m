@@ -1,4 +1,4 @@
-function [v, ThetaPU] = cr_viterbiViterbi(x, NPol, NTaps, VVFilter, L, Pilots, PilotThreshold, UsePilots)
+function [v, ThetaPU] = cr_viterbiViterbi(x, NPol, VVFilter, L, Pilots, PilotThreshold, UsePilots, BlockBased)
 %CR_VITERBIVITERBI  Viterbi-Viterbi carrier phase estimation & correction.
 %
 %   v = cr_viterbiViterbi(x, NPol, NTaps, VVFilter)
@@ -6,13 +6,13 @@ function [v, ThetaPU] = cr_viterbiViterbi(x, NPol, NTaps, VVFilter, L, Pilots, P
 %   Inputs
 %     x             - input signal [samples x NPol]
 %     NPol          - number of polarizations
-%     NTaps         - number of past/future symbols for phase estimation
 %     VVFilter      - Viterbi-Viterbi filter coefficients
 %     L             - block length
 %     Pilots        - Pilot symbols at the start of every block [Pilot length x 1]
 %     PilotThreshold - threshold to reverse a cycle slip
 %     UsePilots      - whether to use pilots for phase estimation
-    L_filt = 2 * NTaps + 1;
+%     BlockBased     - whether to apply phase correction on a block of symbols
+    L_filt = length(VVFilter);
     ThetaML4 = zeros(size(x,1), NPol);
 
     % Reference phase from pilots
@@ -44,6 +44,12 @@ function [v, ThetaPU] = cr_viterbiViterbi(x, NPol, NTaps, VVFilter, L, Pilots, P
     % Phase correction
     ThetaML = ThetaML4 / 4 - pi/4;
 
+    if BlockBased
+        ThetaML = repelem(ThetaML(1:L:end, :), L, 1);
+        % crop to original length
+        ThetaML = ThetaML(1:size(x,1), :);
+    end
+
     % Phase unwrapping
     N = size(ThetaML, 1);
     ThetaPU = zeros(N, NPol);
@@ -54,7 +60,15 @@ function [v, ThetaPU] = cr_viterbiViterbi(x, NPol, NTaps, VVFilter, L, Pilots, P
             ThetaPU(i, pol) = ThetaML(i, pol) + n * (pi/2);
             if UsePilots
                 BlockIdx = ceil(i / L);
-                ThetaPU(i, pol) = ThetaPU(i, pol) - pi/2 * round((ThetaPU(i, pol) - PhiRef(BlockIdx, pol)) / PilotThreshold);
+                n = 0;
+                PhaseDiff = ThetaPU(i, pol) - PhiRef(BlockIdx, pol);
+                if PhaseDiff > pi /2
+                    n = 1;
+                elseif PhaseDiff < -pi/2
+                    n = -1;
+                end
+                % ThetaPU(i, pol) = ThetaPU(i, pol) - pi/2 * round((ThetaPU(i, pol) - PhiRef(BlockIdx, pol)) / PilotThreshold);
+                ThetaPU(i, pol) = ThetaPU(i, pol) - n * pi/2;
             end
             ThetaPrev = ThetaPU(i, pol);
         end

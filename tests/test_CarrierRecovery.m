@@ -7,15 +7,16 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
         N_pol   = 2
         Ns      = 2^17          % symbols per polarisation
         SpS     = 1
-        BlockLen = 64
+        BlockLen = 512
         PilotLen = 8             % symbol-rate processing (no pulse shaping)
         PilotThreshold = pi
         UsePilots = true
+        BlockBased = true
 
         % System
         Rs      = 32            % [GBd]
         SNR_dB  = 20            % [dB]
-        Linewidth = 1000e3       % laser linewidth [Hz]
+        Linewidth = 100e3       % laser linewidth [Hz]
 
         % Channel (unused impairments set to benign values)
         L       = 80            % fibre length [km]
@@ -23,7 +24,7 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
         CWL     = 1550          % [nm]
         DGDSpec = 0             % no PMD
         N_pmd   = 1
-        LW      = 1000e3       % phase-noise linewidth [Hz]
+        LW      = 100e3       % phase-noise linewidth [Hz]
 
         % Carrier recovery
         NTaps   = 15
@@ -50,7 +51,7 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
             plotBeforeAfter(testCase, rxSym, crSym, ...
                 '4-QAM  |  VV', M, BER);
 
-            % --- Plot estimated phase for both polarisations ---
+            % --- Plot estimated phase for both polarisations --- 
             figure('Name', 'VV Phase Estimate', ...
                    'Position', [100 650 1200 400]);
             for p = 1:testCase.N_pol
@@ -104,8 +105,8 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
             VVFilter  = cr_genVVFilter(testCase.Linewidth, testCase.Rs, ...
                 testCase.SNR_dB, symEnergy, testCase.N_pol, testCase.NTaps);
 
-            [crSym, ThetaPU] = cr_viterbiViterbi(rxSym, testCase.N_pol, testCase.NTaps, ...
-                VVFilter, testCase.BlockLen, pilots, testCase.PilotThreshold, testCase.UsePilots);
+            [crSym, ThetaPU] = cr_viterbiViterbi(rxSym, testCase.N_pol, ...
+                VVFilter, testCase.BlockLen, pilots, testCase.PilotThreshold, testCase.UsePilots, testCase.BlockBased);
 
             % --- Demodulate & BER ---
             decidedSyms = qam_decideSymbols(crSym, M, testCase.N_pol);

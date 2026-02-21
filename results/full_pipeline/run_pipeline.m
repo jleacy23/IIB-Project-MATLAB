@@ -28,8 +28,8 @@ function R = run_pipeline(P)
     % =================================================================
     fprintf('TX: %d-QAM, %d pol, %d symbols/pol\n', P.M, P.N_pol, P.Ns);
 
-    bits    = qam_randomBits(Nbits);
-    symbols = qam_modulate(bits, P.M, P.N_pol);        % [Ns x Npol]
+    bits    = qam_randomBits(Nbits, P.BlockLen, P.PilotLen, P.M);  % [Nbits x 1]
+    [symbols, pilots] = qam_modulate(bits, P.M, P.N_pol);        % [Ns x Npol]
     txSig   = qam_rrcPulse(symbols, P.SpS, P.Rolloff, P.Span);
 
     %% ================================================================

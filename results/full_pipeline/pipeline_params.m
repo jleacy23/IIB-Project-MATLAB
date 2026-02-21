@@ -10,6 +10,8 @@ function P = pipeline_params()
     P.M       = 4;           % QAM order (4, 16, 64, …)
     P.N_pol   = 2;            % number of polarisations
     P.Ns      = 2^17;         % symbols per polarisation
+    P.PilotLen = 8;
+    P.BlockLen = 64;
 
     % ---- Pulse shaping ----------------------------------------------
     P.SpS     = 2;            % samples per symbol
@@ -39,13 +41,18 @@ function P = pipeline_params()
     P.AEQ_N2         = 4000;       % CMA→RDE switch iteration
     P.AEQ_NOut       = 5000;        % transient discard
 
-    % ---- Viterbi–Viterbi Carrier Recovery ----------------------------
-    P.VV_NTaps       = 15;         % half-width of VV averaging filter
+    % ---- Carrier Recovery ----------------------------
+    P.VV_NTaps       = 5;         % half-width of VV averaging filter
+    P.BPS_B   = 64;         % number of test phases for BPS
+    P.BPS_N   = 5;
+    P.UsePilots       = true;       % use pilot symbols for phase estimation
+    P.BlockBased       = false;      % apply phase correction on a block of symbols
 
     % ---- Fixed-point configuration ----------------------------------
     P.FxpConfig_CD   = 'fixed16';  % CD equalizer:  'fixed16' | 'fixed32'
     P.FxpConfig_AEQ  = 'fixed16';  % Adaptive EQ:   'fixed16' | 'fixed32'
     P.FxpConfig_VV   = 'fixed16';  % VV carrier recovery: 'fixed16' | 'fixed32'
+    P.FxpConfig_BPS  = 'fixed16';  % BPS carrier recovery: 'fixed16' | 'fixed32'
     P.po2Twiddle     = false;      % power-of-2 twiddle factors in FFT
 
     % ---- Output / display --------------------------------------------

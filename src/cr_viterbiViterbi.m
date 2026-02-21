@@ -1,4 +1,4 @@
-function [v, ThetaPU] = cr_viterbiViterbi(x, NPol, VVFilter, L, Pilots, PilotThreshold, UsePilots, BlockBased)
+function [v, ThetaPU] = cr_viterbiViterbi(x, NPol, VVFilter, L, Pilots, UsePilots, BlockBased)
 %CR_VITERBIVITERBI  Viterbi-Viterbi carrier phase estimation & correction.
 %
 %   v = cr_viterbiViterbi(x, NPol, NTaps, VVFilter)
@@ -44,12 +44,6 @@ function [v, ThetaPU] = cr_viterbiViterbi(x, NPol, VVFilter, L, Pilots, PilotThr
     % Phase correction
     ThetaML = ThetaML4 / 4 - pi/4;
 
-    if BlockBased
-        ThetaML = repelem(ThetaML(1:L:end, :), L, 1);
-        % crop to original length
-        ThetaML = ThetaML(1:size(x,1), :);
-    end
-
     % Phase unwrapping
     N = size(ThetaML, 1);
     ThetaPU = zeros(N, NPol);
@@ -69,6 +63,9 @@ function [v, ThetaPU] = cr_viterbiViterbi(x, NPol, VVFilter, L, Pilots, PilotThr
                 end
                 % ThetaPU(i, pol) = ThetaPU(i, pol) - pi/2 * round((ThetaPU(i, pol) - PhiRef(BlockIdx, pol)) / PilotThreshold);
                 ThetaPU(i, pol) = ThetaPU(i, pol) - n * pi/2;
+            end
+            if BlockBased && mod(i, L) ~= 1
+                ThetaPU(i,pol) = ThetaPU(i-1, pol);
             end
             ThetaPrev = ThetaPU(i, pol);
         end

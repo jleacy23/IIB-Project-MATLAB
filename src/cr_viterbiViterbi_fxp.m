@@ -50,10 +50,8 @@ function [v, ThetaPU] = cr_viterbiViterbi_fxp(x, NPol, NTaps, VVFilter, ...
     %% ----------------------------------------------------------------
     %  Fixed-point constants
     %% ----------------------------------------------------------------
-    PI_VAL   = cast(pi,    'like', T.theta);
     PI_OVER2 = cast(pi/2,  'like', T.theta);
     PI_OVER4 = cast(pi/4,  'like', T.theta);
-    TWO_PI   = cast(2*pi,  'like', T.theta);
     QUARTER  = cast(0.25,  'like', T.theta);
     ZERO_TH  = cast(0,     'like', T.theta);
     ONE_TH   = cast(1,     'like', T.theta);
@@ -186,24 +184,27 @@ function [v, ThetaPU] = cr_viterbiViterbi_fxp(x, NPol, NTaps, VVFilter, ...
             n_fi     = cast(n_val, 'like', T.theta);
             theta_uw = ThetaML(i, pol) + n_fi * PI_OVER2;
 
-            % Wrap to [-pi, pi] to prevent fixed-point overflow
-            wrap_n   = cast(floor(double(theta_uw + PI_VAL) / double(TWO_PI)), ...
-                            'like', T.theta);
-            theta_uw = theta_uw - TWO_PI * wrap_n;
+            % theta_uw stays within the fi range (±8 rad for fixed16 FL=12)
+            % because ThetaML(i) ∈ (-pi/4, pi/4] and n_val is 0 or ±1,
+            % so theta_uw never exceeds ~±3pi/4 < ±8.  No wrap needed.
 
             %-- Pilot-aided cycle-slip correction ---------------------
             if UsePilots
-                BlockIdx  = ceil(i / L);          % 1-based block index
-                PhaseDiff = theta_uw - PhiRef(BlockIdx, pol);
+                BlockIdx = ceil(i / L);
 
-                % Determine integer number of pi/2 slips
+                % theta_uw is unwrapped; PhiRef is wrapped to (-pi, pi]
+                % by cordicangle.  Wrap the difference to (-pi, pi] to
+                % obtain the shortest-path phase error, then threshold at
+                % ±pi/2 to detect a cycle slip of one quadrant.
+                PhaseDiff_d = mod(double(theta_uw - PhiRef(BlockIdx, pol)) ...
+                                  + pi, 2*pi) - pi;
+
                 n_slip = ZERO_TH;
-                if PhaseDiff > PI_OVER2
-                    n_slip = ONE_TH;
-                elseif PhaseDiff < -PI_OVER2
+                if PhaseDiff_d > pi/2
+                    n_slip =  ONE_TH;
+                elseif PhaseDiff_d < -pi/2
                     n_slip = -ONE_TH;
                 end
-
                 theta_uw = theta_uw - n_slip * PI_OVER2;
             end
 

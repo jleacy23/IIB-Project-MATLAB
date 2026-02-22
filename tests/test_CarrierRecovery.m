@@ -9,24 +9,34 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
     %   Cast inputs to fi, call the compiled MEX, verify BER < threshold.
     %   No MATLAB vs MEX comparison is performed.
     %
-    % Prerequisites for fxp tests
-    %   - cr_viterbiViterbi_fxp_mex and cr_bps_fxp_mex must be compiled.
-    %     Run build_all_mex() before executing fxp tests.
+    % MEX compilation
+    %   Both MEX binaries are compiled automatically in TestClassSetup
+    %   (once per test run, before any test method executes).  A fresh
+    %   pipeline_params() struct is constructed and its fields are
+    %   overridden with the Constant properties defined here so that the
+    %   compiled binary exactly matches the test configuration.
+    %
+    % Prerequisites
+    %   - MATLAB Coder and Fixed-Point Designer toolboxes must be licensed.
     %   - qam_slicer.m must be on the MATLAB path (used by cr_bps_fxp).
+    %   - build_cr_viterbiViterbi_fxp_mex.m and build_cr_bps_fxp_mex.m
+    %     must be on the MATLAB path.
 
     properties (Constant)
         % ---- Signal -------------------------------------------------
         N_pol    = 2
-        Ns       = 2^15             % symbols per polarisation
+        Ns       = 2^13             % symbols per polarisation
         SpS      = 1                % symbol-rate processing
         BlockLen = 64
         PilotLen = 8
+        M = 4
+        seed = 42
 
         % ---- System -------------------------------------------------
-        Rs        = 32              % symbol rate [GBd]
-        SNR_dB    = 20              % [dB]
-        Linewidth = 1000e3          % laser linewidth [Hz]
-        LW        = 1000e3          % phase-noise linewidth [Hz]
+        Rs        = 10              % symbol rate [GBd]
+        SNR_dB    = 17.5            % [dB]
+        Linewidth = 2400e3          % laser linewidth [Hz]
+        LW        = 2400e3          % phase-noise linewidth [Hz]
 
         % ---- Channel (benign) ---------------------------------------
         L       = 80
@@ -50,10 +60,43 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
         BER_THRESHOLD = 5e-2
     end
 
+    % ================================================================
+    %  One-time setup: seed RNG and compile both MEX binaries
+    % ================================================================
     methods (TestClassSetup)
+
         function seedRng(~)
             rng('shuffle');
         end
+
+        function compileMex(testCase)
+            % Build a pipeline_params struct consistent with the test's
+            % own Constant properties so the compiled MEX signatures match
+            % exactly what the test methods will pass at runtime.
+
+            % Override fields that differ from pipeline defaults
+            P.N_pol      = testCase.N_pol;
+            P.BlockLen   = testCase.BlockLen;
+            P.PilotLen   = testCase.PilotLen;
+            P.VV_NTaps   = testCase.NTaps;
+            P.BPS_N      = testCase.NTaps;   % BPS one-sided half-length
+            P.BPS_B      = testCase.B;
+            P.FxpConfig_VV  = testCase.FxpConfig;
+            P.FxpConfig_BPS = testCase.FxpConfig;
+            P.M = testCase.M;
+
+            % Shared coder config: MEX target, no extrinsic warnings
+            cfg = coder.config('mex');
+            cfg.GenerateReport          = false;
+            cfg.SaturateOnIntegerOverflow = false;
+
+            fprintf('  Compiling cr_viterbiViterbi_fxp_mex...\n');
+            build_cr_viterbiViterbi_fxp_mex(P, cfg);
+
+            fprintf('  Compiling cr_bps_fxp_mex...\n');
+            build_cr_bps_fxp_mex(P, cfg);
+        end
+
     end
 
     % ================================================================
@@ -101,6 +144,7 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
             plotBeforeAfter(testCase, rxSym, crSym, ...
                 sprintf('4-QAM | VV fxp (%s)', testCase.FxpConfig), M, BER);
             plotPhase(testCase, ThetaPU, '4-QAM VV Fxp', BER);
+
             testCase.verifyTrue(all(isfinite(crSym(:))), ...
                 'VV fxp MEX output contains NaN/Inf.');
             testCase.verifyLessThan(BER, testCase.BER_THRESHOLD, ...
@@ -166,7 +210,6 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
             VVFilter  = cr_genVVFilter(testCase.Linewidth, testCase.Rs, ...
                 testCase.SNR_dB, symEnergy, testCase.N_pol, testCase.NTaps);
 
-            % Cast inputs to fi before handing to MEX
             rxSym_fi    = cast(rxSym,    'like', T.x);
             VVFilter_fi = cast(VVFilter, 'like', T.w);
             pilots_fi   = cast(pilots,   'like', T.x);
@@ -188,7 +231,6 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
 
             [~, pilots, txBits, rxSym] = buildChannel(testCase, M);
 
-            % Cast inputs to fi before handing to MEX
             rxSym_fi  = cast(rxSym,  'like', T.x);
             pilots_fi = cast(pilots, 'like', T.x);
 

@@ -4,8 +4,18 @@ function build_cr_viterbiViterbi_fxp_mex(P, cfg)
 %   build_cr_viterbiViterbi_fxp_mex(P, cfg)
 %
 %   Inputs
-%     P   - parameter struct from pipeline_params()
+%     P   - parameter struct with the fields listed below
 %     cfg - coder.MexCodeConfig object
+%
+%   Required fields in P
+%     P.N_pol        - number of polarisations
+%     P.VV_NTaps     - one-sided VV filter half-length
+%     P.PilotLen     - number of pilot symbols per block
+%     P.BlockLen     - block length in symbols
+%     P.StepSize     - phase update interval in symbols (1..BlockLen)
+%     P.FxpConfig_VV - fixed-point config string: 'fixed16' | 'fixed32'
+%     P.PilotThreshold - threshold for pilot-based cycle-slip correction in radians
+%     P.CordicIts      - number of iterations for CORDIC operations
 
     srcDir = fullfile(fileparts(mfilename('fullpath')), '..', 'src');
     fxp = P.FxpConfig_VV;
@@ -28,31 +38,37 @@ function build_cr_viterbiViterbi_fxp_mex(P, cfg)
 
     % ----------------------------------------------------------------
     % VVFilter  –  variable-length real fi column vector [(2*NTaps+1) x 1]
-    %              Length is fixed at build time but declared variable so
-    %              the same MEX works if NTaps is tuned without recompile.
+    %              Declared variable so the same MEX works if NTaps is
+    %              tuned without recompilation.
     % ----------------------------------------------------------------
     w_proto = fi(0, numerictype(T_vv.w), fimath(T_vv.w));
     w_type  = coder.typeof(w_proto, [Inf, 1], [true, false]);
 
     % ----------------------------------------------------------------
     % Pilots  –  fixed-length complex fi column vector [PilotLen x 1]
-    %            Size is known at compile time (same fi type as x).
+    %            Size is known at compile time; declared fixed so codegen
+    %            can unroll the pilot correlation loop.
     % ----------------------------------------------------------------
     pilots_proto = fi(complex(0, 0), numerictype(T_vv.x), fimath(T_vv.x));
     pilots_type  = coder.typeof(pilots_proto, [P.PilotLen, 1], [false, false]);
 
+    cordic_its_type = coder.Constant(P.CordicIts);
+
     % ----------------------------------------------------------------
-    % Build argument list
+    % Build argument list — must match cr_viterbiViterbi_fxp signature:
+    %   (x, NPol, NTaps, VVFilter, Pilots, BlockLen, StepSize, UsePilots, PilotThreshold, T)
     % ----------------------------------------------------------------
     args_vv = { ...
-        In_vv_type, ...            % x          [N x NPol]    fi complex
-        double(P.N_pol), ...       % NPol        scalar        double
-        double(P.VV_NTaps), ...    % NTaps       scalar        double
-        w_type, ...                % VVFilter   [L_filt x 1]  fi real
-        pilots_type, ...           % Pilots     [PilotLen x 1] fi complex
-        double(P.BlockLen), ...    % L           scalar        double
-        logical(false), ...        % UsePilots   scalar        logical
-        logical(false), ...        % BlockBased  scalar        logical
+        In_vv_type, ...            % x          [N x NPol]      fi complex
+        double(P.N_pol), ...       % NPol        scalar          double
+        double(P.VV_NTaps), ...    % NTaps       scalar          double
+        w_type, ...                % VVFilter   [L_filt x 1]    fi real
+        pilots_type, ...           % Pilots     [PilotLen x 1]  fi complex
+        double(P.BlockLen), ...    % BlockLen    scalar          double
+        double(P.StepSize), ...    % StepSize    scalar          double
+        logical(false), ...        % UsePilots   scalar          logical
+        double(P.PilotThreshold), ... % PilotThreshold scalar       double
+        cordic_its_type, ...   % CordicIts   scalar          double
         T_vv};                     % T           struct of fi prototypes
 
     codegen('-config', cfg, ...

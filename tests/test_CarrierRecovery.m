@@ -12,9 +12,9 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
     % MEX compilation
     %   Both MEX binaries are compiled automatically in TestClassSetup
     %   (once per test run, before any test method executes).  A fresh
-    %   pipeline_params() struct is constructed and its fields are
-    %   overridden with the Constant properties defined here so that the
-    %   compiled binary exactly matches the test configuration.
+    %   parameter struct is constructed and its fields are overridden with
+    %   the Constant properties defined here so that the compiled binary
+    %   exactly matches the test configuration.
     %
     % Prerequisites
     %   - MATLAB Coder and Fixed-Point Designer toolboxes must be licensed.
@@ -29,8 +29,7 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
         SpS      = 1                % symbol-rate processing
         BlockLen = 64
         PilotLen = 8
-        M = 4
-        seed = 42
+        M        = 4
 
         % ---- System -------------------------------------------------
         Rs        = 10              % symbol rate [GBd]
@@ -46,9 +45,10 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
         N_pmd   = 1
 
         % ---- Carrier recovery – shared ------------------------------
-        NTaps      = 5
-        UsePilots  = true
-        BlockBased = false
+        NTaps     = 5
+        UsePilots = true
+        PilotThreshold = pi/3
+        StepSize  = 1               % symbol-by-symbol update (full bandwidth)
 
         % ---- BPS-specific -------------------------------------------
         B = 64                      % number of blind test phases
@@ -70,24 +70,23 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
         end
 
         function compileMex(testCase)
-            % Build a pipeline_params struct consistent with the test's
-            % own Constant properties so the compiled MEX signatures match
+            % Build a parameter struct consistent with the test's own
+            % Constant properties so the compiled MEX signatures match
             % exactly what the test methods will pass at runtime.
-
-            % Override fields that differ from pipeline defaults
-            P.N_pol      = testCase.N_pol;
-            P.BlockLen   = testCase.BlockLen;
-            P.PilotLen   = testCase.PilotLen;
-            P.VV_NTaps   = testCase.NTaps;
-            P.BPS_N      = testCase.NTaps;   % BPS one-sided half-length
-            P.BPS_B      = testCase.B;
+            P.N_pol         = testCase.N_pol;
+            P.BlockLen      = testCase.BlockLen;
+            P.PilotLen      = testCase.PilotLen;
+            P.VV_NTaps      = testCase.NTaps;
+            P.BPS_N         = testCase.NTaps;
+            P.BPS_B         = testCase.B;
+            P.M             = testCase.M;
             P.FxpConfig_VV  = testCase.FxpConfig;
             P.FxpConfig_BPS = testCase.FxpConfig;
-            P.M = testCase.M;
+            P.StepSize      = testCase.StepSize;
+            P.PilotThreshold = testCase.PilotThreshold;
 
-            % Shared coder config: MEX target, no extrinsic warnings
             cfg = coder.config('mex');
-            cfg.GenerateReport          = false;
+            cfg.GenerateReport            = false;
             cfg.SaturateOnIntegerOverflow = false;
 
             fprintf('  Compiling cr_viterbiViterbi_fxp_mex...\n');
@@ -105,7 +104,7 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
     methods (Test)
 
         function testQPSK_VV(testCase)
-            M = 4;
+            M = testCase.M;
             [rxSym, crSym, BER, ThetaPU] = runScenario_VV(testCase, M);
 
             plotBeforeAfter(testCase, rxSym, crSym, '4-QAM | VV', M, BER);
@@ -118,7 +117,7 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
         end
 
         function testQPSK_BPS(testCase)
-            M = 4;
+            M = testCase.M;
             [rxSym, crSym, BER, ThetaPU] = runScenario_BPS(testCase, M);
 
             plotBeforeAfter(testCase, rxSym, crSym, '4-QAM | BPS', M, BER);
@@ -138,7 +137,7 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
     methods (Test)
 
         function testQPSK_VV_Fxp16(testCase)
-            M = 4;
+            M = testCase.M;
             [rxSym, crSym, BER, ThetaPU] = runScenarioFxp_VV(testCase, M, testCase.FxpConfig);
 
             plotBeforeAfter(testCase, rxSym, crSym, ...
@@ -152,7 +151,7 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
         end
 
         function testQPSK_BPS_Fxp16(testCase)
-            M = 4;
+            M = testCase.M;
             [rxSym, crSym, BER, ThetaPU] = runScenarioFxp_BPS(testCase, M, testCase.FxpConfig);
 
             plotBeforeAfter(testCase, rxSym, crSym, ...
@@ -181,8 +180,8 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
                 testCase.SNR_dB, symEnergy, testCase.N_pol, testCase.NTaps);
 
             [crSym, ThetaPU] = cr_viterbiViterbi(rxSym, testCase.N_pol, ...
-                VVFilter, testCase.BlockLen, pilots, ...
-                testCase.UsePilots, testCase.BlockBased);
+                VVFilter, testCase.BlockLen, testCase.StepSize, ...
+                pilots, testCase.UsePilots, testCase.PilotThreshold);
 
             BER = computeBER(testCase, crSym, txBits, M);
             fprintf('4-QAM VV BER = %.2e\n', BER);
@@ -193,8 +192,8 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
             [~, pilots, txBits, rxSym] = buildChannel(testCase, M);
 
             [crSym, ThetaPU] = cr_bps(rxSym, testCase.NTaps, testCase.N_pol, ...
-                M, testCase.B, testCase.BlockLen, pilots, ...
-                testCase.UsePilots, testCase.BlockBased);
+                M, testCase.B, testCase.BlockLen, testCase.StepSize, ...
+                pilots, testCase.UsePilots, testCase.PilotThreshold);
 
             BER = computeBER(testCase, crSym, txBits, M);
             fprintf('4-QAM BPS BER = %.2e\n', BER);
@@ -216,8 +215,8 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
 
             [crSym_fi, ThetaPU_fi] = cr_viterbiViterbi_fxp_mex( ...
                 rxSym_fi, testCase.N_pol, testCase.NTaps, VVFilter_fi, ...
-                pilots_fi, testCase.BlockLen, ...
-                testCase.UsePilots, testCase.BlockBased, T);
+                pilots_fi, testCase.BlockLen, double(testCase.StepSize), ...
+                testCase.UsePilots, testCase.PilotThreshold, T);
             ThetaPU = double(ThetaPU_fi);
 
             crSym = resolvePhaseAmbiguity(testCase, double(crSym_fi), txBits, M);
@@ -236,8 +235,8 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
 
             [crSym_fi, ThetaPU_fi] = cr_bps_fxp_mex( ...
                 rxSym_fi, testCase.NTaps, testCase.N_pol, ...
-                M, testCase.B, testCase.BlockLen, ...
-                pilots_fi, testCase.UsePilots, testCase.BlockBased, T);
+                M, testCase.B, testCase.BlockLen, double(testCase.StepSize), ...
+                pilots_fi, testCase.UsePilots, testCase.PilotThreshold, T);
             ThetaPU = double(ThetaPU_fi);
 
             crSym = resolvePhaseAmbiguity(testCase, double(crSym_fi), txBits, M);
@@ -258,9 +257,6 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
 
         % ---- Phase ambiguity resolution -----------------------------
         function bestSym = resolvePhaseAmbiguity(testCase, crSym, txBits, M)
-            % Pilots prevent cycle slips during the sequence but do not
-            % resolve the absolute starting quadrant ambiguity.  Try all
-            % four pi/2 rotations and keep the one with the lowest BER.
             bestBER = Inf;
             bestSym = crSym;
             for k = 0:3

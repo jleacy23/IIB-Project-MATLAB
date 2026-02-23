@@ -1,44 +1,56 @@
 function [v, ThetaPU] = cr_viterbiViterbi_fxp(x, NPol, NTaps, VVFilter, ...
-                                                Pilots, L, UsePilots, BlockBased, T) %#codegen
+                                                Pilots, BlockLen, StepSize, ...
+                                                UsePilots, PilotThreshold,  CordicIts, T) %#codegen
 %CR_VITERBIVITERBI_FXP  Fixed-point Viterbi-Viterbi carrier phase recovery
-%                        with optional pilot-aided cycle-slip correction and
-%                        block-constant phase output.
+%                        with step-based phase update and optional pilot-aided
+%                        cycle-slip correction.
 %
 %   [v, ThetaPU] = cr_viterbiViterbi_fxp(x, NPol, NTaps, VVFilter, ...
-%                      Pilots, L, UsePilots, BlockBased, T)
+%                      Pilots, BlockLen, StepSize, UsePilots, T)
 %
 %   Inputs
-%     x          - input signal [N x NPol] (fi or double, complex)
-%     NPol       - number of polarisations (double scalar)
-%     NTaps      - one-sided filter half-length (double scalar)
-%                  Filter window = 2*NTaps+1 samples
-%     VVFilter   - VV filter coefficients [(2*NTaps+1) x 1] (fi or double, real)
-%     Pilots     - pilot symbols used at block start [P x 1] (complex)
-%                  Ignored when UsePilots = false (pass [] or zeros)
-%     L          - block length in symbols (double scalar)
-%     UsePilots  - logical: enable pilot-aided cycle-slip correction
-%     BlockBased - logical: hold phase constant over each L-symbol block
-%     T          - (optional) fixed-point types table from
-%                  cr_viterbiViterbi_fxp_types.  Defaults to 'fixed16'.
+%     x         - input signal [N x NPol] (fi or double, complex)
+%     NPol      - number of polarisations (double scalar)
+%     NTaps     - one-sided VV filter half-length; window = 2*NTaps+1 (double)
+%     VVFilter  - VV filter coefficients [(2*NTaps+1) x 1] (fi or double, real)
+%     Pilots    - pilot symbols at block start [P x 1] (complex fi or double)
+%                 Ignored when UsePilots = false
+%     BlockLen  - block length in symbols (double scalar)
+%                 Pilots are taken from the first P symbols of each block.
+%     StepSize  - phase update interval in symbols (double scalar, 1..BlockLen)
+%                 The estimator, unwrapper and pilot correction fire once every
+%                 StepSize symbols, aligned to the start of each block.
+%                 The phase is held constant between updates.
+%                   StepSize = 1        -> symbol-by-symbol (full bandwidth)
+%                   StepSize = BlockLen -> one update per block (minimum bandwidth)
+%                 Pilot symbols are treated as regular data by the VV estimator.
+%     UsePilots - logical: enable pilot-aided cycle-slip correction
+%     PilotThreshold - threshold for pilot-based cycle-slip correction in radians (double scalar)
+%     CordicIts - number of iterations for CORDIC operations (double scalar)
+%                 cr_viterbiViterbi_fxp_types.  Defaults to 'fixed16'.
 %
 %   Outputs
-%     v          - phase-corrected signal [N x NPol], same type as T.x
-%     ThetaPU    - unwrapped (and optionally pilot-corrected) phase
-%                  estimate [N x NPol], same type as T.theta
+%     v       - phase-corrected signal [N x NPol], type T.x
+%     ThetaPU - phase estimate [N x NPol], type T.theta
+%               At step positions: newly estimated, unwrapped, pilot-corrected.
+%               Between steps: held from the most recent step.
 %
 %   Fixed-point types table T must supply:
-%     T.x      - input / output signal type
-%     T.w      - filter coefficient type
-%     T.theta  - phase / angle type  (must accommodate ±pi)
-%     T.acc    - accumulator type    (used for pilot correlation sums)
+%     T.x     - input / output signal type
+%     T.w     - filter coefficient type
+%     T.theta - phase / angle type  (must accommodate ±pi)
+%     T.acc   - accumulator type    (pilot correlation sums)
 %
 %   Codegen notes
-%     - No convmtx: phase estimation uses explicit tap-delay indexing.
-%     - cordicangle replaces angle() for phase extraction.
-%     - cordicrotate replaces exp(-j*theta)*x for phase correction.
-%     - All if-branches on UsePilots / BlockBased are runtime-legal so
-%       codegen compiles both paths without coder.const wrapping.
-%     - PhiRef and ThetaPU are pre-allocated before all loops.
+%     - No convmtx: tap-delay indexing throughout.
+%     - ThetaML is not pre-allocated; estimation and unwrapping are merged
+%       into a single loop and skipped entirely at non-step positions,
+%       reducing computation by a factor of StepSize.
+%     - cordicangle and cordicrotate outputs are explicitly cast to the
+%       intended fi type immediately after each call (CORDIC ignores fimath).
+%     - ThetaPrev is updated only at step positions; the unwrapper anchor
+%       therefore always reflects the last computed (not held) phase.
+%     - UsePilots is a runtime branch; codegen compiles both paths.
 
     %% ----------------------------------------------------------------
     %  Default types table
@@ -50,21 +62,21 @@ function [v, ThetaPU] = cr_viterbiViterbi_fxp(x, NPol, NTaps, VVFilter, ...
     %% ----------------------------------------------------------------
     %  Fixed-point constants
     %% ----------------------------------------------------------------
-    PI_OVER2 = cast(pi/2,  'like', T.theta);
-    PI_OVER4 = cast(pi/4,  'like', T.theta);
-    QUARTER  = cast(0.25,  'like', T.theta);
-    ZERO_TH  = cast(0,     'like', T.theta);
-    ONE_TH   = cast(1,     'like', T.theta);
-    ZERO_ACC = cast(0,     'like', T.acc);
+    PI_OVER2 = cast(pi/2, 'like', T.theta);
+    PI_OVER4 = cast(pi/4, 'like', T.theta);
+    ZERO_TH  = cast(0, 'like', T.theta);
+    QUARTER  = cast(0.25, 'like', T.theta);
+    ZERO_ACC = cast(0,    'like', T.acc);
+    CORDIC_ITS = coder.const(CordicIts);
 
     %% ----------------------------------------------------------------
     %  Dimensions
     %% ----------------------------------------------------------------
-    N      = size(x, 1);
-    L_filt = 2 * NTaps + 1;
-    halfL  = floor(L_filt / 2);
-    P      = length(Pilots);        % number of pilot symbols per block
-    NBlocks = ceil(N / L);
+    N       = size(x, 1);
+    L_filt  = 2 * NTaps + 1;
+    halfL   = floor(L_filt / 2);
+    P       = length(Pilots);
+    NBlocks = ceil(N / BlockLen);
 
     %% ----------------------------------------------------------------
     %  Cast inputs to fixed-point
@@ -73,28 +85,27 @@ function [v, ThetaPU] = cr_viterbiViterbi_fxp(x, NPol, NTaps, VVFilter, ...
     w_fi = cast(VVFilter, 'like', T.w);
 
     %% ----------------------------------------------------------------
-    %  Pre-allocate outputs and working arrays
+    %  Pre-allocate outputs
     %% ----------------------------------------------------------------
-    ThetaML = zeros(N, NPol, 'like', T.theta);  % raw ML phase estimate
-    ThetaPU = zeros(N, NPol, 'like', T.theta);  % unwrapped / corrected phase
+    ThetaPU = zeros(N, NPol, 'like', T.theta);
     v       = complex(zeros(N, NPol, 'like', T.x));
 
-    % Pilot-derived block phase references (one scalar per block per pol)
-    PhiRef  = zeros(NBlocks, NPol, 'like', T.theta);
+    %% ================================================================
+    %  Pilot correlation  -->  PhiRef [NBlocks x NPol]
+    %
+    %  All pilot references are computed upfront before the main loop
+    %  so that any step position can look up its block's reference
+    %  without ordering constraints.
+    %% ================================================================
+    PhiRef = zeros(NBlocks, NPol, 'like', T.theta);
 
-    %% ================================================================
-    %  Pilot correlation  (runs only when UsePilots == true)
-    %  PhiRef(b,pol) = angle( sum_p  conj(Pilots(p)) * x(blockStart+p-1, pol) )
-    %% ================================================================
     if UsePilots
         Pilots_fi = cast(Pilots, 'like', T.x);
 
         for pol = 1:NPol
-            for b = 1:NBlocks
-                blockStart = (b - 1) * L + 1;
+            for blk = 1:NBlocks
+                blockStart = (blk - 1) * BlockLen + 1;
 
-                % Accumulate real and imaginary parts separately so we
-                % stay within T.acc precision throughout the sum.
                 corr_re = ZERO_ACC;
                 corr_im = ZERO_ACC;
 
@@ -103,131 +114,138 @@ function [v, ThetaPU] = cr_viterbiViterbi_fxp(x, NPol, NTaps, VVFilter, ...
                     if idx >= 1 && idx <= N
                         rx = x_fi(idx, pol);
 
-                        % conj(pilot) * rx  in acc precision
                         pilot_re =  real(Pilots_fi(p));
-                        pilot_im = -imag(Pilots_fi(p));   % conjugate
+                        pilot_im = -imag(Pilots_fi(p));       % conjugate
 
                         rx_re = cast(real(rx), 'like', T.acc);
                         rx_im = cast(imag(rx), 'like', T.acc);
                         pr    = cast(pilot_re, 'like', T.acc);
                         pi_c  = cast(pilot_im, 'like', T.acc);
 
-                        % (pilot_re + j*pilot_im_conj)(rx_re + j*rx_im)
                         corr_re = corr_re + pr * rx_re - pi_c * rx_im;
                         corr_im = corr_im + pr * rx_im + pi_c * rx_re;
                     end
                 end
 
-                % Convert accumulator to theta type for cordicangle
-                corr_fi = complex( cast(corr_re, 'like', T.theta), ...
-                                   cast(corr_im, 'like', T.theta) );
-                PhiRef(b, pol) = cordicangle(corr_fi);
+                % cordicangle ignores fimath and returns FL = (input FL - 2).
+                % Cast immediately to T.theta to restore the correct
+                % numerictype and SpecifyPrecision fimath.
+                corr_fi          = complex(cast(corr_re, 'like', T.theta), ...
+                                           cast(corr_im, 'like', T.theta));
+                PhiRef(blk, pol) = cast(cordicangle(corr_fi, CORDIC_ITS), 'like', T.theta);
             end
         end
     end
 
     %% ================================================================
-    %  Per-polarisation VV phase estimation  +  unwrap / correction
+    %  Per-polarisation processing
+    %
+    %  Estimation, unwrapping, pilot correction, and phase hold are
+    %  merged into a single pass.  At step positions the full pipeline
+    %  executes; at all other positions the previous phase is replicated.
+    %
+    %  Step positions within each block are determined by:
+    %    posInBlock = mod(i-1, BlockLen)   (0-indexed, resets each block)
+    %    isStep     = mod(posInBlock, StepSize) == 0
+    %  The first symbol of every block (posInBlock = 0) is always a step.
     %% ================================================================
     for pol = 1:NPol
 
-        %% ------------------------------------------------------------
-        %  Step 1 – 4th-power FIR phase estimation
-        %  ThetaML(i) = angle( sum_k  w(k) * x(i+k-halfL)^4 ) / 4 - pi/4
-        %% ------------------------------------------------------------
-        for i = 1:N
-            sum4_re = ZERO_TH;
-            sum4_im = ZERO_TH;
+        ThetaPrev = ZERO_TH;    % unwrapper anchor; updated only at steps
 
-            for k = 1:L_filt
-                idx = i - halfL - 1 + k;
-                if idx >= 1 && idx <= N
-                    s = x_fi(idx, pol);
-                else
-                    s = complex(cast(0, 'like', T.x), cast(0, 'like', T.x));
+        for i = 1:N
+
+            posInBlock = mod(i - 1, BlockLen);
+            isStep     = (mod(posInBlock, StepSize) == 0);
+
+            if isStep
+
+                %% ------------------------------------------------
+                %  VV phase estimation
+                %  theta_ml = angle(sum_k w(k)*x(i+k-halfL)^4)/4 - pi/4
+                %% ------------------------------------------------
+                sum4_re = ZERO_TH;
+                sum4_im = ZERO_TH;
+
+                for k = 1:L_filt
+                    idx = i - halfL - 1 + k;
+                    if idx >= 1 && idx <= N
+                        s = x_fi(idx, pol);
+                    else
+                        s = complex(cast(0, 'like', T.x), cast(0, 'like', T.x));
+                    end
+
+                    % s^4 via two complex squarings (avoids fi .^4)
+                    s_re = cast(real(s), 'like', T.theta);
+                    s_im = cast(imag(s), 'like', T.theta);
+
+                    s2_re = s_re * s_re - s_im * s_im;
+                    s2_im = cast(2, 'like', T.theta) * s_re * s_im;
+
+                    s4_re = s2_re * s2_re - s2_im * s2_im;
+                    s4_im = cast(2, 'like', T.theta) * s2_re * s2_im;
+
+                    w_k     = cast(w_fi(k), 'like', T.theta);
+                    sum4_re = sum4_re + w_k * s4_re;
+                    sum4_im = sum4_im + w_k * s4_im;
                 end
 
-                % s^4 via two complex squarings (avoids ^4 on fi)
-                s_re = cast(real(s), 'like', T.theta);
-                s_im = cast(imag(s), 'like', T.theta);
+                sum4_fi  = complex(sum4_re, sum4_im);
+                % cordicangle output FL = (input FL - 2); cast immediately.
+                theta_ml = cast(cordicangle(sum4_fi, CORDIC_ITS), 'like', T.theta) ...
+                           * QUARTER - PI_OVER4;
 
-                % s^2
-                s2_re = s_re * s_re - s_im * s_im;
-                s2_im = cast(2, 'like', T.theta) * s_re * s_im;
+                %% ------------------------------------------------
+                %  Phase unwrapping
+                %  n = floor(0.5 + (ThetaPrev - theta_ml) / (pi/2))
+                %% ------------------------------------------------
+                diff_val = ThetaPrev - theta_ml;
+                n_val    = floor(double(diff_val) / double(PI_OVER2) + 0.5);
+                n_fi     = cast(n_val, 'like', T.theta);
+                theta_uw = theta_ml + n_fi * PI_OVER2;
 
-                % s^4 = (s^2)^2
-                s4_re = s2_re * s2_re - s2_im * s2_im;
-                s4_im = cast(2, 'like', T.theta) * s2_re * s2_im;
+                % theta_ml in (-pi/4, pi/4], n_fi in {-1,0,1}:
+                % theta_uw bounded to (-3pi/4, 3pi/4] — no fi overflow risk.
 
-                % Weighted accumulation  (weight in T.theta precision)
-                w_k = cast(w_fi(k), 'like', T.theta);
-                sum4_re = sum4_re + w_k * s4_re;
-                sum4_im = sum4_im + w_k * s4_im;
-            end
+                %% ------------------------------------------------
+                %  Pilot-aided cycle-slip correction
+                %% ------------------------------------------------
+                if UsePilots
+                    BlockIdx = ceil(i / BlockLen);
 
-            sum4_fi   = complex(sum4_re, sum4_im);
-            theta4    = cordicangle(sum4_fi);                 % in (-pi, pi]
-            ThetaML(i, pol) = cast(theta4, 'like', T.theta) * QUARTER - PI_OVER4;
-        end
-
-        %% ------------------------------------------------------------
-        %  Step 2 – Phase unwrapping + pilot cycle-slip correction
-        %           + optional block-constant phase
-        %% ------------------------------------------------------------
-        ThetaPrev = ZERO_TH;
-
-        for i = 1:N
-
-            %-- Standard quadrant-ambiguity unwrap --------------------
-            diff_val = ThetaPrev - ThetaML(i, pol);
-            n_val    = floor(double(diff_val) / double(PI_OVER2) + 0.5);
-            n_fi     = cast(n_val, 'like', T.theta);
-            theta_uw = ThetaML(i, pol) + n_fi * PI_OVER2;
-
-            % theta_uw stays within the fi range (±8 rad for fixed16 FL=12)
-            % because ThetaML(i) ∈ (-pi/4, pi/4] and n_val is 0 or ±1,
-            % so theta_uw never exceeds ~±3pi/4 < ±8.  No wrap needed.
-
-            %-- Pilot-aided cycle-slip correction ---------------------
-            if UsePilots
-                BlockIdx = ceil(i / L);
-
-                % theta_uw is unwrapped; PhiRef is wrapped to (-pi, pi]
-                % by cordicangle.  Wrap the difference to (-pi, pi] to
-                % obtain the shortest-path phase error, then threshold at
-                % ±pi/2 to detect a cycle slip of one quadrant.
-                PhaseDiff_d = mod(double(theta_uw - PhiRef(BlockIdx, pol)) ...
-                                  + pi, 2*pi) - pi;
-
-                n_slip = ZERO_TH;
-                if PhaseDiff_d > pi/2
-                    n_slip =  ONE_TH;
-                elseif PhaseDiff_d < -pi/2
-                    n_slip = -ONE_TH;
+                    % Wrap difference to (-pi, pi] for shortest-path error,
+                    % then threshold at ±pi/2 to identify a one-quadrant slip.
+                    PhaseDiff_d = mod( ...
+                        double(theta_uw - PhiRef(BlockIdx, pol)) + pi, ...
+                        2*pi) - pi;
+                    n_slip = round(PhaseDiff_d / double(PilotThreshold));
+                    n_slip_fi = cast(n_slip, 'like', T.theta);
+                    theta_uw = theta_uw - n_slip_fi * PI_OVER2;
                 end
-                theta_uw = theta_uw - n_slip * PI_OVER2;
+
+                ThetaPU(i, pol) = theta_uw;
+                ThetaPrev       = theta_uw;   % advance anchor to this step
+
+            else
+
+                %% ------------------------------------------------
+                %  Hold: replicate the last computed phase
+                %  ThetaPrev is not updated so the next step's
+                %  unwrapper still anchors to the last real estimate.
+                %% ------------------------------------------------
+                ThetaPU(i, pol) = ThetaPrev;
+
             end
 
-            %-- Block-constant phase (hold first sample of block) -----
-            if BlockBased && mod(i, L) ~= 1 && i > 1
-                % Overwrite with the phase already stored for this block.
-                % ThetaPU(i-1) was either the block's first-sample estimate
-                % (if that was also block-held) or the previous symbol's
-                % corrected phase — either way we replicate it.
-                theta_uw = ThetaPU(i - 1, pol);
-            end
-
-            % Store and update running reference
-            ThetaPU(i, pol) = theta_uw;
-            ThetaPrev       = theta_uw;
-        end
+        end  % for i
 
         %% ------------------------------------------------------------
-        %  Step 3 – Phase correction via CORDIC rotation
-        %           v(i) = x(i) * exp(-j * ThetaPU(i))
+        %  Phase correction: v(i) = x(i) * exp(-j * ThetaPU(i))
+        %  cordicrotate output cast to T.x to enforce SpecifyPrecision.
         %% ------------------------------------------------------------
         for i = 1:N
-            v(i, pol) = cordicrotate(-ThetaPU(i, pol), x_fi(i, pol));
+            neg_theta = cast(-ThetaPU(i, pol), 'like', T.theta);
+            v(i, pol) = cast(cordicrotate(neg_theta, x_fi(i, pol), CORDIC_ITS), 'like', T.x);
         end
 
     end  % for pol

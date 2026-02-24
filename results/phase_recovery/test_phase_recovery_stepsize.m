@@ -12,21 +12,21 @@ classdef test_phase_recovery_stepsize < matlab.unittest.TestCase
         M           = 4
         N_pol       = 2
         Ns          = 2^14
-        Rs          = 32
+        Rs          = 10
         LW          = 2400e3
         SNR_dB      = 17.5
-        NTrials     = 200
+        NTrials     = 5
 
         % Pilot
         PilotLen    = 4
         UsePilots   = true
-        PilotThreshold = pi/2
+        PilotThreshold = 3 * pi/4
 
         % Block
         BlockLen    = 128
 
         % Step sizes (powers of 2 up to BlockLen)
-        StepSizes   = 2.^(0:log2(256))
+        StepSizes   = 2.^(0:log2(128))
 
         % VV
         VV_NTaps    = 5
@@ -41,6 +41,7 @@ classdef test_phase_recovery_stepsize < matlab.unittest.TestCase
 
         % Plot
         Plot        = true
+        PlotTrials   = false
     end
 
     %% ================================================================
@@ -141,11 +142,12 @@ classdef test_phase_recovery_stepsize < matlab.unittest.TestCase
 
 
                     %% VV
-                    [cr_vv_fi,~] = cr_viterbiViterbi_fxp_mex( ...
+                    [cr_vv_fi,ThetaPU_vv] = cr_viterbiViterbi_fxp_mex( ...
                         rx_vv, P.N_pol, P.VV_NTaps, ...
                         testCase.VVFilter_fi, ...
                         pilots_vv, P.BlockLen, stepSize, ...
                         P.UsePilots, P.PilotThreshold, P.CordicIts, testCase.T_vv);
+                    
 
                     cr_vv = test_phase_recovery_stepsize.resolvePhaseAmbiguity( ...
                         double(cr_vv_fi), txBits, P.M, P.N_pol);
@@ -155,7 +157,7 @@ classdef test_phase_recovery_stepsize < matlab.unittest.TestCase
                         cr_vv, txBits, P.M, P.N_pol);
 
                     %% BPS
-                    [cr_bps_fi,~] = cr_bps_fxp_mex( ...
+                    [cr_bps_fi,ThetaPU_bps] = cr_bps_fxp_mex( ...
                         rx_bps, P.BPS_N, P.N_pol, ...
                         P.M, P.BPS_B, ...
                         P.BlockLen, stepSize, ...
@@ -171,8 +173,8 @@ classdef test_phase_recovery_stepsize < matlab.unittest.TestCase
                 end
             end
 
-            BER_VV  = mean(BER_VV_all,1);
-            BER_BPS = mean(BER_BPS_all,1);
+            BER_VV  = mean(BER_VV_all,1)
+            BER_BPS = mean(BER_BPS_all,1)
 
             %% Plot
             if P.Plot
@@ -180,23 +182,41 @@ classdef test_phase_recovery_stepsize < matlab.unittest.TestCase
                        'Position',[100 100 800 550], ...
                        'Color','w');
 
-                for si=1:NS
-                    semilogy(StepSizes(si)*ones(P.NTrials,1), ...
-                        BER_VV_all(:,si),'o','HandleVisibility','off'); hold on
-                    semilogy(StepSizes(si)*ones(P.NTrials,1), ...
-                        BER_BPS_all(:,si),'s','HandleVisibility','off');
+                set(gca,...
+                    'FontSize',14,...
+                    'LineWidth',1,...
+                    'Box','on',...
+                    'Color','w');
+                
+                hold on
+                
+                if P.PlotTrials
+                    for si=1:NS
+                        semilogy(StepSizes(si)*ones(P.NTrials,1), ...
+                            BER_VV_all(:,si),'o','HandleVisibility','off');
+                        semilogy(StepSizes(si)*ones(P.NTrials,1), ...
+                            BER_BPS_all(:,si),'s','HandleVisibility','off');
+                    end
                 end
 
-                semilogy(StepSizes,BER_VV,'o-','LineWidth',2,...
+                semilogy(StepSizes,BER_VV,'s-','LineWidth',2,...
                     'DisplayName','VV fxp');
                 semilogy(StepSizes,BER_BPS,'s-','LineWidth',2,...
                     'DisplayName','BPS fxp');
 
                 set(gca,'XScale','log','XTick',StepSizes);
                 grid on
-                xlabel('Step size [symbols]')
-                ylabel('BER')
-                legend('Location','best')
+                xlabel('Step size [symbols]',...
+                    'Interpreter','latex',...
+                    'FontSize',16)
+
+                ylabel('BER',...
+                    'Interpreter','latex',...
+                    'FontSize',16)
+
+                legend('Location','best',...
+                    'Interpreter','latex',...
+                    'FontSize',14)
 
                 title(sprintf(['BER vs Step Size | %d-QAM | ' ...
                       'SNR=%.1f dB | LW=%.0f kHz | %d trials'], ...

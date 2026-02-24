@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2026.2.19)  23 FEB 2026 15:03
+This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2026.2.19)  24 FEB 2026 10:31
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -211,25 +211,37 @@ File: blind_phase_search.png Graphic file (type png)
 <use blind_phase_search.png>
 Package pdftex.def Info: blind_phase_search.png  used on input line 63.
 (pdftex.def)             Requested size: 364.19667pt x 195.86824pt.
- [2 <./blind_phase_search.png>] [3] (./phase_recovery.aux)
+ [2 <./blind_phase_search.png>]
+<BER vs StepSize.png, id=23, 538.1706pt x 395.5578pt>
+File: BER vs StepSize.png Graphic file (type png)
+<use BER vs StepSize.png>
+Package pdftex.def Info: BER vs StepSize.png  used on input line 108.
+(pdftex.def)             Requested size: 341.43307pt x 250.95912pt.
+ [3]
+<BER vs Filter.png, id=27, 534.3162pt x 394.5942pt>
+File: BER vs Filter.png Graphic file (type png)
+<use BER vs Filter.png>
+Package pdftex.def Info: BER vs Filter.png  used on input line 116.
+(pdftex.def)             Requested size: 341.43307pt x 252.14804pt.
+ (./phase_recovery.bbl [4 <./BER vs StepSize.png (PNG copy)> <./BER vs Filter.png (PNG copy)>]) [5] (./phase_recovery.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
  ***********
  ) 
 Here is how much of TeX's memory you used:
- 5632 strings out of 469514
- 107691 string characters out of 5467647
+ 5664 strings out of 469514
+ 108451 string characters out of 5467647
  552451 words of memory out of 5000000
- 34275 multiletter control sequences out of 15000+600000
- 632275 words of font info for 55 fonts, out of 8000000 for 9000
+ 34303 multiletter control sequences out of 15000+600000
+ 632622 words of font info for 56 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 67i,12n,77p,989b,307s stack positions out of 10000i,1000n,20000p,200000b,200000s
-<c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb>
-Output written on phase_recovery.pdf (3 pages, 187271 bytes).
+ 67i,12n,77p,1089b,322s stack positions out of 10000i,1000n,20000p,200000b,200000s
+<c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb>
+Output written on phase_recovery.pdf (5 pages, 303394 bytes).
 PDF statistics:
- 64 PDF objects out of 1000 (max. 8388607)
- 36 compressed objects within 1 object stream
+ 77 PDF objects out of 1000 (max. 8388607)
+ 43 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
- 11 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 21 words of extra memory for PDF output out of 10000 (max. 10000000)
 

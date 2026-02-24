@@ -23,7 +23,7 @@ to \(z[k]\). Here \(M = 4\) for QAM.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{viterbi_viterbi.png}
-    \caption{Viterbi \& Viterbi algorithm block diagram}
+    \caption{Viterbi \& Viterbi algorithm block diagram \cite{mello2021digital}}
     \label{fig:viterbi_viterbi}
 \end{figure}
 An energy efficient hardware implementation of this algorithm avoids multipliers where possible. The ML filter is known beforehand
@@ -57,11 +57,11 @@ of shifts and adds for multiplication by a fixed value would be \(h\) and \(h-1\
 \end{table}
 
 \section{Blind Phase Search}
-The Blind Phase Search algorithm is an alternative feed-forward algorithm that can be implemented without multipliers. Figure \ref{blind_phase_search} shows its operation. Producing the test rotations \(\theta_\mathrm{b}\) can be done very efficiently with CORDIC by reusing intermediate values, resulting in only \(\sum_{b=1}^{\log_2B} 2^{b+1} = 4B - 4\) shift and add operations for \(B\) rotations. For a QAM constellation \(\mathcal{S}\), the decision circuit is implemented with \(2(\sqrt{|\mathcal{S}|} - 1)\) comparators. Forming the squared distances \(|d_b[k]|^2\) appears to require a multiplier but the low degree of precision necessary means a look-up table (LUT) can be used. Additive noise is filtered from the estimate by summing \(L = 2N + 1\) squared distances. Finding the minimum \(m_b[k]\) can be done with \(B - 1\) comparators.
+The Blind Phase Search algorithm is an alternative feed-forward algorithm that can be implemented without multipliers. Figure \ref{blind_phase_search} shows its operation. Producing the test rotations \(\theta_\mathrm{b}\) can be done very efficiently with CORDIC by reusing intermediate values, resulting in only \(\sum_{b=1}^{\log_2B} 2^{b+1} = 4B - 4\) shift and add operations for \(B\) rotations \cite{Pfau2009FeedforwardCarrierRecovery}. For a QAM constellation \(\mathcal{S}\), the decision circuit is implemented with \(2(\sqrt{|\mathcal{S}|} - 1)\) comparators. Forming the squared distances \(|d_b[k]|^2\) appears to require a multiplier but the low degree of precision necessary means a look-up table (LUT) can be used \cite{Pfau2009FeedforwardCarrierRecovery}. Additive noise is filtered from the estimate by summing \(L = 2N + 1\) squared distances. Finding the minimum \(m_b[k]\) can be done with \(B - 1\) comparators.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{blind_phase_search.png}
-    \caption{Blind Phase Search algorithm block diagram}
+    \caption{Blind Phase Search algorithm block diagram \cite{mello2021digital}}
     \label{blind_phase_search}
 \end{figure}
 The cost of this algorithm per symbol is shown in Table \ref{tab:blind_phase_search_cost}. For small constellations, the LUT will be small so accesses will be assumed to have negligible cost along with any MUX operations to select the correct \(\theta_\mathrm{b}\).
@@ -101,10 +101,25 @@ Thus setting sensible values of \(N_C = n = 8\), \(L = 5\), \(|\mathcal{S}| = 16
     \label{tab:cost_comparison}
 \end{table}
 It is clear the the Blind Phase Search algorith is more energy efficient. This is due to the absence of multipliers, a simpler additive noise filter, and efficient reuse of intermediate values for test rotations.
-\section{Block-Wise Correction}
-Both the Viterbi-Viterbi and Blind Phase Search algorithms can operate on blocks of symbols to reduce their computational cost. An estimated phase can be found for one symbol in a block of \(K\) and applied to the whole block, thereby reducing the cost by a factor of \(K\). However, this reduces the accuracy of the phase estimate and can make cycle slips more likely in the phase unwrapper. Pilot symbols can be used in both algorithms to mitigate this issue. (plot of BER vs block size for both algorithms with and without pilots using values above).
-\section{Simplified Blind Phase Search}
-Try removing additive noise filter.
+\section{Phase Estimation Frequency}
+Both algorithms above produce a phase noise estimate for every symbol. The phase noise is slowly varying so only estimating every \(K\) symbols and applying the same correction to the intermediate symbols may be sufficient. This would reduce the cost of both algorithms by a factor of \(K\) at the cost of increased phase noise variance. Figure \ref{fig:phase_estimation_frequency} shows the effect of \(K\) on the phase noise variance for both algorithms. Both algorithms use pilots to avoid cycle slips \cite{Cheng2013PilotCycleSlip} and exhibit almost identical performance.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{BER vs StepSize.png}
+    \caption{Phase noise variance vs phase estimation frequency \(K\)}
+    \label{fig:phase_estimation_frequency}
+\end{figure}
+\section{Filter Length}
+Blind Phase Search averages over several minimum distances to filter out noise. It can be seen from Table \ref{tab:blind_phase_search_cost} that the cost of this filter is linear in \(L\) so it should be made as small as possible while still giving acceptable performance. Figure \ref{fig:filter_length} shows the effect of \(L\) on the phase noise variance.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{BER vs Filter.png}
+    \caption{Phase noise variance vs filter length \(L\)}
+    \label{fig:filter_length}
+\end{figure}
+
+\bibliographystyle{ieeetr}
+\bibliography{ref}
 
 
 \end{document}

@@ -60,7 +60,7 @@ classdef test_bps_filter < matlab.unittest.TestCase
             assert(mod(P.BPS_B,2)==0,'BPS_B must be even.')
 
             %% Types
-            testCase.T_bps = cr_bps_fxp_types(P.FxpConfig);
+            testCase.T_bps = carrier_recovery.bps_fxp_types(P.FxpConfig);
 
             %% Build config
             Pbuild.N_pol = P.N_pol;
@@ -83,7 +83,7 @@ classdef test_bps_filter < matlab.unittest.TestCase
 
             fprintf('=== Compiling BPS MEX ===\n');
 
-            build_cr_bps_fxp_mex(Pbuild,cfg);
+            build_carrier_recovery_bps_fxp_mex(Pbuild,cfg);
 
             fprintf('=== Compilation done ===\n\n');
 
@@ -111,17 +111,17 @@ classdef test_bps_filter < matlab.unittest.TestCase
                 k     = log2(P.M);
                 Nbits = k*P.N_pol*P.Ns;
 
-                txBits = qam_randomBits( ...
+                txBits = modem.randomBits( ...
                     Nbits,...
                     P.BlockLen,...
                     P.PilotLen,...
                     P.M);
 
-                [symbols,pilots] = qam_modulate( ...
+                [symbols,pilots] = modem.modulate( ...
                     txBits,P.M,P.N_pol,P.PilotLen);
 
-                rxSym = channel_add_awgn(symbols,P.SNR_dB);
-                rxSym = channel_add_phase_noise(rxSym,P.Rs,P.LW);
+                rxSym = channel.add_awgn(symbols,P.SNR_dB);
+                rxSym = channel.add_phase_noise(rxSym,P.Rs,P.LW);
 
                 %% Cast
 
@@ -136,7 +136,7 @@ classdef test_bps_filter < matlab.unittest.TestCase
 
                     %% BPS
 
-                    [cr_bps_fi,~] = cr_bps_fxp_mex( ...
+                    [cr_bps_fi,~] = carrier_recovery.bps_fxp_mex( ...
                         rx_bps,...
                         BPS_N,...
                         P.N_pol,...
@@ -247,10 +247,10 @@ classdef test_bps_filter < matlab.unittest.TestCase
         function BER = computeBER(crSym,txBits,M,NPol)
 
             decidedSyms = ...
-                qam_decideSymbols(crSym,M,NPol);
+                modem.decideSymbols(crSym,M,NPol);
 
             rxBits = ...
-                qam_symbolsToBits(decidedSyms,M);
+                modem.symbolsToBits(decidedSyms,M);
 
             BER = sum(txBits~=rxBits)/length(txBits);
 
@@ -267,10 +267,10 @@ classdef test_bps_filter < matlab.unittest.TestCase
                 rotated = crSym .* exp(-1j*k*pi/2);
 
                 decidedSyms = ...
-                    qam_decideSymbols(rotated,M,NPol);
+                    modem.decideSymbols(rotated,M,NPol);
 
                 rxBits = ...
-                    qam_symbolsToBits(decidedSyms,M);
+                    modem.symbolsToBits(decidedSyms,M);
 
                 thisBER = ...
                     sum(txBits~=rxBits)/length(txBits);

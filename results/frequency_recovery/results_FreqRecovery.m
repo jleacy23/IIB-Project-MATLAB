@@ -44,36 +44,36 @@ classdef results_FreqRecovery < matlab.unittest.TestCase
             % --- Tx: generate symbols ---
             k      = log2(M_);
             Nbits  = k * N_pol_ * Ns_;
-            txBits = qam_randomBits(Nbits);
-            symbols = qam_modulate(txBits, M_, N_pol_);
+            txBits = modem.randomBits(Nbits);
+            symbols = modem.modulate(txBits, M_, N_pol_);
 
             % =============================================================
             %  Path A: no pulse shaping (symbol-rate)
             % =============================================================
-            rxNone = channel_add_awgn(symbols, SNR_);
-            rxNone = channel_lo_freq_shift(rxNone, DeltaF_, Rs_, 1);
+            rxNone = channel.add_awgn(symbols, SNR_);
+            rxNone = channel.lo_freq_shift(rxNone, DeltaF_, Rs_, 1);
             symNone = rxNone;   % already at symbol rate
 
             % =============================================================
             %  Path B: rectangular pulse shaping
             % =============================================================
-            txRect = qam_rectPulse(symbols, SpS_);
-            rxRect = channel_add_awgn(txRect, SNR_);
-            rxRect = channel_lo_freq_shift(rxRect, DeltaF_, Rs_, SpS_);
+            txRect = modem.rectPulse(symbols, SpS_);
+            rxRect = channel.add_awgn(txRect, SNR_);
+            rxRect = channel.lo_freq_shift(rxRect, DeltaF_, Rs_, SpS_);
 
             % Matched filter + downsample
-            rxRectFilt = qam_matched_filter(rxRect, SpS_, 'rect');
+            rxRectFilt = modem.matched_filter(rxRect, SpS_, 'rect');
             symRect    = rxRectFilt(1:SpS_:end, :);
 
             % =============================================================
             %  Path C: RRC pulse shaping
             % =============================================================
-            txRRC = qam_rrcPulse(symbols, SpS_, testCase.Rolloff, testCase.Span);
-            rxRRC = channel_add_awgn(txRRC, SNR_);
-            rxRRC = channel_lo_freq_shift(rxRRC, DeltaF_, Rs_, SpS_);
+            txRRC = modem.rrcPulse(symbols, SpS_, testCase.Rolloff, testCase.Span);
+            rxRRC = channel.add_awgn(txRRC, SNR_);
+            rxRRC = channel.lo_freq_shift(rxRRC, DeltaF_, Rs_, SpS_);
 
             % Matched filter + downsample
-            rxRRCFilt = qam_matched_filter(rxRRC, SpS_, 'rrc', ...
+            rxRRCFilt = modem.matched_filter(rxRRC, SpS_, 'rrc', ...
                 testCase.Rolloff, testCase.Span);
             symRRC    = rxRRCFilt(1:SpS_:end, :);
 

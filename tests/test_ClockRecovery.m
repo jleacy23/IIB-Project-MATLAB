@@ -45,13 +45,13 @@ classdef test_ClockRecovery < matlab.unittest.TestCase
             % --- Tx: generate symbols & pulse-shape at high SpS ---
             k      = log2(M_);
             Nbits  = k * testCase.N_pol * Ns_;
-            txBits = qam_randomBits(Nbits);
-            symbols = qam_modulate(txBits, M_, testCase.N_pol);
+            txBits = modem.randomBits(Nbits);
+            symbols = modem.modulate(txBits, M_, testCase.N_pol);
 
-            txHi = qam_rrcPulse(symbols, SpS_hi_, testCase.Rolloff, testCase.Span);
+            txHi = modem.rrcPulse(symbols, SpS_hi_, testCase.Rolloff, testCase.Span);
 
             % --- Matched filter at high SpS ---
-            rxHi = qam_matched_filter(txHi, SpS_hi_, 'rrc', ...
+            rxHi = modem.matched_filter(txHi, SpS_hi_, 'rrc', ...
                 testCase.Rolloff, testCase.Span);
 
             % --- Introduce a constant timing offset ---
@@ -64,7 +64,7 @@ classdef test_ClockRecovery < matlab.unittest.TestCase
             rx2 = rxShifted(1:decFactor:end, :);
 
             % --- Clock recovery ---
-            crOut = clk_recovery(rx2, 'Nyquist', Ns_, ...
+            crOut = clk_recovery.recovery(rx2, 'Nyquist', Ns_, ...
                 testCase.ki, testCase.kp);
 
             % --- Downsample to symbol rate & demodulate ---
@@ -97,13 +97,13 @@ classdef test_ClockRecovery < matlab.unittest.TestCase
             % --- Tx ---
             k      = log2(M_);
             Nbits  = k * testCase.N_pol * Ns_;
-            txBits = qam_randomBits(Nbits);
-            symbols = qam_modulate(txBits, M_, testCase.N_pol);
+            txBits = modem.randomBits(Nbits);
+            symbols = modem.modulate(txBits, M_, testCase.N_pol);
 
-            txHi = qam_rrcPulse(symbols, SpS_hi_, testCase.Rolloff, testCase.Span);
+            txHi = modem.rrcPulse(symbols, SpS_hi_, testCase.Rolloff, testCase.Span);
 
             % --- Matched filter at high SpS ---
-            rxHi = qam_matched_filter(txHi, SpS_hi_, 'rrc', ...
+            rxHi = modem.matched_filter(txHi, SpS_hi_, 'rrc', ...
                 testCase.Rolloff, testCase.Span);
 
             % --- Introduce a sampling-frequency offset ---
@@ -120,7 +120,7 @@ classdef test_ClockRecovery < matlab.unittest.TestCase
             rx2 = rxSkewed(1:decFactor:end, :);
 
             % --- Clock recovery ---
-            crOut = clk_recovery(rx2, 'Nyquist', Ns_, ...
+            crOut = clk_recovery.recovery(rx2, 'Nyquist', Ns_, ...
                 testCase.ki, testCase.kp);
 
             % --- Downsample to symbol rate & demodulate ---
@@ -157,8 +157,8 @@ classdef test_ClockRecovery < matlab.unittest.TestCase
             N_pol_ = testCase.N_pol;
             for kk = 0:3
                 rotated = crSym .* exp(-1j * kk * pi/2);
-                decided = qam_decideSymbols(rotated, M, N_pol_);
-                rxBits  = qam_symbolsToBits(decided, M);
+                decided = modem.decideSymbols(rotated, M, N_pol_);
+                rxBits  = modem.symbolsToBits(decided, M);
                 nBits   = min(length(rxBits), length(txBits));
                 nErr    = sum(txBits(1:nBits) ~= rxBits(1:nBits));
                 thisBER = nErr / nBits;

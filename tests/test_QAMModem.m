@@ -11,9 +11,9 @@ classdef test_QAMModem < matlab.unittest.TestCase
             k = log2(M);
             Nbits = k * N_pol * 128;           % 128 symbols per pol
 
-            bits = qam_randomBits(Nbits);
-            symbols = qam_modulate(bits, M, N_pol);
-            recoveredBits = qam_symbolsToBits(symbols, M);
+            bits = modem.randomBits(Nbits);
+            symbols = modem.modulate(bits, M, N_pol);
+            recoveredBits = modem.symbolsToBits(symbols, M);
 
             testCase.verifyEqual(recoveredBits, bits, ...
                 sprintf('Round-trip failed for %d-QAM, %d pol(s).', M, N_pol));
@@ -24,14 +24,14 @@ classdef test_QAMModem < matlab.unittest.TestCase
             k = log2(M);
             Nbits = k * N_pol * 64;
 
-            bits = qam_randomBits(Nbits);
-            symbols = qam_modulate(bits, M, N_pol);
-            decided = qam_decideSymbols(symbols, M, N_pol);
+            bits = modem.randomBits(Nbits);
+            symbols = modem.modulate(bits, M, N_pol);
+            decided = modem.decideSymbols(symbols, M, N_pol);
 
             testCase.verifyEqual(decided, symbols, 'AbsTol', 1e-10, ...
                 'decideSymbols should return the same symbols for clean input.');
 
-            recoveredBits = qam_symbolsToBits(decided, M);
+            recoveredBits = modem.symbolsToBits(decided, M);
             testCase.verifyEqual(recoveredBits, bits, ...
                 'Bits should survive modulate -> decide -> symbolsToBits.');
         end
@@ -42,8 +42,8 @@ classdef test_QAMModem < matlab.unittest.TestCase
             Ns = 50;
             Nbits = k * N_pol * Ns;
 
-            bits = qam_randomBits(Nbits);
-            symbols = qam_modulate(bits, M, N_pol);
+            bits = modem.randomBits(Nbits);
+            symbols = modem.modulate(bits, M, N_pol);
 
             testCase.verifySize(symbols, [Ns, N_pol]);
         end
@@ -53,8 +53,8 @@ classdef test_QAMModem < matlab.unittest.TestCase
             k = log2(M);
             Nbits = k * N_pol * 4096;
 
-            bits = qam_randomBits(Nbits);
-            symbols = qam_modulate(bits, M, N_pol);
+            bits = modem.randomBits(Nbits);
+            symbols = modem.modulate(bits, M, N_pol);
 
             avgPower = mean(abs(symbols(:)).^2);
             testCase.verifyEqual(avgPower, 1, 'AbsTol', 0.05, ...
@@ -66,7 +66,7 @@ classdef test_QAMModem < matlab.unittest.TestCase
         function testInvalidMThrows(testCase)
             threw = false;
             try
-                qam_modulate([0;1;0;1], 3, 1);
+                modem.modulate([0;1;0;1], 3, 1);
             catch
                 threw = true;
             end
@@ -77,7 +77,7 @@ classdef test_QAMModem < matlab.unittest.TestCase
         function testNotEnoughBitsThrows(testCase)
             threw = false;
             try
-                qam_modulate([0;1], 16, 2);
+                modem.modulate([0;1], 16, 2);
             catch
                 threw = true;
             end
@@ -86,12 +86,12 @@ classdef test_QAMModem < matlab.unittest.TestCase
         end
 
         function testRandomBitsLength(testCase)
-            bits = qam_randomBits(200);
+            bits = modem.randomBits(200);
             testCase.verifyLength(bits, 200);
         end
 
         function testRandomBitsBinary(testCase)
-            bits = qam_randomBits(500);
+            bits = modem.randomBits(500);
             testCase.verifyTrue(all(bits == 0 | bits == 1), ...
                 'randomBits should only produce 0s and 1s.');
         end
@@ -105,16 +105,16 @@ classdef test_QAMModem < matlab.unittest.TestCase
             rolloff = 0.25;
             span    = 10;
 
-            bits    = qam_randomBits(k * Ns);
-            symbols = qam_modulate(bits, M_, 1);
+            bits    = modem.randomBits(k * Ns);
+            symbols = modem.modulate(bits, M_, 1);
 
             % Rectangular
-            txRect = qam_rectPulse(symbols, SpS);
-            rxRect = qam_matched_filter(txRect, SpS, 'rect');
+            txRect = modem.rectPulse(symbols, SpS);
+            rxRect = modem.matched_filter(txRect, SpS, 'rect');
 
             % RRC
-            txRRC = qam_rrcPulse(symbols, SpS, rolloff, span);
-            rxRRC = qam_matched_filter(txRRC, SpS, 'rrc', rolloff, span);
+            txRRC = modem.rrcPulse(symbols, SpS, rolloff, span);
+            rxRRC = modem.matched_filter(txRRC, SpS, 'rrc', rolloff, span);
 
             t = (0:size(txRect,1)-1).' / SpS;
 

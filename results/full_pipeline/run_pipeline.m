@@ -28,9 +28,9 @@ function R = run_pipeline(P)
     % =================================================================
     fprintf('TX: %d-QAM, %d pol, %d symbols/pol\n', P.M, P.N_pol, P.Ns);
 
-    bits    = qam_randomBits(Nbits, P.BlockLen, P.PilotLen, P.M);  % [Nbits x 1]
-    [symbols, pilots] = qam_modulate(bits, P.M, P.N_pol);        % [Ns x Npol]
-    txSig   = qam_rrcPulse(symbols, P.SpS, P.Rolloff, P.Span);
+    bits    = modem.randomBits(Nbits, P.BlockLen, P.PilotLen, P.M);  % [Nbits x 1]
+    [symbols, pilots] = modem.modulate(bits, P.M, P.N_pol);        % [Ns x Npol]
+    txSig   = modem.rrcPulse(symbols, P.SpS, P.Rolloff, P.Span);
 
     %% ================================================================
     %  Channel
@@ -38,17 +38,17 @@ function R = run_pipeline(P)
     fprintf('Channel: SNR=%.0f dB, D=%.0f ps/(nm·km), L=%.0f km, LW=%.0f kHz\n', ...
             P.SNR_dB, P.D, P.L, P.LW/1e3);
 
-    rxSig = channel_add_awgn(txSig, P.SNR_dB);
-    rxSig = channel_add_chromatic_dispersion(rxSig, P.L, P.SpS, P.Rs, P.D, P.CWL);
-    rxSig = channel_add_phase_noise(rxSig, P.Rs, P.LW);
-    rxSig = channel_add_pmd(rxSig, P.L, P.SpS, P.Rs, P.DGDSpec, P.N_pmd);
-    rxSig = channel_adc(rxSig, P.ENOBits);
+    rxSig = channel.add_awgn(txSig, P.SNR_dB);
+    rxSig = channel.add_chromatic_dispersion(rxSig, P.L, P.SpS, P.Rs, P.D, P.CWL);
+    rxSig = channel.add_phase_noise(rxSig, P.Rs, P.LW);
+    rxSig = channel.add_pmd(rxSig, P.L, P.SpS, P.Rs, P.DGDSpec, P.N_pmd);
+    rxSig = channel.adc(rxSig, P.ENOBits);
 
     %% ================================================================
     %  Generate VV filter (shared)
     % =================================================================
     SymbolEnergy = 1;   % unit-power constellation
-    VVFilter = cr_genVVFilter(P.LW, P.Rs, P.SNR_dB, SymbolEnergy, ...
+    VVFilter = carrier_recovery.genVVFilter(P.LW, P.Rs, P.SNR_dB, SymbolEnergy, ...
                               P.N_pol, P.VV_NTaps);
 
     % The adaptive EQ discards NOut symbols from the front, so the VV
@@ -63,18 +63,18 @@ function R = run_pipeline(P)
     % CD Equalisation
     fprintf('  CD EQ ... ');
     tic;
-    cdOut_fl = cdeq_equalize(rxSig, P.D, P.L, P.CWL, P.Rs, ...
+    cdOut_fl = cd_eq.equalize(rxSig, P.D, P.L, P.CWL, P.Rs, ...
                              P.N_pol, P.SpS, P.NFFT);
     t_cd_fl = toc;
     fprintf('%.3f s\n', t_cd_fl);
 
     % Matched filter
-    mfOut_fl = qam_matched_filter(cdOut_fl, P.SpS, 'rrc', P.Rolloff, P.Span);
+    mfOut_fl = modem.matched_filter(cdOut_fl, P.SpS, 'rrc', P.Rolloff, P.Span);
 
     % Adaptive Equalisation
     fprintf('  Adaptive EQ ... ');
     tic;
-    aeqOut_fl = adeq_equalize(mfOut_fl, P.SpS, P.AEQ_Eq, ...
+    aeqOut_fl = adaptive_eq.equalize(mfOut_fl, P.SpS, P.AEQ_Eq, ...
                               P.AEQ_NTaps, P.AEQ_Mu, P.AEQ_SingleSpike, ...
                               P.AEQ_N1, P.AEQ_N2, P.AEQ_NOut);
     t_aeq_fl = toc;
@@ -83,7 +83,7 @@ function R = run_pipeline(P)
     % Viterbi-Viterbi
     fprintf('  VV carrier recovery ... ');
     tic;
-    vvOut_fl = cr_viterbiViterbi(aeqOut_fl, P.N_pol, P.VV_NTaps, ...
+    vvOut_fl = carrier_recovery.viterbiViterbi(aeqOut_fl, P.N_pol, P.VV_NTaps, ...
                                  VVFilter);
     t_vv_fl = toc;
     fprintf('%.3f s\n', t_vv_fl);
@@ -100,13 +100,13 @@ function R = run_pipeline(P)
     bestRotPerPol_fl = zeros(1, P.N_pol);
     bestSrcPerPol_fl = zeros(1, P.N_pol);
     for p = 1:P.N_pol
-        refBitsPol = qam_symbolsToBits(refSym_fl(:,p), P.M);
+        refBitsPol = modem.symbolsToBits(refSym_fl(:,p), P.M);
         bestPolBER = Inf;
         for q = 1:P.N_pol          % try both EQ outputs (pol swap)
             for ri = 1:4           % try all rotations
                 vvRot   = vvOut_fl(1:Nuse_fl, q) * rotations(ri);
-                decRot  = qam_decideSymbols(vvRot, P.M, 1);
-                bitsRot = qam_symbolsToBits(decRot, P.M);
+                decRot  = modem.decideSymbols(vvRot, P.M, 1);
+                bitsRot = modem.symbolsToBits(decRot, P.M);
                 polBER  = sum(bitsRot ~= refBitsPol) / numel(refBitsPol);
                 if polBER < bestPolBER
                     bestPolBER = polBER;
@@ -124,8 +124,8 @@ function R = run_pipeline(P)
     for p = 1:P.N_pol
         vvOut_fl(:,p) = vvOut_fl(:, bestSrcPerPol_fl(p)) * rotations(bestRotPerPol_fl(p));
     end
-    dec_fl  = qam_decideSymbols(vvOut_fl(1:Nuse_fl, :), P.M, P.N_pol);
-    bits_fl = qam_symbolsToBits(dec_fl, P.M);
+    dec_fl  = modem.decideSymbols(vvOut_fl(1:Nuse_fl, :), P.M, P.N_pol);
+    bits_fl = modem.symbolsToBits(dec_fl, P.M);
     fprintf('  BER (float) = %.2e\n', BER_fl);
 
     %% ================================================================
@@ -135,9 +135,9 @@ function R = run_pipeline(P)
             P.FxpConfig_CD, P.FxpConfig_AEQ, P.FxpConfig_VV);
 
     % Load types tables
-    T_cd  = cdeq_equalize_fxp_types(P.FxpConfig_CD);
-    T_aeq = adeq_equalize_fxp_types(P.FxpConfig_AEQ);
-    T_vv  = cr_viterbiViterbi_fxp_types(P.FxpConfig_VV);
+    T_cd  = cd_eq.equalize_fxp_types(P.FxpConfig_CD);
+    T_aeq = adaptive_eq.equalize_fxp_types(P.FxpConfig_AEQ);
+    T_vv  = carrier_recovery.viterbiViterbi_fxp_types(P.FxpConfig_VV);
 
     % Cast channel output to fi for the fixed-point path
     rxSig_fi = cast(rxSig, 'like', T_cd.x);
@@ -145,7 +145,7 @@ function R = run_pipeline(P)
     % CD Equalisation (MEX)
     fprintf('  CD EQ (MEX) ... ');
     tic;
-    cdOut_fxp = cdeq_equalize_fxp_mex(rxSig_fi, ...
+    cdOut_fxp = cd_eq.equalize_fxp_mex(rxSig_fi, ...
                     double(P.D), double(P.L), double(P.CWL), ...
                     double(P.Rs), double(P.N_pol), double(P.SpS), ...
                     double(P.NFFT), logical(P.po2Twiddle), T_cd);
@@ -153,7 +153,7 @@ function R = run_pipeline(P)
     fprintf('%.3f s\n', t_cd_fxp);
 
     % Matched filter (float — not fixed-point)
-    mfOut_fxp = qam_matched_filter(double(cdOut_fxp), P.SpS, 'rrc', ...
+    mfOut_fxp = modem.matched_filter(double(cdOut_fxp), P.SpS, 'rrc', ...
                                    P.Rolloff, P.Span);
 
     % Cast back to fi for adaptive EQ
@@ -162,7 +162,7 @@ function R = run_pipeline(P)
     % Adaptive Equalisation (MEX)
     fprintf('  Adaptive EQ (MEX) ... ');
     tic;
-    aeqOut_fxp = adeq_equalize_fxp_mex(mfOut_fxp_fi, ...
+    aeqOut_fxp = adaptive_eq.equalize_fxp_mex(mfOut_fxp_fi, ...
                      double(P.SpS), P.AEQ_Eq, ...
                      double(P.AEQ_NTaps), double(P.AEQ_Mu), ...
                      logical(P.AEQ_SingleSpike), ...
@@ -180,7 +180,7 @@ function R = run_pipeline(P)
     % Viterbi-Viterbi (MEX)
     fprintf('  VV carrier recovery (MEX) ... ');
     tic;
-    vvOut_fxp = cr_viterbiViterbi_fxp_mex(aeqOut_vv_fi, ...
+    vvOut_fxp = carrier_recovery.viterbiViterbi_fxp_mex(aeqOut_vv_fi, ...
                     double(P.N_pol), double(P.VV_NTaps), ...
                     VVFilter_fi, T_vv);
     t_vv_fxp = toc;
@@ -198,13 +198,13 @@ function R = run_pipeline(P)
     bestRotPerPol_fxp = zeros(1, P.N_pol);
     bestSrcPerPol_fxp = zeros(1, P.N_pol);
     for p = 1:P.N_pol
-        refBitsPol = qam_symbolsToBits(refSym_fxp(:,p), P.M);
+        refBitsPol = modem.symbolsToBits(refSym_fxp(:,p), P.M);
         bestPolBER = Inf;
         for q = 1:P.N_pol          % try both EQ outputs (pol swap)
             for ri = 1:4           % try all rotations
                 vvRot   = vvOut_fxp_d(1:Nuse_fxp, q) * rotations(ri);
-                decRot  = qam_decideSymbols(vvRot, P.M, 1);
-                bitsRot = qam_symbolsToBits(decRot, P.M);
+                decRot  = modem.decideSymbols(vvRot, P.M, 1);
+                bitsRot = modem.symbolsToBits(decRot, P.M);
                 polBER  = sum(bitsRot ~= refBitsPol) / numel(refBitsPol);
                 if polBER < bestPolBER
                     bestPolBER = polBER;
@@ -222,8 +222,8 @@ function R = run_pipeline(P)
     for p = 1:P.N_pol
         vvOut_fxp_d(:,p) = vvOut_fxp_d(:, bestSrcPerPol_fxp(p)) * rotations(bestRotPerPol_fxp(p));
     end
-    dec_fxp  = qam_decideSymbols(vvOut_fxp_d(1:Nuse_fxp, :), P.M, P.N_pol);
-    bits_fxp = qam_symbolsToBits(dec_fxp, P.M);
+    dec_fxp  = modem.decideSymbols(vvOut_fxp_d(1:Nuse_fxp, :), P.M, P.N_pol);
+    bits_fxp = modem.symbolsToBits(dec_fxp, P.M);
     fprintf('  BER (fxp)   = %.2e\n', BER_fxp);
 
     %% ================================================================

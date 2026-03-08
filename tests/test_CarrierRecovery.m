@@ -18,8 +18,8 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
     %
     % Prerequisites
     %   - MATLAB Coder and Fixed-Point Designer toolboxes must be licensed.
-    %   - qam_slicer.m must be on the MATLAB path (used by cr_bps_fxp).
-    %   - build_cr_viterbiViterbi_fxp_mex.m and build_cr_bps_fxp_mex.m
+%   - modem.slicer must be on the MATLAB path (used by carrier_recovery.bps_fxp).
+%   - build_carrier_recovery_viterbiViterbi_fxp_mex.m and build_carrier_recovery_bps_fxp_mex.m
     %     must be on the MATLAB path.
 
     properties (Constant)
@@ -90,10 +90,10 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
             cfg.SaturateOnIntegerOverflow = false;
 
             fprintf('  Compiling cr_viterbiViterbi_fxp_mex...\n');
-            build_cr_viterbiViterbi_fxp_mex(P, cfg);
+            build_carrier_recovery_viterbiViterbi_fxp_mex(P, cfg);
 
             fprintf('  Compiling cr_bps_fxp_mex...\n');
-            build_cr_bps_fxp_mex(P, cfg);
+            build_carrier_recovery_bps_fxp_mex(P, cfg);
         end
 
     end
@@ -176,10 +176,10 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
             [symbols, pilots, txBits, rxSym] = buildChannel(testCase, M);
 
             symEnergy = mean(abs(symbols(:)).^2);
-            VVFilter  = cr_genVVFilter(testCase.Linewidth, testCase.Rs, ...
+            VVFilter  = carrier_recovery.genVVFilter(testCase.Linewidth, testCase.Rs, ...
                 testCase.SNR_dB, symEnergy, testCase.N_pol, testCase.NTaps);
 
-            [crSym, ThetaPU] = cr_viterbiViterbi(rxSym, testCase.N_pol, ...
+            [crSym, ThetaPU] = carrier_recovery.viterbiViterbi(rxSym, testCase.N_pol, ...
                 VVFilter, testCase.BlockLen, testCase.StepSize, ...
                 pilots, testCase.UsePilots, testCase.PilotThreshold);
 
@@ -191,7 +191,7 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
         function [rxSym, crSym, BER, ThetaPU] = runScenario_BPS(testCase, M)
             [~, pilots, txBits, rxSym] = buildChannel(testCase, M);
 
-            [crSym, ThetaPU] = cr_bps(rxSym, testCase.NTaps, testCase.N_pol, ...
+            [crSym, ThetaPU] = carrier_recovery.bps(rxSym, testCase.NTaps, testCase.N_pol, ...
                 M, testCase.B, testCase.BlockLen, testCase.StepSize, ...
                 pilots, testCase.UsePilots, testCase.PilotThreshold);
 
@@ -201,19 +201,19 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
 
         % ---- Fixed-point VV MEX -------------------------------------
         function [rxSym, crSym, BER, ThetaPU] = runScenarioFxp_VV(testCase, M, config)
-            T = cr_viterbiViterbi_fxp_types(config);
+            T = carrier_recovery.viterbiViterbi_fxp_types(config);
 
             [symbols, pilots, txBits, rxSym] = buildChannel(testCase, M);
 
             symEnergy = mean(abs(symbols(:)).^2);
-            VVFilter  = cr_genVVFilter(testCase.Linewidth, testCase.Rs, ...
+            VVFilter  = carrier_recovery.genVVFilter(testCase.Linewidth, testCase.Rs, ...
                 testCase.SNR_dB, symEnergy, testCase.N_pol, testCase.NTaps);
 
             rxSym_fi    = cast(rxSym,    'like', T.x);
             VVFilter_fi = cast(VVFilter, 'like', T.w);
             pilots_fi   = cast(pilots,   'like', T.x);
 
-            [crSym_fi, ThetaPU_fi] = cr_viterbiViterbi_fxp_mex( ...
+            [crSym_fi, ThetaPU_fi] = carrier_recovery.viterbiViterbi_fxp_mex( ...
                 rxSym_fi, testCase.N_pol, testCase.NTaps, VVFilter_fi, ...
                 pilots_fi, testCase.BlockLen, double(testCase.StepSize), ...
                 testCase.UsePilots, testCase.PilotThreshold, T);
@@ -226,14 +226,14 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
 
         % ---- Fixed-point BPS MEX ------------------------------------
         function [rxSym, crSym, BER, ThetaPU] = runScenarioFxp_BPS(testCase, M, config)
-            T = cr_bps_fxp_types(config);
+            T = carrier_recovery.bps_fxp_types(config);
 
             [~, pilots, txBits, rxSym] = buildChannel(testCase, M);
 
             rxSym_fi  = cast(rxSym,  'like', T.x);
             pilots_fi = cast(pilots, 'like', T.x);
 
-            [crSym_fi, ThetaPU_fi] = cr_bps_fxp_mex( ...
+            [crSym_fi, ThetaPU_fi] = carrier_recovery.bps_fxp_mex( ...
                 rxSym_fi, testCase.NTaps, testCase.N_pol, ...
                 M, testCase.B, testCase.BlockLen, double(testCase.StepSize), ...
                 pilots_fi, testCase.UsePilots, testCase.PilotThreshold, T);
@@ -248,11 +248,11 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
         function [symbols, pilots, txBits, rxSym] = buildChannel(testCase, M)
             k      = log2(M);
             Nbits  = k * testCase.N_pol * testCase.Ns;
-            txBits = qam_randomBits(Nbits, testCase.BlockLen, testCase.PilotLen, M);
-            [symbols, pilots] = qam_modulate(txBits, M, testCase.N_pol, testCase.PilotLen);
+            txBits = modem.randomBits(Nbits, testCase.BlockLen, testCase.PilotLen, M);
+            [symbols, pilots] = modem.modulate(txBits, M, testCase.N_pol, testCase.PilotLen);
 
-            rxSym = channel_add_awgn(symbols, testCase.SNR_dB);
-            rxSym = channel_add_phase_noise(rxSym, testCase.Rs, testCase.LW);
+            rxSym = channel.add_awgn(symbols, testCase.SNR_dB);
+            rxSym = channel.add_phase_noise(rxSym, testCase.Rs, testCase.LW);
         end
 
         % ---- Phase ambiguity resolution -----------------------------
@@ -261,8 +261,8 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
             bestSym = crSym;
             for k = 0:3
                 rotated     = crSym .* exp(-1j * k * pi/2);
-                decidedSyms = qam_decideSymbols(rotated, M, testCase.N_pol);
-                rxBits      = qam_symbolsToBits(decidedSyms, M);
+                decidedSyms = modem.decideSymbols(rotated, M, testCase.N_pol);
+                rxBits      = modem.symbolsToBits(decidedSyms, M);
                 thisBER     = sum(txBits ~= rxBits) / length(txBits);
                 if thisBER < bestBER
                     bestBER = thisBER;
@@ -273,8 +273,8 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
 
         % ---- BER computation ----------------------------------------
         function BER = computeBER(testCase, crSym, txBits, M)
-            decidedSyms = qam_decideSymbols(crSym, M, testCase.N_pol);
-            rxBits      = qam_symbolsToBits(decidedSyms, M);
+            decidedSyms = modem.decideSymbols(crSym, M, testCase.N_pol);
+            rxBits      = modem.symbolsToBits(decidedSyms, M);
             nErrors     = sum(txBits ~= rxBits);
             BER         = nErrors / length(txBits);
         end

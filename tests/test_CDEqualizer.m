@@ -40,23 +40,23 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
             % --- Tx ---
             k     = log2(testCase.M);
             Nbits = k * testCase.N_pol * testCase.Ns;
-            txBits   = qam_randomBits(Nbits);
-            symbols  = qam_modulate(txBits, testCase.M, testCase.N_pol);
-            txSig    = qam_rectPulse(symbols, testCase.SpS);
+            txBits   = modem.randomBits(Nbits);
+            symbols  = modem.modulate(txBits, testCase.M, testCase.N_pol);
+            txSig    = modem.rectPulse(symbols, testCase.SpS);
 
             % --- Channel (CD only, high SNR, no phase noise/PMD) ---
-            rxSig = channel_add_chromatic_dispersion(txSig, ...
+            rxSig = channel.add_chromatic_dispersion(txSig, ...
                 testCase.L, testCase.SpS, testCase.Rs, testCase.D, testCase.CWL);
 
             % --- CD Equalizer ---
-            eqSig = cdeq_equalize(rxSig, testCase.D, testCase.L, ...
+            eqSig = cd_eq.equalize(rxSig, testCase.D, testCase.L, ...
                 testCase.CWL, testCase.Rs, testCase.N_pol, ...
                 testCase.SpS, testCase.NFFT);
 
             % --- Downsample & recover bits ---
             eqSymbols    = eqSig(1:testCase.SpS:end, :);
-            decidedSyms  = qam_decideSymbols(eqSymbols, testCase.M, testCase.N_pol);
-            rxBits       = qam_symbolsToBits(decidedSyms, testCase.M);
+            decidedSyms  = modem.decideSymbols(eqSymbols, testCase.M, testCase.N_pol);
+            rxBits       = modem.symbolsToBits(decidedSyms, testCase.M);
 
             % --- BER ---
             nErrors = sum(txBits ~= rxBits);
@@ -78,17 +78,17 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
             % --- Tx ---
             k     = log2(testCase.M);
             Nbits = k * testCase.N_pol * testCase.Ns;
-            txBits   = qam_randomBits(Nbits);
-            symbols  = qam_modulate(txBits, testCase.M, testCase.N_pol);
-            txSig    = qam_rectPulse(symbols, testCase.SpS);
+            txBits   = modem.randomBits(Nbits);
+            symbols  = modem.modulate(txBits, testCase.M, testCase.N_pol);
+            txSig    = modem.rectPulse(symbols, testCase.SpS);
 
             % --- Channel (CD + AWGN) ---
-            rxSig = channel_add_chromatic_dispersion(txSig, ...
+            rxSig = channel.add_chromatic_dispersion(txSig, ...
                 testCase.L, testCase.SpS, testCase.Rs, testCase.D, testCase.CWL);
-            rxSig = channel_add_awgn(rxSig, SNR_dB);
+            rxSig = channel.add_awgn(rxSig, SNR_dB);
 
             % --- CD Equalizer ---
-            eqSig = cdeq_equalize(rxSig, testCase.D, testCase.L, ...
+            eqSig = cd_eq.equalize(rxSig, testCase.D, testCase.L, ...
                 testCase.CWL, testCase.Rs, testCase.N_pol, ...
                 testCase.SpS, testCase.NFFT);
 
@@ -97,8 +97,8 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
             eqSymbols = eqSig(1:testCase.SpS:end, :);
 
             % --- BER after equalization ---
-            decidedSyms = qam_decideSymbols(eqSymbols, testCase.M, testCase.N_pol);
-            rxBits      = qam_symbolsToBits(decidedSyms, testCase.M);
+            decidedSyms = modem.decideSymbols(eqSymbols, testCase.M, testCase.N_pol);
+            rxBits      = modem.symbolsToBits(decidedSyms, testCase.M);
             nErrors = sum(txBits ~= rxBits);
             BER     = nErrors / length(txBits);
             fprintf('CD+AWGN BER = %.2e  (%d errors / %d bits)\n', ...
@@ -142,31 +142,31 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
 
         % -------- CD only: fxp32 BER check ----------------------------
         function testCDOnlyBER_Fxp32(testCase)
-            T = cdeq_equalize_fxp_types('fixed16');
+            T = cd_eq.equalize_fxp_types('fixed16');
 
             % --- Tx ---
             k     = log2(testCase.M);
             Nbits = k * testCase.N_pol * testCase.Ns;
-            txBits   = qam_randomBits(Nbits);
-            symbols  = qam_modulate(txBits, testCase.M, testCase.N_pol);
-            txSig    = qam_rectPulse(symbols, testCase.SpS);
+            txBits   = modem.randomBits(Nbits);
+            symbols  = modem.modulate(txBits, testCase.M, testCase.N_pol);
+            txSig    = modem.rectPulse(symbols, testCase.SpS);
 
             % --- Channel (CD only) ---
-            rxSig = channel_add_chromatic_dispersion(txSig, ...
+            rxSig = channel.add_chromatic_dispersion(txSig, ...
                 testCase.L, testCase.SpS, testCase.Rs, testCase.D, testCase.CWL);
 
             % --- Cast to fi ---
             rxSig_fi = cast(rxSig, 'like', T.x);
 
             % --- CD Equalizer (fxp MATLAB) ---
-            eqSig = cdeq_equalize_fxp(rxSig_fi, testCase.D, testCase.L, ...
+            eqSig = cd_eq.equalize_fxp(rxSig_fi, testCase.D, testCase.L, ...
                 testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, ...
                 testCase.NFFT, false, T)
 
             % --- BER ---
             eqSymbols   = double(eqSig(1:testCase.SpS:end, :));
-            decidedSyms = qam_decideSymbols(eqSymbols, testCase.M, testCase.N_pol);
-            rxBits      = qam_symbolsToBits(decidedSyms, testCase.M);
+            decidedSyms = modem.decideSymbols(eqSymbols, testCase.M, testCase.N_pol);
+            rxBits      = modem.symbolsToBits(decidedSyms, testCase.M);
             nErrors = sum(txBits ~= rxBits);
             BER     = nErrors / length(txBits);
             fprintf('CD-only FXP32 BER = %.2e  (%d errors / %d bits)\n', ...
@@ -179,27 +179,27 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
 
         % -------- CD only: fxp32 vs float NRMSE ----------------------
         function testCDOnly_Fxp32_vs_Float(testCase)
-            T = cdeq_equalize_fxp_types('fixed16');
+            T = cd_eq.equalize_fxp_types('fixed16');
 
             % --- Tx ---
             k     = log2(testCase.M);
             Nbits = k * testCase.N_pol * testCase.Ns;
-            txBits   = qam_randomBits(Nbits);
-            symbols  = qam_modulate(txBits, testCase.M, testCase.N_pol);
-            txSig    = qam_rectPulse(symbols, testCase.SpS);
+            txBits   = modem.randomBits(Nbits);
+            symbols  = modem.modulate(txBits, testCase.M, testCase.N_pol);
+            txSig    = modem.rectPulse(symbols, testCase.SpS);
 
             % --- Channel (CD only) ---
-            rxSig = channel_add_chromatic_dispersion(txSig, ...
+            rxSig = channel.add_chromatic_dispersion(txSig, ...
                 testCase.L, testCase.SpS, testCase.Rs, testCase.D, testCase.CWL);
 
             % --- Float reference ---
-            eqRef = cdeq_equalize(rxSig, testCase.D, testCase.L, ...
+            eqRef = cd_eq.equalize(rxSig, testCase.D, testCase.L, ...
                 testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, ...
                 testCase.NFFT);
 
             % --- FXP ---
             rxSig_fi = cast(rxSig, 'like', T.x);
-            eqFxp    = cdeq_equalize_fxp(rxSig_fi, testCase.D, testCase.L, ...
+            eqFxp    = cd_eq.equalize_fxp(rxSig_fi, testCase.D, testCase.L, ...
                 testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, ...
                 testCase.NFFT, false, T);
 
@@ -216,23 +216,23 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
             testCase.assumeTrue(exist('cdeq_equalize_fxp_mex', 'file') == 3, ...
                 'cdeq_equalize_fxp_mex not found — run build_cdeq_equalize_fxp_mex first.');
 
-            T = cdeq_equalize_fxp_types('fixed16');
+            T = cd_eq.equalize_fxp_types('fixed16');
 
             % --- Tx ---
             k     = log2(testCase.M);
             Nbits = k * testCase.N_pol * testCase.Ns;
-            txBits   = qam_randomBits(Nbits);
-            symbols  = qam_modulate(txBits, testCase.M, testCase.N_pol);
-            txSig    = qam_rectPulse(symbols, testCase.SpS);
+            txBits   = modem.randomBits(Nbits);
+            symbols  = modem.modulate(txBits, testCase.M, testCase.N_pol);
+            txSig    = modem.rectPulse(symbols, testCase.SpS);
 
             % --- Channel (CD only) ---
-            rxSig = channel_add_chromatic_dispersion(txSig, ...
+            rxSig = channel.add_chromatic_dispersion(txSig, ...
                 testCase.L, testCase.SpS, testCase.Rs, testCase.D, testCase.CWL);
 
             rxSig_fi = cast(rxSig, 'like', T.x);
 
             % --- MATLAB fxp ---
-            eqML = cdeq_equalize_fxp(rxSig_fi, testCase.D, testCase.L, ...
+            eqML = cd_eq.equalize_fxp(rxSig_fi, testCase.D, testCase.L, ...
                 testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, ...
                 testCase.NFFT, false, T);
 
@@ -256,28 +256,28 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
         % -------- CD + AWGN: fxp32 visual comparison -----------------
         function testCDPlusAWGN_Fxp32(testCase)
             SNR_dB = 25;
-            T = cdeq_equalize_fxp_types('fixed16');
+            T = cd_eq.equalize_fxp_types('fixed16');
 
             % --- Tx ---
             k     = log2(testCase.M);
             Nbits = k * testCase.N_pol * testCase.Ns;
-            txBits   = qam_randomBits(Nbits);
-            symbols  = qam_modulate(txBits, testCase.M, testCase.N_pol);
-            txSig    = qam_rectPulse(symbols, testCase.SpS);
+            txBits   = modem.randomBits(Nbits);
+            symbols  = modem.modulate(txBits, testCase.M, testCase.N_pol);
+            txSig    = modem.rectPulse(symbols, testCase.SpS);
 
             % --- Channel ---
-            rxSig = channel_add_chromatic_dispersion(txSig, ...
+            rxSig = channel.add_chromatic_dispersion(txSig, ...
                 testCase.L, testCase.SpS, testCase.Rs, testCase.D, testCase.CWL);
-            rxSig = channel_add_awgn(rxSig, SNR_dB);
+            rxSig = channel.add_awgn(rxSig, SNR_dB);
 
             % --- Float reference ---
-            eqRef = cdeq_equalize(rxSig, testCase.D, testCase.L, ...
+            eqRef = cd_eq.equalize(rxSig, testCase.D, testCase.L, ...
                 testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, ...
                 testCase.NFFT);
 
             % --- FXP ---
             rxSig_fi = cast(rxSig, 'like', T.x);
-            eqFxp    = cdeq_equalize_fxp(rxSig_fi, testCase.D, testCase.L, ...
+            eqFxp    = cd_eq.equalize_fxp(rxSig_fi, testCase.D, testCase.L, ...
                 testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, ...
                 testCase.NFFT, false, T);
 

@@ -65,8 +65,8 @@ classdef test_phase_recovery_stepsize < matlab.unittest.TestCase
             assert(mod(P.BPS_B,2)==0,'BPS_B must be even.');
 
             %% Fixed-point types
-            testCase.T_vv  = cr_viterbiViterbi_fxp_types(P.FxpConfig);
-            testCase.T_bps = cr_bps_fxp_types(P.FxpConfig);
+            testCase.T_vv  = carrier_recovery.viterbiViterbi_fxp_types(P.FxpConfig);
+            testCase.T_bps = carrier_recovery.bps_fxp_types(P.FxpConfig);
 
             %% Build configuration
             Pbuild.N_pol         = P.N_pol;
@@ -87,13 +87,13 @@ classdef test_phase_recovery_stepsize < matlab.unittest.TestCase
             cfg.SaturateOnIntegerOverflow = false;
 
             fprintf('=== Compiling MEX binaries ===\n');
-            build_cr_viterbiViterbi_fxp_mex(Pbuild, cfg);
-            build_cr_bps_fxp_mex(Pbuild, cfg);
+            build_carrier_recovery_viterbiViterbi_fxp_mex(Pbuild, cfg);
+            build_carrier_recovery_bps_fxp_mex(Pbuild, cfg);
             fprintf('=== MEX compilation complete ===\n\n');
 
             %% VV filter
             symEnergy = 1.0;
-            VVFilter  = cr_genVVFilter(P.LW, P.Rs, P.SNR_dB, ...
+            VVFilter  = carrier_recovery.genVVFilter(P.LW, P.Rs, P.SNR_dB, ...
                                        symEnergy, P.N_pol, P.VV_NTaps);
 
             testCase.VVFilter_fi = cast(VVFilter, ...
@@ -120,14 +120,14 @@ classdef test_phase_recovery_stepsize < matlab.unittest.TestCase
                 %% Channel
                 k     = log2(P.M);
                 Nbits = k * P.N_pol * P.Ns;
-                txBits = qam_randomBits(Nbits, ...
+                txBits = modem.randomBits(Nbits, ...
                                         P.BlockLen, ...
                                         P.PilotLen, ...
                                         P.M);
-                [symbols, pilots] = qam_modulate( ...
+                [symbols, pilots] = modem.modulate( ...
                     txBits, P.M, P.N_pol, P.PilotLen);
-                rxSym = channel_add_awgn(symbols, P.SNR_dB);
-                rxSym = channel_add_phase_noise(rxSym, P.Rs, P.LW);
+                rxSym = channel.add_awgn(symbols, P.SNR_dB);
+                rxSym = channel.add_phase_noise(rxSym, P.Rs, P.LW);
                 %% Cast
                 rx_vv  = cast(rxSym,'like',testCase.T_vv.x);
                 rx_bps = cast(rxSym,'like',testCase.T_bps.x);
@@ -142,7 +142,7 @@ classdef test_phase_recovery_stepsize < matlab.unittest.TestCase
 
 
                     %% VV
-                    [cr_vv_fi,ThetaPU_vv] = cr_viterbiViterbi_fxp_mex( ...
+                    [cr_vv_fi,ThetaPU_vv] = carrier_recovery.viterbiViterbi_fxp_mex( ...
                         rx_vv, P.N_pol, P.VV_NTaps, ...
                         testCase.VVFilter_fi, ...
                         pilots_vv, P.BlockLen, stepSize, ...
@@ -157,7 +157,7 @@ classdef test_phase_recovery_stepsize < matlab.unittest.TestCase
                         cr_vv, txBits, P.M, P.N_pol);
 
                     %% BPS
-                    [cr_bps_fi,ThetaPU_bps] = cr_bps_fxp_mex( ...
+                    [cr_bps_fi,ThetaPU_bps] = carrier_recovery.bps_fxp_mex( ...
                         rx_bps, P.BPS_N, P.N_pol, ...
                         P.M, P.BPS_B, ...
                         P.BlockLen, stepSize, ...
@@ -231,8 +231,8 @@ classdef test_phase_recovery_stepsize < matlab.unittest.TestCase
     methods (Static, Access = private)
 
         function BER = computeBER(crSym, txBits, M, NPol)
-            decidedSyms = qam_decideSymbols(crSym, M, NPol);
-            rxBits      = qam_symbolsToBits(decidedSyms, M);
+            decidedSyms = modem.decideSymbols(crSym, M, NPol);
+            rxBits      = modem.symbolsToBits(decidedSyms, M);
             BER         = sum(txBits ~= rxBits) / length(txBits);
         end
 
@@ -242,8 +242,8 @@ classdef test_phase_recovery_stepsize < matlab.unittest.TestCase
 
             for k = 0:3
                 rotated     = crSym .* exp(-1j * k * pi/2);
-                decidedSyms = qam_decideSymbols(rotated, M, NPol);
-                rxBits      = qam_symbolsToBits(decidedSyms, M);
+                decidedSyms = modem.decideSymbols(rotated, M, NPol);
+                rxBits      = modem.symbolsToBits(decidedSyms, M);
                 thisBER     = sum(txBits ~= rxBits) / length(txBits);
 
                 if thisBER < bestBER

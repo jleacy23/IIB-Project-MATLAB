@@ -28,22 +28,22 @@ cfg.GenerateReport      = true;
 cfg.EnableMexProfiling  = false;
 
 %% =================================================================
-%  1  — CD Equalizer  (cdeq_equalize_fxp)
+%  1  — CD Equalizer  (cd_eq.equalize_fxp)
 % ==================================================================
-fprintf('\n--- [1/3] cdeq_equalize_fxp ---\n');
-build_cdeq_equalize_fxp_mex(P, cfg);
+fprintf('\n--- [1/3] cd_eq.equalize_fxp ---\n');
+build_cd_eq_equalize_fxp_mex(P, cfg);
 
 %% =================================================================
-%  2  — Adaptive Equalizer  (adeq_equalize_fxp)
+%  2  — Adaptive Equalizer  (adaptive_eq.equalize_fxp)
 % ==================================================================
-fprintf('\n--- [2/3] adeq_equalize_fxp ---\n');
-build_adeq_equalize_fxp_mex(P, cfg);
+fprintf('\n--- [2/3] adaptive_eq.equalize_fxp ---\n');
+build_adaptive_eq_equalize_fxp_mex(P, cfg);
 
 %% =================================================================
-%  3  — Viterbi-Viterbi Carrier Recovery  (cr_viterbiViterbi_fxp)
+%  3  — Viterbi-Viterbi Carrier Recovery  (carrier_recovery.viterbiViterbi_fxp)
 % ==================================================================
-fprintf('\n--- [3/3] cr_viterbiViterbi_fxp ---\n');
-build_cr_viterbiViterbi_fxp_mex(P, cfg);
+fprintf('\n--- [3/3] carrier_recovery.viterbiViterbi_fxp ---\n');
+build_carrier_recovery_viterbiViterbi_fxp_mex(P, cfg);
 
 %% =================================================================
 fprintf('\n========================================\n');

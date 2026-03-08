@@ -59,14 +59,14 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
             totalErrors = 0;
             totalBits   = 0;
             for p = 1:testCase.N_pol
-                refBitsPol = qam_symbolsToBits(refSyms(:,p), M);
+                refBitsPol = modem.symbolsToBits(refSyms(:,p), M);
                 bestPolBER = Inf;
                 % try both EQ outputs (equalizer may swap pols)
                 for q = 1:testCase.N_pol
                     for kk = 0:31
                         rotated = eqSym(:,q) .* exp(-1j * kk * pi/16);
-                        decSym  = qam_decideSymbols(rotated, M, 1);
-                        decBits = qam_symbolsToBits(decSym, M);
+                        decSym  = modem.decideSymbols(rotated, M, 1);
+                        decBits = modem.symbolsToBits(decSym, M);
                         polBER  = sum(refBitsPol ~= decBits) / numel(refBitsPol);
                         if polBER < bestPolBER, bestPolBER = polBER; end
                     end
@@ -97,14 +97,14 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
             totalErrors = 0;
             totalBits   = 0;
             for p = 1:testCase.N_pol
-                refBitsPol = qam_symbolsToBits(refSyms(:,p), M);
+                refBitsPol = modem.symbolsToBits(refSyms(:,p), M);
                 bestPolBER = Inf;
                 % try both EQ outputs (equalizer may swap pols)
                 for q = 1:testCase.N_pol
                     for kk = 0:127
                         rotated = eqSym(:,q) .* exp(-1j * kk * pi/64);
-                        decSym  = qam_decideSymbols(rotated, M, 1);
-                        decBits = qam_symbolsToBits(decSym, M);
+                        decSym  = modem.decideSymbols(rotated, M, 1);
+                        decBits = modem.symbolsToBits(decSym, M);
                         polBER  = sum(refBitsPol ~= decBits) / numel(refBitsPol);
                         if polBER < bestPolBER, bestPolBER = polBER; end
                     end
@@ -194,30 +194,30 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
             % --- Tx ---
             k      = log2(M);
             Nbits  = k * testCase.N_pol * testCase.Ns;
-            bits   = qam_randomBits(Nbits);
-            symbols = qam_modulate(bits, M, testCase.N_pol);
-            % txSig  = qam_rrcPulse(symbols, testCase.SpS, ...
+            bits   = modem.randomBits(Nbits);
+            symbols = modem.modulate(bits, M, testCase.N_pol);
+            % txSig  = modem.rrcPulse(symbols, testCase.SpS, ...
             %     testCase.Rolloff, testCase.Span);
             % duplicate for SpS > 1
             txSig = repelem(symbols, testCase.SpS, 1);
 
             % --- Channel: AWGN + PMD (+ optional phase noise) ---
-            rxSig = channel_add_awgn(txSig, testCase.SNR_dB);
+            rxSig = channel.add_awgn(txSig, testCase.SNR_dB);
             if addPhaseNoise
                 linewidth = 100e4;   % 1 MHz
-                rxSig = channel_add_phase_noise(rxSig, testCase.Rs, linewidth);
+                rxSig = channel.add_phase_noise(rxSig, testCase.Rs, linewidth);
             end
-            rxSig = channel_add_pmd(rxSig, testCase.L, testCase.SpS, ...
+            rxSig = channel.add_pmd(rxSig, testCase.L, testCase.SpS, ...
                 testCase.Rs, testCase.DGDSpec, testCase.N_pmd);
 
             % --- Matched filter ---
-            % rxSig = qam_matched_filter(rxSig, testCase.SpS, 'rrc', ...
+            % rxSig = modem.matched_filter(rxSig, testCase.SpS, 'rrc', ...
             %     testCase.Rolloff, testCase.Span);
 
             rxSym = rxSig(1:testCase.SpS:end, :);
 
             % --- Adaptive Equalizer ---
-            eqSig = adeq_equalize(rxSig, testCase.SpS, Eq, NTaps, Mu, ...
+            eqSig = adaptive_eq.equalize(rxSig, testCase.SpS, Eq, NTaps, Mu, ...
                 SingleSpike, N1, N2, NOut);
 
             eqSym = eqSig;   % already at symbol rate after equalize
@@ -235,38 +235,38 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
             % --- Tx ---
             k      = log2(M);
             Nbits  = k * testCase.N_pol * testCase.Ns;
-            bits   = qam_randomBits(Nbits);
-            symbols = qam_modulate(bits, M, testCase.N_pol);
-            txSig  = qam_rrcPulse(symbols, testCase.SpS, ...
+            bits   = modem.randomBits(Nbits);
+            symbols = modem.modulate(bits, M, testCase.N_pol);
+            txSig  = modem.rrcPulse(symbols, testCase.SpS, ...
                 testCase.Rolloff, testCase.Span);
 
             % --- Channel: AWGN + PMD (+ optional phase noise) ---
-            rxSig = channel_add_awgn(txSig, testCase.SNR_dB);
+            rxSig = channel.add_awgn(txSig, testCase.SNR_dB);
             if addPhaseNoise
                 linewidth = 100e4;   % 1 MHz
-                rxSig = channel_add_phase_noise(rxSig, testCase.Rs, linewidth);
+                rxSig = channel.add_phase_noise(rxSig, testCase.Rs, linewidth);
             end
-            rxSig = channel_add_pmd(rxSig, testCase.L, testCase.SpS, ...
+            rxSig = channel.add_pmd(rxSig, testCase.L, testCase.SpS, ...
                 testCase.Rs, testCase.DGDSpec, testCase.N_pmd);
 
             % --- Matched filter ---
-            rxSig = qam_matched_filter(rxSig, testCase.SpS, 'rrc', ...
+            rxSig = modem.matched_filter(rxSig, testCase.SpS, 'rrc', ...
                 testCase.Rolloff, testCase.Span);
 
             % --- Downsample before EQ for reference constellation ---
             rxSym = rxSig(1:testCase.SpS:end, :);
 
             % --- Cast input to fixed-point ---
-            T = adeq_equalize_fxp_types(fxpConfig);
+            T = adaptive_eq.equalize_fxp_types(fxpConfig);
             rxSig_fi = cast(rxSig, 'like', T.x);
 
             % --- Run MATLAB fixed-point function ---
-            eqML = adeq_equalize_fxp(rxSig_fi, ...
+            eqML = adaptive_eq.equalize_fxp(rxSig_fi, ...
                 double(testCase.SpS), Eq, double(NTaps), double(Mu), ...
                 SingleSpike, double(N1), double(N2), double(NOut), T);
 
             % --- Run fixed-point MEX ---
-            eqMEX = adeq_equalize_fxp_mex(rxSig_fi, ...
+            eqMEX = adaptive_eq.equalize_fxp_mex(rxSig_fi, ...
                 double(testCase.SpS), Eq, double(NTaps), double(Mu), ...
                 SingleSpike, double(N1), double(N2), double(NOut), T);
         end

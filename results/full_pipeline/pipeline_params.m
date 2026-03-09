@@ -7,11 +7,9 @@ function P = pipeline_params()
 %   and build_all_mex.  Edit values here; everything else reads from P.
 
     % ---- Modulation -------------------------------------------------
-    P.M       = 4;           % QAM order (4, 16, 64, …)
+    P.M       = 4;           % QPSK only (kept for carrier-recovery APIs)
     P.N_pol   = 2;            % number of polarisations
-    P.Ns      = 2^17;         % symbols per polarisation
-    P.PilotLen = 8;
-    P.BlockLen = 64;
+    P.Ns      = 2^17;         % approximate symbols per polarisation
 
     % ---- Pulse shaping ----------------------------------------------
     P.SpS     = 2;            % samples per symbol

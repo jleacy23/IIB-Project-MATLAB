@@ -20,16 +20,15 @@ function R = run_pipeline(P)
     addpath(fullfile(fileparts(mfilename('fullpath')), '..', '..', 'src'));
     rng(P.Seed);
 
-    k     = log2(P.M);
-    Nbits = k * P.N_pol * P.Ns;
+    Nbits = 4 * P.Ns;           % CPON: 4 data bits per dual-pol symbol; modulate pads to integer subframes
 
     %% ================================================================
     %  Transmitter (shared by both paths)
     % =================================================================
-    fprintf('TX: %d-QAM, %d pol, %d symbols/pol\n', P.M, P.N_pol, P.Ns);
-
-    bits    = modem.randomBits(Nbits, P.BlockLen, P.PilotLen, P.M);  % [Nbits x 1]
-    [symbols, pilots] = modem.modulate(bits, P.M, P.N_pol);        % [Ns x Npol]
+    bits    = modem.randomBits(Nbits);                               % [Nbits x 1]
+    [symbols, ~, ~, ~] = modem.modulate(bits);                       % [Ns_actual x 2]
+    Ns_actual = size(symbols, 1);
+    fprintf('TX: DP-QPSK, %d pol, %d symbols/pol\n', P.N_pol, Ns_actual);
     txSig   = modem.rrcPulse(symbols, P.SpS, P.Rolloff, P.Span);
 
     %% ================================================================
@@ -90,7 +89,7 @@ function R = run_pipeline(P)
 
     % Decide & compute BER — resolve pi/2 ambiguity + pol swap
     Nsym_fl  = size(vvOut_fl, 1);
-    refEnd   = min(symOffset + Nsym_fl, P.Ns);
+    refEnd   = min(symOffset + Nsym_fl, Ns_actual);
     Nuse_fl  = refEnd - symOffset;
     refSym_fl = symbols(symOffset+1 : refEnd, :);
     rotations = [1, 1j, -1, -1j];
@@ -100,13 +99,13 @@ function R = run_pipeline(P)
     bestRotPerPol_fl = zeros(1, P.N_pol);
     bestSrcPerPol_fl = zeros(1, P.N_pol);
     for p = 1:P.N_pol
-        refBitsPol = modem.symbolsToBits(refSym_fl(:,p), P.M);
+        refBitsPol = modem.symbolsToBits(refSym_fl(:,p));
         bestPolBER = Inf;
         for q = 1:P.N_pol          % try both EQ outputs (pol swap)
             for ri = 1:4           % try all rotations
                 vvRot   = vvOut_fl(1:Nuse_fl, q) * rotations(ri);
-                decRot  = modem.decideSymbols(vvRot, P.M, 1);
-                bitsRot = modem.symbolsToBits(decRot, P.M);
+                decRot  = modem.decideSymbols(vvRot);
+                bitsRot = modem.symbolsToBits(decRot);
                 polBER  = sum(bitsRot ~= refBitsPol) / numel(refBitsPol);
                 if polBER < bestPolBER
                     bestPolBER = polBER;
@@ -124,8 +123,8 @@ function R = run_pipeline(P)
     for p = 1:P.N_pol
         vvOut_fl(:,p) = vvOut_fl(:, bestSrcPerPol_fl(p)) * rotations(bestRotPerPol_fl(p));
     end
-    dec_fl  = modem.decideSymbols(vvOut_fl(1:Nuse_fl, :), P.M, P.N_pol);
-    bits_fl = modem.symbolsToBits(dec_fl, P.M);
+    dec_fl  = modem.decideSymbols(vvOut_fl(1:Nuse_fl, :));
+    bits_fl = modem.symbolsToBits(dec_fl);
     fprintf('  BER (float) = %.2e\n', BER_fl);
 
     %% ================================================================
@@ -189,7 +188,7 @@ function R = run_pipeline(P)
     % Decide & compute BER — resolve pi/2 ambiguity + pol swap
     vvOut_fxp_d = double(vvOut_fxp);
     Nsym_fxp    = size(vvOut_fxp_d, 1);
-    refEnd_fxp  = min(symOffset + Nsym_fxp, P.Ns);
+    refEnd_fxp  = min(symOffset + Nsym_fxp, Ns_actual);
     Nuse_fxp    = refEnd_fxp - symOffset;
     refSym_fxp  = symbols(symOffset+1 : refEnd_fxp, :);
 
@@ -198,13 +197,13 @@ function R = run_pipeline(P)
     bestRotPerPol_fxp = zeros(1, P.N_pol);
     bestSrcPerPol_fxp = zeros(1, P.N_pol);
     for p = 1:P.N_pol
-        refBitsPol = modem.symbolsToBits(refSym_fxp(:,p), P.M);
+        refBitsPol = modem.symbolsToBits(refSym_fxp(:,p));
         bestPolBER = Inf;
         for q = 1:P.N_pol          % try both EQ outputs (pol swap)
             for ri = 1:4           % try all rotations
                 vvRot   = vvOut_fxp_d(1:Nuse_fxp, q) * rotations(ri);
-                decRot  = modem.decideSymbols(vvRot, P.M, 1);
-                bitsRot = modem.symbolsToBits(decRot, P.M);
+                decRot  = modem.decideSymbols(vvRot);
+                bitsRot = modem.symbolsToBits(decRot);
                 polBER  = sum(bitsRot ~= refBitsPol) / numel(refBitsPol);
                 if polBER < bestPolBER
                     bestPolBER = polBER;
@@ -222,8 +221,8 @@ function R = run_pipeline(P)
     for p = 1:P.N_pol
         vvOut_fxp_d(:,p) = vvOut_fxp_d(:, bestSrcPerPol_fxp(p)) * rotations(bestRotPerPol_fxp(p));
     end
-    dec_fxp  = modem.decideSymbols(vvOut_fxp_d(1:Nuse_fxp, :), P.M, P.N_pol);
-    bits_fxp = modem.symbolsToBits(dec_fxp, P.M);
+    dec_fxp  = modem.decideSymbols(vvOut_fxp_d(1:Nuse_fxp, :));
+    bits_fxp = modem.symbolsToBits(dec_fxp);
     fprintf('  BER (fxp)   = %.2e\n', BER_fxp);
 
     %% ================================================================
@@ -243,8 +242,8 @@ function R = run_pipeline(P)
     %  Plots — constellation at each stage (float vs fxp, per pol)
     % =================================================================
     if isfield(P, 'Plot') && P.Plot
-        plotTitle = sprintf('%d-QAM  |  SNR %.0f dB  |  CD=%s AEQ=%s VV=%s', ...
-                    P.M, P.SNR_dB, P.FxpConfig_CD, P.FxpConfig_AEQ, P.FxpConfig_VV);
+        plotTitle = sprintf('QPSK  |  SNR %.0f dB  |  CD=%s AEQ=%s VV=%s', ...
+                    P.SNR_dB, P.FxpConfig_CD, P.FxpConfig_AEQ, P.FxpConfig_VV);
         ms = 1;  % marker size
 
         cdOut_fxp_d  = double(cdOut_fxp);

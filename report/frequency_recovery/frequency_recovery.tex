@@ -1,0 +1,28 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{parskip}
+\usepackage{cleveref}
+
+
+\title{A Comparison of Frequency Recovery Algorithms for Energy Efficient Coherent Receivers}
+\author{Joe Leacy}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+Three frequency recovery algorithms are compared for use in the Cable Television Labs CPON specification \cite{CPON_PMD_2025}. Data is organized into subframes, consisting of 3712 symbols total with the first 11 being training symbols. A feed-forward DSP architecture is required so these training symbols are used to estimate the frequency offset which is then applied to the rest of the subframe. Further refinements within a block could be made with pilots but this is not investigated yet (see if this way is good enough first). The use of known training symbols avoids the need to eliminate the data dependence of the phase by raising it to the 4th power, thereby reducing the computational cost and improving the frequency range over which the estimate is valid.
+\section{Rife and Boorstyn}
+The Rife and Boorstyn algorithm computes the FFT of the training symbols to provide a coarse estimate of the frequency offset. This corresponds to the index \(k\) of the largest absolute value in the FFT. Parabolic interpolation can then be used to refine the frequency estimate \cite{Jacobsen2007}. The accuracy of the coarse search can be improved by zero-padding the training symbols and using a larger FFT, this increases the computational cost of both the FFT and search for the maximum index. Finally a division must be performed to interpolate, making this algorithm expensive.
+
+\section{Tretter/Kay}
+
+
+\bibliographystyle{ieeetr}
+\bibliography{ref}
+\end{document}

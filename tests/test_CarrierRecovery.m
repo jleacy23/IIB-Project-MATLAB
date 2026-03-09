@@ -104,29 +104,27 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
     methods (Test)
 
         function testQPSK_VV(testCase)
-            M = testCase.M;
-            [rxSym, crSym, BER, ThetaPU] = runScenario_VV(testCase, M);
+            [rxSym, crSym, BER, ThetaPU] = runScenario_VV(testCase);
 
-            plotBeforeAfter(testCase, rxSym, crSym, '4-QAM | VV', M, BER);
+            plotBeforeAfter(testCase, rxSym, crSym, 'QPSK | VV', BER);
             plotPhase(testCase, ThetaPU, '4-QAM VV', BER);
 
             testCase.verifyTrue(all(isfinite(crSym(:))), ...
                 'VV carrier-recovery output contains NaN/Inf.');
             testCase.verifyLessThan(BER, testCase.BER_THRESHOLD, ...
-                sprintf('4-QAM VV BER %.2e exceeds threshold.', BER));
+                sprintf('QPSK VV BER %.2e exceeds threshold.', BER));
         end
 
         function testQPSK_BPS(testCase)
-            M = testCase.M;
-            [rxSym, crSym, BER, ThetaPU] = runScenario_BPS(testCase, M);
+            [rxSym, crSym, BER, ThetaPU] = runScenario_BPS(testCase);
 
-            plotBeforeAfter(testCase, rxSym, crSym, '4-QAM | BPS', M, BER);
+            plotBeforeAfter(testCase, rxSym, crSym, 'QPSK | BPS', BER);
             plotPhase(testCase, ThetaPU, '4-QAM BPS', BER);
 
             testCase.verifyTrue(all(isfinite(crSym(:))), ...
                 'BPS carrier-recovery output contains NaN/Inf.');
             testCase.verifyLessThan(BER, testCase.BER_THRESHOLD, ...
-                sprintf('4-QAM BPS BER %.2e exceeds threshold.', BER));
+                sprintf('QPSK BPS BER %.2e exceeds threshold.', BER));
         end
 
     end
@@ -137,31 +135,29 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
     methods (Test)
 
         function testQPSK_VV_Fxp16(testCase)
-            M = testCase.M;
-            [rxSym, crSym, BER, ThetaPU] = runScenarioFxp_VV(testCase, M, testCase.FxpConfig);
+            [rxSym, crSym, BER, ThetaPU] = runScenarioFxp_VV(testCase, testCase.FxpConfig);
 
             plotBeforeAfter(testCase, rxSym, crSym, ...
-                sprintf('4-QAM | VV fxp (%s)', testCase.FxpConfig), M, BER);
+                sprintf('QPSK | VV fxp (%s)', testCase.FxpConfig), BER);
             plotPhase(testCase, ThetaPU, '4-QAM VV Fxp', BER);
 
             testCase.verifyTrue(all(isfinite(crSym(:))), ...
                 'VV fxp MEX output contains NaN/Inf.');
             testCase.verifyLessThan(BER, testCase.BER_THRESHOLD, ...
-                sprintf('4-QAM VV fxp16 BER %.2e exceeds threshold.', BER));
+                sprintf('QPSK VV fxp16 BER %.2e exceeds threshold.', BER));
         end
 
         function testQPSK_BPS_Fxp16(testCase)
-            M = testCase.M;
-            [rxSym, crSym, BER, ThetaPU] = runScenarioFxp_BPS(testCase, M, testCase.FxpConfig);
+            [rxSym, crSym, BER, ThetaPU] = runScenarioFxp_BPS(testCase, testCase.FxpConfig);
 
             plotBeforeAfter(testCase, rxSym, crSym, ...
-                sprintf('4-QAM | BPS fxp (%s)', testCase.FxpConfig), M, BER);
+                sprintf('QPSK | BPS fxp (%s)', testCase.FxpConfig), BER);
             plotPhase(testCase, ThetaPU, '4-QAM BPS Fxp', BER);
 
             testCase.verifyTrue(all(isfinite(crSym(:))), ...
                 'BPS fxp MEX output contains NaN/Inf.');
             testCase.verifyLessThan(BER, testCase.BER_THRESHOLD, ...
-                sprintf('4-QAM BPS fxp16 BER %.2e exceeds threshold.', BER));
+                sprintf('QPSK BPS fxp16 BER %.2e exceeds threshold.', BER));
         end
 
     end
@@ -172,8 +168,8 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
     methods (Access = private)
 
         % ---- Floating-point VV --------------------------------------
-        function [rxSym, crSym, BER, ThetaPU] = runScenario_VV(testCase, M)
-            [symbols, pilots, txBits, rxSym] = buildChannel(testCase, M);
+        function [rxSym, crSym, BER, ThetaPU] = runScenario_VV(testCase)
+            [symbols, pilots, txRefBits, rxSym] = buildChannel(testCase);
 
             symEnergy = mean(abs(symbols(:)).^2);
             VVFilter  = carrier_recovery.genVVFilter(testCase.Linewidth, testCase.Rs, ...
@@ -183,27 +179,27 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
                 VVFilter, testCase.BlockLen, testCase.StepSize, ...
                 pilots, testCase.UsePilots, testCase.PilotThreshold);
 
-            BER = computeBER(testCase, crSym, txBits, M);
-            fprintf('4-QAM VV BER = %.2e\n', BER);
+            BER = computeBER(testCase, crSym, txRefBits);
+            fprintf('QPSK VV BER = %.2e\n', BER);
         end
 
         % ---- Floating-point BPS -------------------------------------
-        function [rxSym, crSym, BER, ThetaPU] = runScenario_BPS(testCase, M)
-            [~, pilots, txBits, rxSym] = buildChannel(testCase, M);
+        function [rxSym, crSym, BER, ThetaPU] = runScenario_BPS(testCase)
+            [~, pilots, txRefBits, rxSym] = buildChannel(testCase);
 
             [crSym, ThetaPU] = carrier_recovery.bps(rxSym, testCase.NTaps, testCase.N_pol, ...
-                M, testCase.B, testCase.BlockLen, testCase.StepSize, ...
+                testCase.M, testCase.B, testCase.BlockLen, testCase.StepSize, ...
                 pilots, testCase.UsePilots, testCase.PilotThreshold);
 
-            BER = computeBER(testCase, crSym, txBits, M);
-            fprintf('4-QAM BPS BER = %.2e\n', BER);
+            BER = computeBER(testCase, crSym, txRefBits);
+            fprintf('QPSK BPS BER = %.2e\n', BER);
         end
 
         % ---- Fixed-point VV MEX -------------------------------------
-        function [rxSym, crSym, BER, ThetaPU] = runScenarioFxp_VV(testCase, M, config)
+        function [rxSym, crSym, BER, ThetaPU] = runScenarioFxp_VV(testCase, config)
             T = carrier_recovery.viterbiViterbi_fxp_types(config);
 
-            [symbols, pilots, txBits, rxSym] = buildChannel(testCase, M);
+            [symbols, pilots, txRefBits, rxSym] = buildChannel(testCase);
 
             symEnergy = mean(abs(symbols(:)).^2);
             VVFilter  = carrier_recovery.genVVFilter(testCase.Linewidth, testCase.Rs, ...
@@ -219,51 +215,53 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
                 testCase.UsePilots, testCase.PilotThreshold, T);
             ThetaPU = double(ThetaPU_fi);
 
-            crSym = resolvePhaseAmbiguity(testCase, double(crSym_fi), txBits, M);
-            BER   = computeBER(testCase, crSym, txBits, M);
-            fprintf('4-QAM VV fxp (%s) BER = %.2e\n', config, BER);
+            crSym = resolvePhaseAmbiguity(testCase, double(crSym_fi), txRefBits);
+            BER   = computeBER(testCase, crSym, txRefBits);
+            fprintf('QPSK VV fxp (%s) BER = %.2e\n', config, BER);
         end
 
         % ---- Fixed-point BPS MEX ------------------------------------
-        function [rxSym, crSym, BER, ThetaPU] = runScenarioFxp_BPS(testCase, M, config)
+        function [rxSym, crSym, BER, ThetaPU] = runScenarioFxp_BPS(testCase, config)
             T = carrier_recovery.bps_fxp_types(config);
 
-            [~, pilots, txBits, rxSym] = buildChannel(testCase, M);
+            [~, pilots, txRefBits, rxSym] = buildChannel(testCase);
 
             rxSym_fi  = cast(rxSym,  'like', T.x);
             pilots_fi = cast(pilots, 'like', T.x);
 
             [crSym_fi, ThetaPU_fi] = carrier_recovery.bps_fxp_mex( ...
                 rxSym_fi, testCase.NTaps, testCase.N_pol, ...
-                M, testCase.B, testCase.BlockLen, double(testCase.StepSize), ...
+                testCase.M, testCase.B, testCase.BlockLen, double(testCase.StepSize), ...
                 pilots_fi, testCase.UsePilots, testCase.PilotThreshold, T);
             ThetaPU = double(ThetaPU_fi);
 
-            crSym = resolvePhaseAmbiguity(testCase, double(crSym_fi), txBits, M);
-            BER   = computeBER(testCase, crSym, txBits, M);
-            fprintf('4-QAM BPS fxp (%s) BER = %.2e\n', config, BER);
+            crSym = resolvePhaseAmbiguity(testCase, double(crSym_fi), txRefBits);
+            BER   = computeBER(testCase, crSym, txRefBits);
+            fprintf('QPSK BPS fxp (%s) BER = %.2e\n', config, BER);
         end
 
         % ---- Shared channel builder ---------------------------------
-        function [symbols, pilots, txBits, rxSym] = buildChannel(testCase, M)
-            k      = log2(M);
-            Nbits  = k * testCase.N_pol * testCase.Ns;
-            txBits = modem.randomBits(Nbits, testCase.BlockLen, testCase.PilotLen, M);
-            [symbols, pilots] = modem.modulate(txBits, M, testCase.N_pol, testCase.PilotLen);
+        function [symbols, pilots, txRefBits, rxSym] = buildChannel(testCase)
+            Nbits  = 4 * testCase.Ns;
+            txBits = modem.randomBits(Nbits);
+            [symbols, pilotSyms, ~, ~] = modem.modulate(txBits);
+            pilots = pilotSyms(:, 1);     % single-pol pilot vector for CR
+            txRefBits = modem.symbolsToBits(symbols);
 
             rxSym = channel.add_awgn(symbols, testCase.SNR_dB);
             rxSym = channel.add_phase_noise(rxSym, testCase.Rs, testCase.LW);
         end
 
         % ---- Phase ambiguity resolution -----------------------------
-        function bestSym = resolvePhaseAmbiguity(testCase, crSym, txBits, M)
+        function bestSym = resolvePhaseAmbiguity(testCase, crSym, txRefBits)
             bestBER = Inf;
             bestSym = crSym;
             for k = 0:3
                 rotated     = crSym .* exp(-1j * k * pi/2);
-                decidedSyms = modem.decideSymbols(rotated, M, testCase.N_pol);
-                rxBits      = modem.symbolsToBits(decidedSyms, M);
-                thisBER     = sum(txBits ~= rxBits) / length(txBits);
+                decidedSyms = modem.decideSymbols(rotated);
+                rxBits      = modem.symbolsToBits(decidedSyms);
+                nBits       = min(length(txRefBits), length(rxBits));
+                thisBER     = sum(txRefBits(1:nBits) ~= rxBits(1:nBits)) / nBits;
                 if thisBER < bestBER
                     bestBER = thisBER;
                     bestSym = rotated;
@@ -272,31 +270,32 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
         end
 
         % ---- BER computation ----------------------------------------
-        function BER = computeBER(testCase, crSym, txBits, M)
-            decidedSyms = modem.decideSymbols(crSym, M, testCase.N_pol);
-            rxBits      = modem.symbolsToBits(decidedSyms, M);
-            nErrors     = sum(txBits ~= rxBits);
-            BER         = nErrors / length(txBits);
+        function BER = computeBER(testCase, crSym, txRefBits)
+            decidedSyms = modem.decideSymbols(crSym);
+            rxBits      = modem.symbolsToBits(decidedSyms);
+            nBits       = min(length(txRefBits), length(rxBits));
+            nErrors     = sum(txRefBits(1:nBits) ~= rxBits(1:nBits));
+            BER         = nErrors / nBits;
         end
 
         % ---- Plotting -----------------------------------------------
-        function plotBeforeAfter(testCase, rxSym, crSym, titleStr, M, BER)
+        function plotBeforeAfter(testCase, rxSym, crSym, titleStr, BER)
             figure('Name', titleStr, 'Position', [100 100 1200 500]);
             for p = 1:testCase.N_pol
                 subplot(2, 2, (p-1)*2 + 1);
                 plot(real(rxSym(:,p)), imag(rxSym(:,p)), '.', 'MarkerSize', 2);
                 grid on; axis equal;
-                title(sprintf('Before CR  –  Pol %d', p));
+                title(sprintf('Before CR  \u2013  Pol %d', p));
                 xlabel('In-Phase'); ylabel('Quadrature');
 
                 subplot(2, 2, (p-1)*2 + 2);
                 plot(real(crSym(:,p)), imag(crSym(:,p)), '.', 'MarkerSize', 2);
                 grid on; axis equal;
-                title(sprintf('After CR  –  Pol %d', p));
+                title(sprintf('After CR  \u2013  Pol %d', p));
                 xlabel('In-Phase'); ylabel('Quadrature');
             end
-            sgtitle(sprintf('%d-QAM: AWGN + Phase Noise  |  %s  |  BER = %.2e', ...
-                M, titleStr, BER));
+            sgtitle(sprintf('QPSK: AWGN + Phase Noise  |  %s  |  BER = %.2e', ...
+                titleStr, BER));
         end
 
         function plotPhase(testCase, ThetaPU, titleStr, BER)

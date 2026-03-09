@@ -94,8 +94,8 @@ function [v, ThetaPU] = bps(z, N, NPol, M, B, BlockLen, StepSize, ...
         zRot = bsxfun(@times, reshape(zBlocks, L, 1, Nsym), ...
                                reshape(RotMat,  L, B, 1));
 
-        % QAM decision and squared-error metric [L x B x Nsym]
-        zDec = modem.slicer(zRot, M);
+        % QPSK decision and squared-error metric [L x B x Nsym]
+        zDec = modem.slicer(zRot);
         m    = sum(abs(zRot - zDec).^2, 1);          % [1 x B x Nsym]
 
         % argmin over B -> [1 x 1 x Nsym]

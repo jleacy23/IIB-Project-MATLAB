@@ -201,7 +201,7 @@ function [v, ThetaPU] = bps_fxp(z, N, NPol, M, B, BlockLen, StepSize, ...
 
                         s_rot_d  = complex(double(real(s_rot_fi)), ...
                                            double(imag(s_rot_fi)));
-                        s_dec    = modem.slicer(s_rot_d, M);
+                        s_dec    = modem.slicer(s_rot_d);
 
                         err_re   = real(s_rot_d) - real(s_dec);
                         err_im   = imag(s_rot_d) - imag(s_dec);

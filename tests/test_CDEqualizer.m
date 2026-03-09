@@ -3,7 +3,6 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
 
     properties (Constant)
         % Modulation
-        M       = 16
         N_pol   = 2
         Ns      = 1024          % symbols per polarisation
         SpS     = 2             % samples per symbol
@@ -38,10 +37,9 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
     methods (Test)
         function testCDOnlyBER(testCase)
             % --- Tx ---
-            k     = log2(testCase.M);
-            Nbits = k * testCase.N_pol * testCase.Ns;
+            Nbits    = 4 * testCase.Ns;
             txBits   = modem.randomBits(Nbits);
-            symbols  = modem.modulate(txBits, testCase.M, testCase.N_pol);
+            symbols  = modem.modulate(txBits);
             txSig    = modem.rectPulse(symbols, testCase.SpS);
 
             % --- Channel (CD only, high SNR, no phase noise/PMD) ---
@@ -55,12 +53,14 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
 
             % --- Downsample & recover bits ---
             eqSymbols    = eqSig(1:testCase.SpS:end, :);
-            decidedSyms  = modem.decideSymbols(eqSymbols, testCase.M, testCase.N_pol);
-            rxBits       = modem.symbolsToBits(decidedSyms, testCase.M);
+            decidedSyms  = modem.decideSymbols(eqSymbols);
+            rxBits       = modem.symbolsToBits(decidedSyms);
 
             % --- BER ---
-            nErrors = sum(txBits ~= rxBits);
-            BER     = nErrors / length(txBits);
+            txRefBits = modem.symbolsToBits(symbols);
+            nBits   = min(length(txRefBits), length(rxBits));
+            nErrors = sum(txRefBits(1:nBits) ~= rxBits(1:nBits));
+            BER     = nErrors / nBits;
             fprintf('CD-only BER = %.2e  (%d errors / %d bits)\n', ...
                      BER, nErrors, length(txBits));
 
@@ -76,10 +76,9 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
             SNR_dB = 25;
 
             % --- Tx ---
-            k     = log2(testCase.M);
-            Nbits = k * testCase.N_pol * testCase.Ns;
+            Nbits    = 4 * testCase.Ns;
             txBits   = modem.randomBits(Nbits);
-            symbols  = modem.modulate(txBits, testCase.M, testCase.N_pol);
+            symbols  = modem.modulate(txBits);
             txSig    = modem.rectPulse(symbols, testCase.SpS);
 
             % --- Channel (CD + AWGN) ---
@@ -97,10 +96,12 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
             eqSymbols = eqSig(1:testCase.SpS:end, :);
 
             % --- BER after equalization ---
-            decidedSyms = modem.decideSymbols(eqSymbols, testCase.M, testCase.N_pol);
-            rxBits      = modem.symbolsToBits(decidedSyms, testCase.M);
-            nErrors = sum(txBits ~= rxBits);
-            BER     = nErrors / length(txBits);
+            decidedSyms = modem.decideSymbols(eqSymbols);
+            rxBits      = modem.symbolsToBits(decidedSyms);
+            txRefBits   = modem.symbolsToBits(symbols);
+            nBits   = min(length(txRefBits), length(rxBits));
+            nErrors = sum(txRefBits(1:nBits) ~= rxBits(1:nBits));
+            BER     = nErrors / nBits;
             fprintf('CD+AWGN BER = %.2e  (%d errors / %d bits)\n', ...
                      BER, nErrors, length(txBits));
 
@@ -125,7 +126,7 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
                 title(sprintf('After CD EQ  –  Pol %d', p));
                 xlabel('In-Phase'); ylabel('Quadrature');
             end
-            sgtitle(sprintf('16-QAM: CD + AWGN (%d dB)  |  BER = %.2e', ...
+            sgtitle(sprintf('QPSK: CD + AWGN (%d dB)  |  BER = %.2e', ...
                              SNR_dB, BER));
 
             % Sanity checks
@@ -145,10 +146,9 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
             T = cd_eq.equalize_fxp_types('fixed16');
 
             % --- Tx ---
-            k     = log2(testCase.M);
-            Nbits = k * testCase.N_pol * testCase.Ns;
+            Nbits    = 4 * testCase.Ns;
             txBits   = modem.randomBits(Nbits);
-            symbols  = modem.modulate(txBits, testCase.M, testCase.N_pol);
+            symbols  = modem.modulate(txBits);
             txSig    = modem.rectPulse(symbols, testCase.SpS);
 
             % --- Channel (CD only) ---
@@ -165,10 +165,12 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
 
             % --- BER ---
             eqSymbols   = double(eqSig(1:testCase.SpS:end, :));
-            decidedSyms = modem.decideSymbols(eqSymbols, testCase.M, testCase.N_pol);
-            rxBits      = modem.symbolsToBits(decidedSyms, testCase.M);
-            nErrors = sum(txBits ~= rxBits);
-            BER     = nErrors / length(txBits);
+            decidedSyms = modem.decideSymbols(eqSymbols);
+            rxBits      = modem.symbolsToBits(decidedSyms);
+            txRefBits   = modem.symbolsToBits(symbols);
+            nBits   = min(length(txRefBits), length(rxBits));
+            nErrors = sum(txRefBits(1:nBits) ~= rxBits(1:nBits));
+            BER     = nErrors / nBits;
             fprintf('CD-only FXP32 BER = %.2e  (%d errors / %d bits)\n', ...
                      BER, nErrors, length(txBits));
 
@@ -182,10 +184,9 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
             T = cd_eq.equalize_fxp_types('fixed16');
 
             % --- Tx ---
-            k     = log2(testCase.M);
-            Nbits = k * testCase.N_pol * testCase.Ns;
+            Nbits    = 4 * testCase.Ns;
             txBits   = modem.randomBits(Nbits);
-            symbols  = modem.modulate(txBits, testCase.M, testCase.N_pol);
+            symbols  = modem.modulate(txBits);
             txSig    = modem.rectPulse(symbols, testCase.SpS);
 
             % --- Channel (CD only) ---
@@ -219,10 +220,9 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
             T = cd_eq.equalize_fxp_types('fixed16');
 
             % --- Tx ---
-            k     = log2(testCase.M);
-            Nbits = k * testCase.N_pol * testCase.Ns;
+            Nbits    = 4 * testCase.Ns;
             txBits   = modem.randomBits(Nbits);
-            symbols  = modem.modulate(txBits, testCase.M, testCase.N_pol);
+            symbols  = modem.modulate(txBits);
             txSig    = modem.rectPulse(symbols, testCase.SpS);
 
             % --- Channel (CD only) ---
@@ -259,10 +259,9 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
             T = cd_eq.equalize_fxp_types('fixed16');
 
             % --- Tx ---
-            k     = log2(testCase.M);
-            Nbits = k * testCase.N_pol * testCase.Ns;
+            Nbits    = 4 * testCase.Ns;
             txBits   = modem.randomBits(Nbits);
-            symbols  = modem.modulate(txBits, testCase.M, testCase.N_pol);
+            symbols  = modem.modulate(txBits);
             txSig    = modem.rectPulse(symbols, testCase.SpS);
 
             % --- Channel ---
@@ -304,7 +303,7 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
                 grid on; axis equal;
                 title(sprintf('FXP32 CD EQ – Pol %d', p));
             end
-            sgtitle(sprintf('16-QAM: CD + AWGN (%d dB)  |  Float vs FXP32', SNR_dB));
+            sgtitle(sprintf('QPSK: CD + AWGN (%d dB)  |  Float vs FXP32', SNR_dB));
 
             % Sanity checks
             testCase.verifyTrue(all(isfinite(double(eqFxp(:)))), ...

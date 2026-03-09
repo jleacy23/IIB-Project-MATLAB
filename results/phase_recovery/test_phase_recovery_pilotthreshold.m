@@ -139,14 +139,10 @@ classdef test_phase_recovery_pilotthreshold < matlab.unittest.TestCase
                         LW     = LW_vec(li);
 
                         %% Channel realisation (shared across threshold sweep)
-                        k      = log2(P.M);
-                        Nbits  = k * P.N_pol * P.Ns;
-                        txBits = modem.randomBits(Nbits, ...
-                                                P.BlockLen, ...
-                                                P.PilotLen, ...
-                                                P.M);
-                        [symbols, pilots] = modem.modulate( ...
-                            txBits, P.M, P.N_pol, P.PilotLen);
+                        Nbits  = 4 * P.Ns;
+                        txBits = modem.randomBits(Nbits);
+                        [symbols, pilots, ~, ~] = modem.modulate(txBits);
+                        txRefBits = modem.symbolsToBits(symbols);
                         rxSym = channel.add_awgn(symbols, SNR_dB);
                         rxSym = channel.add_phase_noise(rxSym, P.Rs, LW);
 
@@ -172,11 +168,11 @@ classdef test_phase_recovery_pilotthreshold < matlab.unittest.TestCase
                                 P.UsePilots, thresh, P.CordicIts, testCase.T_vv);
 
                             cr_vv = test_phase_recovery_pilotthreshold.resolvePhaseAmbiguity( ...
-                                double(cr_vv_fi), txBits, P.M, P.N_pol);
+                                double(cr_vv_fi), txRefBits);
 
                             BER_VV_all(tr, ti, si, li) = ...
                                 test_phase_recovery_pilotthreshold.computeBER( ...
-                                cr_vv, txBits, P.M, P.N_pol);
+                                cr_vv, txRefBits);
 
                             %% BPS
                             [cr_bps_fi, ~] = carrier_recovery.bps_fxp_mex( ...
@@ -187,11 +183,11 @@ classdef test_phase_recovery_pilotthreshold < matlab.unittest.TestCase
                                 testCase.T_bps);
 
                             cr_bps = test_phase_recovery_pilotthreshold.resolvePhaseAmbiguity( ...
-                                double(cr_bps_fi), txBits, P.M, P.N_pol);
+                                double(cr_bps_fi), txRefBits);
 
                             BER_BPS_all(tr, ti, si, li) = ...
                                 test_phase_recovery_pilotthreshold.computeBER( ...
-                                cr_bps, txBits, P.M, P.N_pol);
+                                cr_bps, txRefBits);
 
                         end  % threshold loop
                     end  % LW loop
@@ -257,9 +253,9 @@ classdef test_phase_recovery_pilotthreshold < matlab.unittest.TestCase
                         'Interpreter', 'latex', 'FontSize', 16);
                     legend('Location', 'best', ...
                         'Interpreter', 'latex', 'FontSize', 14);
-                    title(sprintf(['VV | BER vs Pilot Threshold | %d-QAM | ' ...
+                    title(sprintf(['VV | BER vs Pilot Threshold | QPSK | ' ...
                           'SNR=%.1f dB | %d trials'], ...
-                          P.M, SNR_dB_vec(si), P.NTrials));
+                          SNR_dB_vec(si), P.NTrials));
 
                     %% BPS figure
                     fig_bps = figure('Name', ...
@@ -297,9 +293,9 @@ classdef test_phase_recovery_pilotthreshold < matlab.unittest.TestCase
                         'Interpreter', 'latex', 'FontSize', 16);
                     legend('Location', 'best', ...
                         'Interpreter', 'latex', 'FontSize', 14);
-                    title(sprintf(['BPS | BER vs Pilot Threshold | %d-QAM | ' ...
+                    title(sprintf(['BPS | BER vs Pilot Threshold | QPSK | ' ...
                           'SNR=%.1f dB | %d trials'], ...
-                          P.M, SNR_dB_vec(si), P.NTrials));
+                          SNR_dB_vec(si), P.NTrials));
 
                 end  % SNR figure loop
             end  % Plot
@@ -311,21 +307,21 @@ classdef test_phase_recovery_pilotthreshold < matlab.unittest.TestCase
     %% ================================================================
     methods (Static, Access = private)
 
-        function BER = computeBER(crSym, txBits, M, NPol)
-            decidedSyms = modem.decideSymbols(crSym, M, NPol);
-            rxBits      = modem.symbolsToBits(decidedSyms, M);
-            BER         = sum(txBits ~= rxBits) / length(txBits);
+        function BER = computeBER(crSym, refBits)
+            decidedSyms = modem.decideSymbols(crSym);
+            rxBits      = modem.symbolsToBits(decidedSyms);
+            BER         = sum(refBits ~= rxBits) / length(refBits);
         end
 
-        function bestSym = resolvePhaseAmbiguity(crSym, txBits, M, NPol)
+        function bestSym = resolvePhaseAmbiguity(crSym, refBits)
             bestBER = Inf;
             bestSym = crSym;
 
             for k = 0:3
                 rotated     = crSym .* exp(-1j * k * pi/2);
-                decidedSyms = modem.decideSymbols(rotated, M, NPol);
-                rxBits      = modem.symbolsToBits(decidedSyms, M);
-                thisBER     = sum(txBits ~= rxBits) / length(txBits);
+                decidedSyms = modem.decideSymbols(rotated);
+                rxBits      = modem.symbolsToBits(decidedSyms);
+                thisBER     = sum(refBits ~= rxBits) / length(refBits);
 
                 if thisBER < bestBER
                     bestBER = thisBER;

@@ -22,7 +22,7 @@ function Out = equalize(In, D, L, CLambda, Rs, NPol, SpSIn, NFFT)
     Rs_si      = Rs * 1e9;
 
     % Compute overlap
-    NOverlap = computeOverlap(D, L, CLambda, Rs, SpSIn, NFFT);
+    NOverlap = cd_eq.computeOverlap(D, L, CLambda, Rs, SpSIn, NFFT);
 
     %% Frequency response
     n  = (-NFFT/2:NFFT/2-1)';

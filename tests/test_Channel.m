@@ -1,11 +1,10 @@
 classdef test_Channel < matlab.unittest.TestCase
     % Visual and shape tests for the Channel functions.
-    % Generates 16-QAM constellations and passes them through various
+    % Generates QPSK constellations and passes them through various
     % impairment combinations, plotting the result for visual inspection.
 
     properties (Constant)
         % Simulation parameters
-        M       = 16
         N_pol   = 2
         Ns      = 4096          % symbols per polarization
         SpS     = 2             % samples per symbol
@@ -28,10 +27,9 @@ classdef test_Channel < matlab.unittest.TestCase
     % ----- helper ---------------------------------------------------
     methods (Access = private)
         function [txSig, symbols] = generateTx(testCase)
-            k       = log2(testCase.M);
-            Nbits   = k * testCase.N_pol * testCase.Ns;
+            Nbits   = 4 * testCase.Ns;         % approx data bits
             bits    = modem.randomBits(Nbits);
-            symbols = modem.modulate(bits, testCase.M, testCase.N_pol);
+            symbols = modem.modulate(bits);
             txSig   = modem.rectPulse(symbols, testCase.SpS);
         end
 
@@ -143,7 +141,7 @@ classdef test_Channel < matlab.unittest.TestCase
                     xlabel('In-Phase'); ylabel('Quadrature');
                 end
             end
-            sgtitle('16-QAM Constellations under Channel Impairments');
+            sgtitle('QPSK Constellations under Channel Impairments');
 
             % Verify no NaNs or Infs in any output
             for k = 1:numel(data)

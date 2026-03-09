@@ -8,7 +8,6 @@ classdef test_ClockRecovery < matlab.unittest.TestCase
     %  decimated to 2 Sa/symbol before being fed to clk_recovery.
 
     properties (Constant)
-        M       = 4              % QPSK
         N_pol   = 1              % single polarisation (clk_recovery works per-pol)
         Ns      = 4096           % symbols
         SpS     = 2              % target samples per symbol
@@ -40,13 +39,12 @@ classdef test_ClockRecovery < matlab.unittest.TestCase
             SpS_hi_ = testCase.SpS_hi;
             SpS_    = testCase.SpS;
             Ns_     = testCase.Ns;
-            M_      = testCase.M;
 
             % --- Tx: generate symbols & pulse-shape at high SpS ---
-            k      = log2(M_);
-            Nbits  = k * testCase.N_pol * Ns_;
+            Nbits  = 2 * Ns_;              % QPSK: 2 bits/sym, single pol
             txBits = modem.randomBits(Nbits);
-            symbols = modem.modulate(txBits, M_, testCase.N_pol);
+            symbols = modem.modulate(txBits);
+            symbols = symbols(:, 1);        % single pol
 
             txHi = modem.rrcPulse(symbols, SpS_hi_, testCase.Rolloff, testCase.Span);
 
@@ -71,14 +69,15 @@ classdef test_ClockRecovery < matlab.unittest.TestCase
             crSym = crOut(1:SpS_:end);
 
             % Resolve phase ambiguity
-            [BER, crSym] = bestRotationBER(testCase, crSym, txBits, M_);
+            txRefBits = modem.symbolsToBits(symbols);
+            [BER, crSym] = bestRotationBER(testCase, crSym, txRefBits);
 
             fprintf('Constant offset BER = %.2e\n', BER);
 
             % --- Plot ---
             rxSym = rx2(1:SpS_:end);
             plotBeforeAfter(testCase, rxSym, crSym, ...
-                'Constant Timing Offset', M_, BER);
+                'Constant Timing Offset', BER);
 
             % --- Verify ---
             testCase.verifyTrue(all(isfinite(crSym(:))), ...
@@ -92,13 +91,12 @@ classdef test_ClockRecovery < matlab.unittest.TestCase
             SpS_hi_ = testCase.SpS_hi;
             SpS_    = testCase.SpS;
             Ns_     = testCase.Ns;
-            M_      = testCase.M;
 
             % --- Tx ---
-            k      = log2(M_);
-            Nbits  = k * testCase.N_pol * Ns_;
+            Nbits  = 2 * Ns_;              % QPSK: 2 bits/sym, single pol
             txBits = modem.randomBits(Nbits);
-            symbols = modem.modulate(txBits, M_, testCase.N_pol);
+            symbols = modem.modulate(txBits);
+            symbols = symbols(:, 1);        % single pol
 
             txHi = modem.rrcPulse(symbols, SpS_hi_, testCase.Rolloff, testCase.Span);
 
@@ -127,14 +125,15 @@ classdef test_ClockRecovery < matlab.unittest.TestCase
             crSym = crOut(1:SpS_:end);
 
             % Resolve phase ambiguity
-            [BER, crSym] = bestRotationBER(testCase, crSym, txBits, M_);
+            txRefBits = modem.symbolsToBits(symbols);
+            [BER, crSym] = bestRotationBER(testCase, crSym, txRefBits);
 
             fprintf('SFO (%d ppm) BER = %.2e\n', ppm, BER);
 
             % --- Plot ---
             rxSym = rx2(1:SpS_:end);
             plotBeforeAfter(testCase, rxSym, crSym, ...
-                sprintf('SFO %d ppm', ppm), M_, BER);
+                sprintf('SFO %d ppm', ppm), BER);
 
             % --- Verify ---
             testCase.verifyTrue(all(isfinite(crSym(:))), ...
@@ -150,17 +149,16 @@ classdef test_ClockRecovery < matlab.unittest.TestCase
     % ================================================================
     methods (Access = private)
 
-        function [BER, bestSym] = bestRotationBER(testCase, crSym, txBits, M)
+        function [BER, bestSym] = bestRotationBER(testCase, crSym, txRefBits)
             %BESTROTATIONBER  Try all four pi/2 rotations, return lowest BER.
             bestBER = Inf;
             bestSym = crSym;
-            N_pol_ = testCase.N_pol;
             for kk = 0:3
                 rotated = crSym .* exp(-1j * kk * pi/2);
-                decided = modem.decideSymbols(rotated, M, N_pol_);
-                rxBits  = modem.symbolsToBits(decided, M);
-                nBits   = min(length(rxBits), length(txBits));
-                nErr    = sum(txBits(1:nBits) ~= rxBits(1:nBits));
+                decided = modem.decideSymbols(rotated);
+                rxBits  = modem.symbolsToBits(decided);
+                nBits   = min(length(rxBits), length(txRefBits));
+                nErr    = sum(txRefBits(1:nBits) ~= rxBits(1:nBits));
                 thisBER = nErr / nBits;
                 if thisBER < bestBER
                     bestBER = thisBER;
@@ -170,7 +168,7 @@ classdef test_ClockRecovery < matlab.unittest.TestCase
             BER = bestBER;
         end
 
-        function plotBeforeAfter(~, rxSym, crSym, titleStr, M, BER)
+        function plotBeforeAfter(~, rxSym, crSym, titleStr, BER)
             figure('Name', titleStr, 'Position', [100 100 900 400]);
 
             subplot(1, 2, 1);
@@ -185,7 +183,7 @@ classdef test_ClockRecovery < matlab.unittest.TestCase
             title('After Clock Recovery');
             xlabel('I'); ylabel('Q');
 
-            sgtitle(sprintf('%d-QAM  |  %s  |  BER = %.2e', M, titleStr, BER));
+            sgtitle(sprintf('QPSK  |  %s  |  BER = %.2e', titleStr, BER));
         end
     end
 end

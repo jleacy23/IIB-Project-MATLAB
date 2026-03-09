@@ -1,90 +1,108 @@
 classdef test_QAMModem < matlab.unittest.TestCase
+    % Tests for QPSK modem functions with CPON framing.
 
-    properties (TestParameter)
-        M = {4, 16, 64, 256}
-        N_pol = {1, 2}
+    properties (Constant)
+        SUBFRAME_SYMS  = 3712
+        BLOCK_LEN      = 32
+        N_BLOCKS       = 116
+        N_TRAIN        = 11
+        DATA_PER_SF    = 3586      % 3712 - 116 pilots - 10 extra TS
     end
 
     methods (Test)
-        function testModulateDemodulateRoundTrip(testCase, M, N_pol)
-            % Verify that bits survive a modulate -> symbolsToBits round trip
-            k = log2(M);
-            Nbits = k * N_pol * 128;           % 128 symbols per pol
 
-            bits = modem.randomBits(Nbits);
-            symbols = modem.modulate(bits, M, N_pol);
-            recoveredBits = modem.symbolsToBits(symbols, M);
+        % ---- Round-trip: data bits survive modulate -> symbolsToBits ---
+        function testModulateDemodulateRoundTrip(testCase)
+            Nbits = testCase.DATA_PER_SF * 4;     % exactly 1 subframe of data
+            bits  = modem.randomBits(Nbits);
+            [symbols, ~, ~, nSF] = modem.modulate(bits);
 
-            testCase.verifyEqual(recoveredBits, bits, ...
-                sprintf('Round-trip failed for %d-QAM, %d pol(s).', M, N_pol));
+            % Reference bits from the full symbol stream (incl. pilots/TS)
+            txRefBits = modem.symbolsToBits(symbols);
+            rxDecided = modem.decideSymbols(symbols);     % clean input
+            rxBits    = modem.symbolsToBits(rxDecided);
+
+            testCase.verifyEqual(rxBits, txRefBits, ...
+                'Round-trip failed for clean QPSK symbols.');
+            testCase.verifyEqual(nSF, 1, 'Expected exactly 1 subframe.');
         end
 
-        function testDecideSymbolsRecoversBits(testCase, M, N_pol)
-            % Verify that decideSymbols on clean symbols gives exact match
-            k = log2(M);
-            Nbits = k * N_pol * 64;
+        % ---- decideSymbols on clean QPSK returns same symbols --------
+        function testDecideSymbolsClean(testCase)
+            Nbits = testCase.DATA_PER_SF * 4;
+            bits  = modem.randomBits(Nbits);
+            [symbols, ~, ~, ~] = modem.modulate(bits);
 
-            bits = modem.randomBits(Nbits);
-            symbols = modem.modulate(bits, M, N_pol);
-            decided = modem.decideSymbols(symbols, M, N_pol);
+            % Data symbols are ±1±1j, pilots/training are ±3±3j
+            decided = modem.decideSymbols(symbols);
 
-            testCase.verifyEqual(decided, symbols, 'AbsTol', 1e-10, ...
-                'decideSymbols should return the same symbols for clean input.');
-
-            recoveredBits = modem.symbolsToBits(decided, M);
-            testCase.verifyEqual(recoveredBits, bits, ...
-                'Bits should survive modulate -> decide -> symbolsToBits.');
+            % All signs should match (slicer maps ±3 -> ±1)
+            testCase.verifyEqual(sign(real(decided)), sign(real(symbols)), ...
+                'Real-part signs differ after decideSymbols.');
+            testCase.verifyEqual(sign(imag(decided)), sign(imag(symbols)), ...
+                'Imag-part signs differ after decideSymbols.');
         end
 
-        function testSymbolDimensions(testCase, M, N_pol)
-            % Verify output symbol array has the expected shape
-            k = log2(M);
-            Ns = 50;
-            Nbits = k * N_pol * Ns;
+        % ---- Output dimensions ----------------------------------------
+        function testSymbolDimensions(testCase)
+            Nbits = testCase.DATA_PER_SF * 4 * 2;    % 2 subframes of data
+            bits  = modem.randomBits(Nbits);
+            [symbols, pilots, training, nSF] = modem.modulate(bits);
 
-            bits = modem.randomBits(Nbits);
-            symbols = modem.modulate(bits, M, N_pol);
-
-            testCase.verifySize(symbols, [Ns, N_pol]);
+            testCase.verifyEqual(nSF, 2, 'Expected 2 subframes.');
+            testCase.verifySize(symbols, [2 * testCase.SUBFRAME_SYMS, 2]);
+            testCase.verifySize(pilots,  [testCase.N_BLOCKS, 2]);
+            testCase.verifySize(training, [testCase.N_TRAIN, 2]);
         end
 
-        function testUnitAveragePower(testCase, M, N_pol)
-            % Verify constellation has approximately unit average power
-            k = log2(M);
-            Nbits = k * N_pol * 4096;
+        % ---- CPON framing structure: training at correct positions -----
+        function testTrainingPositions(testCase)
+            Nbits = testCase.DATA_PER_SF * 4;
+            bits  = modem.randomBits(Nbits);
+            [symbols, ~, training, ~] = modem.modulate(bits);
 
-            bits = modem.randomBits(Nbits);
-            symbols = modem.modulate(bits, M, N_pol);
-
-            avgPower = mean(abs(symbols(:)).^2);
-            testCase.verifyEqual(avgPower, 1, 'AbsTol', 0.05, ...
-                'Average symbol power should be ~1.');
+            % Training symbols TS2..TS11 at positions 2..11
+            testCase.verifyEqual(symbols(2:testCase.N_TRAIN, :), ...
+                training(2:testCase.N_TRAIN, :), ...
+                'Training symbols TS2..TS11 mismatch at subframe start.');
         end
-    end
 
-    methods (Test)
-        function testInvalidMThrows(testCase)
-            threw = false;
-            try
-                modem.modulate([0;1;0;1], 3, 1);
-            catch
-                threw = true;
+        % ---- CPON framing: pilots at every 32nd position ---------------
+        function testPilotPositions(testCase)
+            Nbits = testCase.DATA_PER_SF * 4;
+            bits  = modem.randomBits(Nbits);
+            [symbols, pilots, ~, ~] = modem.modulate(bits);
+
+            % Pilot at position 1 (TS1 = pilot 1)
+            testCase.verifyEqual(symbols(1, :), pilots(1, :), ...
+                'Pilot 1 (TS1) mismatch.');
+
+            % Pilots at positions 33, 65, ..., 3681 (block boundaries)
+            for blk = 2:testCase.N_BLOCKS
+                pos = (blk - 1) * testCase.BLOCK_LEN + testCase.BLOCK_LEN;
+                testCase.verifyEqual(symbols(pos, :), pilots(blk, :), ...
+                    sprintf('Pilot at block %d (pos %d) mismatch.', blk, pos));
             end
-            testCase.verifyTrue(threw, ...
-                'qam_modulate with non-power-of-2 M should throw an error.');
         end
 
-        function testNotEnoughBitsThrows(testCase)
-            threw = false;
-            try
-                modem.modulate([0;1], 16, 2);
-            catch
-                threw = true;
-            end
-            testCase.verifyTrue(threw, ...
-                'modulate with too few bits should throw an error.');
+        % ---- Pilot amplitude -------------------------------------------
+        function testPilotAmplitude(testCase)
+            Nbits = testCase.DATA_PER_SF * 4;
+            bits  = modem.randomBits(Nbits);
+            [~, pilots, training, ~] = modem.modulate(bits);
+
+            % Pilots and training should be at ±3 ±3j
+            testCase.verifyEqual(abs(real(pilots(:))),  3*ones(numel(pilots),1), ...
+                'Pilot real amplitudes should all be 3.');
+            testCase.verifyEqual(abs(imag(pilots(:))),  3*ones(numel(pilots),1), ...
+                'Pilot imag amplitudes should all be 3.');
+            testCase.verifyEqual(abs(real(training(:))), 3*ones(numel(training),1), ...
+                'Training real amplitudes should all be 3.');
+            testCase.verifyEqual(abs(imag(training(:))), 3*ones(numel(training),1), ...
+                'Training imag amplitudes should all be 3.');
         end
 
+        % ---- randomBits length and binary values ----------------------
         function testRandomBitsLength(testCase)
             bits = modem.randomBits(200);
             testCase.verifyLength(bits, 200);
@@ -96,17 +114,26 @@ classdef test_QAMModem < matlab.unittest.TestCase
                 'randomBits should only produce 0s and 1s.');
         end
 
+        % ---- Slicer: QPSK sign decision ------------------------------
+        function testSlicerQPSK(testCase)
+            s_in  = [0.7+0.3j; -2.5-0.1j; 0.01-99j; -0.5+0.5j];
+            s_exp = [1+1j; -1-1j; 1-1j; -1+1j];
+            s_out = modem.slicer(s_in);
+            testCase.verifyEqual(s_out, s_exp, ...
+                'Slicer should produce ±1±1j based on sign.');
+        end
+
+        % ---- Pulse shaping plot (QPSK) -------------------------------
         function testPulseShapingPlot(testCase)
-            % Plot matched-filter output for rect and RRC pulse shaping
-            M_  = 4;
-            SpS = 2;
-            Ns  = 64;
-            k   = log2(M_);
+            SpS     = 2;
+            Ns      = 64;
             rolloff = 0.25;
             span    = 10;
 
-            bits    = modem.randomBits(k * Ns);
-            symbols = modem.modulate(bits, M_, 1);
+            Nbits   = 4 * Ns;          % 2 bits/sym/pol * 2 pols * Ns
+            bits    = modem.randomBits(Nbits);
+            [symbols, ~, ~, ~] = modem.modulate(bits);
+            symbols = symbols(1:Ns, 1);   % single pol, Ns symbols
 
             % Rectangular
             txRect = modem.rectPulse(symbols, SpS);

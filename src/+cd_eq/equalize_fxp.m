@@ -51,7 +51,7 @@ function Out = equalize_fxp(In, D, L, CLambda, Rs, NPol, SpSIn, NFFT, po2Twiddle
     Rs_si      = Rs * 1e9;
 
     %% Compute overlap length (double helper, same as float version)
-    NOverlap = computeOverlap(D, L, CLambda, Rs, SpSIn, NFFT);
+    NOverlap = cd_eq.computeOverlap(D, L, CLambda, Rs, SpSIn, NFFT);
     stepLen  = NFFT - NOverlap;
     halfOv   = NOverlap / 2;          % NOverlap is guaranteed even
 
@@ -110,7 +110,7 @@ function Out = equalize_fxp(In, D, L, CLambda, Rs, NPol, SpSIn, NFFT, po2Twiddle
             InB = InPad2(wStart : wStart + NFFT - 1, pol);
 
             % --- Forward FFT ----------------------------------------
-            X = fft_fxp(InB, false, po2Twiddle, Tfft);
+            X = fft.fft_fxp(InB, false, po2Twiddle, Tfft);
 
             % --- Frequency-domain CD compensation -------------------
             Y = complex(zeros(NFFT, 1, 'like', T.acc));
@@ -119,7 +119,7 @@ function Out = equalize_fxp(In, D, L, CLambda, Rs, NPol, SpSIn, NFFT, po2Twiddle
             end
 
             % --- Inverse FFT ----------------------------------------
-            outFDE = fft_fxp(Y, true, po2Twiddle, Tfft);
+            outFDE = fft.fft_fxp(Y, true, po2Twiddle, Tfft);
 
             % --- Keep only the valid (non-aliased) samples -----------
             oStart = (i - 1) * stepLen + 1;

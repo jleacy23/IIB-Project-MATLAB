@@ -1,29 +1,23 @@
-function s_dec = slicer(s_rot, M) %#codegen
-%SLICER  Nearest-neighbour decision for square M-QAM, unit average power.
+function s_dec = slicer(s_rot) %#codegen
+%SLICER  QPSK hard decision — returns nearest ±1 ±1j constellation point.
 %
-%   s_dec = slicer(s_rot, M)
+%   s_dec = slicer(s_rot)
 %
-%   Inputs
-%     s_rot - complex double rotated sample (scalar)
-%     M     - QAM order (4, 16, 64, 256, ...)  Must be a perfect square.
+%   For QPSK the decision is simply the sign of the real and imaginary
+%   parts.  This is far cheaper than the generic M-QAM slicer.
+%
+%   Input
+%     s_rot - complex sample (scalar, vector or array)
 %
 %   Output
-%     s_dec - complex double nearest constellation point (unit average power)
-%
-    % Normalisation factor and constellation half-extent
-    k      = sqrt((2 * (M - 1)) / 3);   % scale: normalised -> unnormalised
-    extent = sqrt(M) - 1;               % maximum unnormalised level
+%     s_dec - complex nearest QPSK point (±1 ±1j), same size as s_rot
 
-    % Real axis decision
-    x_re  = real(s_rot) * k;
-    d_re  = 2 * round((x_re - 1) / 2) + 1;
-    d_re  = min(extent, max(-extent, d_re));
+    d_re = sign(real(s_rot));
+    d_im = sign(imag(s_rot));
 
-    % Imaginary axis decision
-    x_im  = imag(s_rot) * k;
-    d_im  = 2 * round((x_im - 1) / 2) + 1;
-    d_im  = min(extent, max(-extent, d_im));
+    % Handle exact zero (map to +1 by convention)
+    d_re(d_re == 0) = 1;
+    d_im(d_im == 0) = 1;
 
-    % Scale back to unit average power
-    s_dec = complex(d_re / k, d_im / k);
+    s_dec = complex(d_re, d_im);
 end

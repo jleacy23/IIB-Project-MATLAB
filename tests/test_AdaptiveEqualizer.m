@@ -39,14 +39,13 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
     % ================================================================
     methods (Test)
 
-        % -------- 4-QAM CMA -----------------------
+        % -------- QPSK CMA -----------------------
         function testQPSK_CMA(testCase)
-            M = 4;
-            [rxSym, eqSym, txBits, symbols] = runScenario(testCase, M, 'CMA', ...
+            [rxSym, eqSym, txBits, symbols] = runScenario(testCase, 'CMA', ...
                 testCase.NTaps, testCase.Mu, true, testCase.N1, [], ...
                 testCase.NOut);
             plotBeforeAfter(testCase, rxSym, eqSym, ...
-                '4-QAM  |  CMA', M, 'AWGN + PMD');
+                'QPSK  |  CMA', 'AWGN + PMD');
 
             testCase.verifyTrue(all(isfinite(eqSym(:))), ...
                 'Equalizer output contains NaN/Inf.');
@@ -59,14 +58,14 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
             totalErrors = 0;
             totalBits   = 0;
             for p = 1:testCase.N_pol
-                refBitsPol = modem.symbolsToBits(refSyms(:,p), M);
+                refBitsPol = modem.symbolsToBits(refSyms(:,p));
                 bestPolBER = Inf;
                 % try both EQ outputs (equalizer may swap pols)
                 for q = 1:testCase.N_pol
                     for kk = 0:31
                         rotated = eqSym(:,q) .* exp(-1j * kk * pi/16);
-                        decSym  = modem.decideSymbols(rotated, M, 1);
-                        decBits = modem.symbolsToBits(decSym, M);
+                        decSym  = modem.decideSymbols(rotated);
+                        decBits = modem.symbolsToBits(decSym);
                         polBER  = sum(refBitsPol ~= decBits) / numel(refBitsPol);
                         if polBER < bestPolBER, bestPolBER = polBER; end
                     end
@@ -75,19 +74,18 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
                 totalBits   = totalBits + numel(refBitsPol);
             end
             bestBER = totalErrors / totalBits;
-            fprintf('4-QAM CMA BER = %.2e\n', bestBER);
+            fprintf('QPSK CMA BER = %.2e\n', bestBER);
             testCase.verifyLessThan(bestBER, testCase.BER_THRESHOLD, ...
-                sprintf('4-QAM CMA BER %.2e exceeds threshold.', bestBER));
+                sprintf('QPSK CMA BER %.2e exceeds threshold.', bestBER));
         end
 
-        % -------- 16-QAM CMA+RDE ------------------
-        function test16QAM_CMARERDE(testCase)
-            M = 16;
-            [rxSym, eqSym, txBits, symbols] = runScenario(testCase, M, 'CMA+RDE', ...
+        % -------- QPSK CMA+RDE ------------------
+        function testQPSK_CMARERDE(testCase)
+            [rxSym, eqSym, txBits, symbols] = runScenario(testCase, 'CMA+RDE', ...
                 testCase.NTaps, testCase.Mu, true, testCase.N1, 4000, ...
                 testCase.NOut);
             plotBeforeAfter(testCase, rxSym, eqSym, ...
-                '16-QAM  |  CMA+RDE', M, 'AWGN + PMD');
+                'QPSK  |  CMA+RDE', 'AWGN + PMD');
 
             testCase.verifyTrue(all(isfinite(eqSym(:))), ...
                 'Equalizer output contains NaN/Inf.');
@@ -97,14 +95,14 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
             totalErrors = 0;
             totalBits   = 0;
             for p = 1:testCase.N_pol
-                refBitsPol = modem.symbolsToBits(refSyms(:,p), M);
+                refBitsPol = modem.symbolsToBits(refSyms(:,p));
                 bestPolBER = Inf;
                 % try both EQ outputs (equalizer may swap pols)
                 for q = 1:testCase.N_pol
                     for kk = 0:127
                         rotated = eqSym(:,q) .* exp(-1j * kk * pi/64);
-                        decSym  = modem.decideSymbols(rotated, M, 1);
-                        decBits = modem.symbolsToBits(decSym, M);
+                        decSym  = modem.decideSymbols(rotated);
+                        decBits = modem.symbolsToBits(decSym);
                         polBER  = sum(refBitsPol ~= decBits) / numel(refBitsPol);
                         if polBER < bestPolBER, bestPolBER = polBER; end
                     end
@@ -113,19 +111,18 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
                 totalBits   = totalBits + numel(refBitsPol);
             end
             bestBER = totalErrors / totalBits;
-            fprintf('16-QAM CMA+RDE BER = %.2e\n', bestBER);
+            fprintf('QPSK CMA+RDE BER = %.2e\n', bestBER);
             testCase.verifyLessThan(bestBER, testCase.BER_THRESHOLD, ...
-                sprintf('16-QAM CMA+RDE BER %.2e exceeds threshold.', bestBER));
+                sprintf('QPSK CMA+RDE BER %.2e exceeds threshold.', bestBER));
         end
 
-        % -------- 16-QAM CMA+RDE + phase noise -----
-        function test16QAM_CMARERDE_PhaseNoise(testCase)
-            M = 16;
-            [rxSym, eqSym] = runScenario(testCase, M, 'CMA+RDE', ...
+        % -------- QPSK CMA+RDE + phase noise -----
+        function testQPSK_CMARERDE_PhaseNoise(testCase)
+            [rxSym, eqSym] = runScenario(testCase, 'CMA+RDE', ...
                 testCase.NTaps, testCase.Mu, true, testCase.N1, 4000, ...
                 testCase.NOut, true);
             plotBeforeAfter(testCase, rxSym, eqSym, ...
-                '16-QAM  |  CMA+RDE  |  PN', M, 'AWGN + PMD + Phase Noise');
+                'QPSK  |  CMA+RDE  |  PN', 'AWGN + PMD + Phase Noise');
 
             testCase.verifyTrue(all(isfinite(eqSym(:))), ...
                 'Equalizer output contains NaN/Inf.');
@@ -135,46 +132,43 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
         %  Fixed-point tests: MATLAB fxp vs MEX fxp (same types)
         % ============================================================
 
-        % % -------- 4-QAM CMA (fixed-point MATLAB vs MEX) ------
+        % % -------- QPSK CMA (fixed-point MATLAB vs MEX) ------
         % function testQPSK_CMA_Fxp(testCase)
-        %     M = 4;
-        %     [rxSym, eqML, eqMEX] = runScenarioFxpBoth(testCase, M, 'CMA', ...
+        %     [rxSym, eqML, eqMEX] = runScenarioFxpBoth(testCase, 'CMA', ...
         %         testCase.NTaps, testCase.Mu, true, testCase.N1, 0, ...
         %         testCase.NOut, 'fixed32');
 
-        %     verifyFxpOutput(testCase, eqMEX, double(eqMEX), '4-QAM CMA FXP32-MEX');
-        %     verifyFxpMexMatchesMatlab(testCase, eqML, eqMEX, '4-QAM CMA FXP32');
+        %     verifyFxpOutput(testCase, eqMEX, double(eqMEX), 'QPSK CMA FXP32-MEX');
+        %     verifyFxpMexMatchesMatlab(testCase, eqML, eqMEX, 'QPSK CMA FXP32');
 
         %     plotFxpComparison(testCase, rxSym, eqML, eqMEX, ...
-        %         '4-QAM  |  CMA  |  FXP32', M);
+        %         'QPSK  |  CMA  |  FXP32');
         % end
 
-        % % -------- 16-QAM CMA+RDE (fixed-point MATLAB vs MEX) -
-        % function test16QAM_CMARERDE_Fxp(testCase)
-        %     M = 16;
-        %     [rxSym, eqML, eqMEX] = runScenarioFxpBoth(testCase, M, 'CMA+RDE', ...
+        % % -------- QPSK CMA+RDE (fixed-point MATLAB vs MEX) -
+        % function testQPSK_CMARERDE_Fxp(testCase)
+        %     [rxSym, eqML, eqMEX] = runScenarioFxpBoth(testCase, 'CMA+RDE', ...
         %         testCase.NTaps, testCase.Mu, true, testCase.N1, 4000, ...
         %         testCase.NOut, 'fixed32');
 
-        %     verifyFxpOutput(testCase, eqMEX, double(eqMEX), '16-QAM CMA+RDE FXP32-MEX');
-        %     verifyFxpMexMatchesMatlab(testCase, eqML, eqMEX, '16-QAM CMA+RDE FXP32');
+        %     verifyFxpOutput(testCase, eqMEX, double(eqMEX), 'QPSK CMA+RDE FXP32-MEX');
+        %     verifyFxpMexMatchesMatlab(testCase, eqML, eqMEX, 'QPSK CMA+RDE FXP32');
 
         %     plotFxpComparison(testCase, rxSym, eqML, eqMEX, ...
-        %         '16-QAM  |  CMA+RDE  |  FXP32', M);
+        %         'QPSK  |  CMA+RDE  |  FXP32');
         % end
 
-        % % -------- 16-QAM CMA+RDE + phase noise (fixed-point MATLAB vs MEX) ---
-        % function test16QAM_CMARERDE_PhaseNoise_Fxp(testCase)
-        %     M = 16;
-        %     [rxSym, eqML, eqMEX] = runScenarioFxpBoth(testCase, M, 'CMA+RDE', ...
+        % % -------- QPSK CMA+RDE + phase noise (fixed-point MATLAB vs MEX) ---
+        % function testQPSK_CMARERDE_PhaseNoise_Fxp(testCase)
+        %     [rxSym, eqML, eqMEX] = runScenarioFxpBoth(testCase, 'CMA+RDE', ...
         %         testCase.NTaps, testCase.Mu, true, testCase.N1, 4000, ...
         %         testCase.NOut, 'fixed32', true);
 
-        %     verifyFxpOutput(testCase, eqMEX, double(eqMEX), '16-QAM CMA+RDE PN FXP32-MEX');
-        %     verifyFxpMexMatchesMatlab(testCase, eqML, eqMEX, '16-QAM CMA+RDE PN FXP32');
+        %     verifyFxpOutput(testCase, eqMEX, double(eqMEX), 'QPSK CMA+RDE PN FXP32-MEX');
+        %     verifyFxpMexMatchesMatlab(testCase, eqML, eqMEX, 'QPSK CMA+RDE PN FXP32');
 
         %     plotFxpComparison(testCase, rxSym, eqML, eqMEX, ...
-        %         '16-QAM  |  CMA+RDE  |  PN  |  FXP32', M);
+        %         'QPSK  |  CMA+RDE  |  PN  |  FXP32');
         % end
 
     end
@@ -184,18 +178,17 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
     % ================================================================
     methods (Access = private)
 
-        function [rxSym, eqSym, bits, symbols] = runScenario(testCase, M, Eq, ...
+        function [rxSym, eqSym, bits, symbols] = runScenario(testCase, Eq, ...
                 NTaps, Mu, SingleSpike, N1, N2, NOut, addPhaseNoise)
-            if nargin < 10
+            if nargin < 9
                 addPhaseNoise = false;
             end
             rng(42);
 
             % --- Tx ---
-            k      = log2(M);
-            Nbits  = k * testCase.N_pol * testCase.Ns;
+            Nbits  = 4 * testCase.Ns;
             bits   = modem.randomBits(Nbits);
-            symbols = modem.modulate(bits, M, testCase.N_pol);
+            symbols = modem.modulate(bits);
             % txSig  = modem.rrcPulse(symbols, testCase.SpS, ...
             %     testCase.Rolloff, testCase.Span);
             % duplicate for SpS > 1
@@ -223,20 +216,19 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
             eqSym = eqSig;   % already at symbol rate after equalize
         end
 
-        function [rxSym, eqML, eqMEX] = runScenarioFxpBoth(testCase, M, Eq, ...
+        function [rxSym, eqML, eqMEX] = runScenarioFxpBoth(testCase, Eq, ...
                 NTaps, Mu, SingleSpike, N1, N2, NOut, fxpConfig, addPhaseNoise)
             %RUNSCENARIOFXPBOTH  Run both MATLAB fxp and MEX fxp on
             %  identical fi input, returning both outputs for comparison.
-            if nargin < 11
+            if nargin < 10
                 addPhaseNoise = false;
             end
             rng(42);
 
             % --- Tx ---
-            k      = log2(M);
-            Nbits  = k * testCase.N_pol * testCase.Ns;
+            Nbits  = 4 * testCase.Ns;
             bits   = modem.randomBits(Nbits);
-            symbols = modem.modulate(bits, M, testCase.N_pol);
+            symbols = modem.modulate(bits);
             txSig  = modem.rrcPulse(symbols, testCase.SpS, ...
                 testCase.Rolloff, testCase.Span);
 
@@ -320,7 +312,7 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
             end
         end
 
-        function plotFxpComparison(testCase, rxSym, eqML, eqMEX, titleStr, M)
+        function plotFxpComparison(testCase, rxSym, eqML, eqMEX, titleStr)
             mlDbl  = double(eqML);
             mexDbl = double(eqMEX);
 
@@ -347,11 +339,11 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
                 title(sprintf('MEX FXP – Pol %d', p));
                 xlabel('I'); ylabel('Q');
             end
-            sgtitle(sprintf('%d-QAM  |  %s  |  MATLAB vs MEX', M, titleStr));
+            sgtitle(sprintf('QPSK  |  %s  |  MATLAB vs MEX', titleStr));
         end
 
-        function plotBeforeAfter(testCase, rxSym, eqSym, titleStr, M, channelStr)
-            if nargin < 6
+        function plotBeforeAfter(testCase, rxSym, eqSym, titleStr, channelStr)
+            if nargin < 5
                 channelStr = 'AWGN + PMD';
             end
             figure('Name', titleStr, 'Position', [100 100 1200 500]);
@@ -372,7 +364,7 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
                 title(sprintf('After Adaptive EQ  –  Pol %d', p));
                 xlabel('In-Phase'); ylabel('Quadrature');
             end
-            sgtitle(sprintf('%d-QAM: %s  |  %s', M, channelStr, titleStr));
+            sgtitle(sprintf('QPSK: %s  |  %s', channelStr, titleStr));
         end
     end
 end

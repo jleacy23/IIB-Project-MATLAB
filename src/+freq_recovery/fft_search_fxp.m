@@ -1,4 +1,4 @@
-function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddle, CordicIts, T) %#codegen
+function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddle, CordicIts, T, data_aided, D) %#codegen
 %FFT_SEARCH_FXP  Fixed-point FFT-based frequency offset estimator.
 %
 %   [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddle, CordicIts, T)
@@ -27,14 +27,18 @@ function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddl
 %     po2Twiddle - logical: round twiddle factors to powers of 2 for fft_fxp
 %     CordicIts  - number of CORDIC iterations
 %     T          - fixed-point types table from freq_recovery.fxp_types
+%     data_aided - true = training-aided (default), false = blind 4th-power
+%     D          - number of data symbols for blind mode (required when
+%                  data_aided = false)
 %
 %   Outputs
 %     y                - frequency-corrected subframe [Nsym x NPol], type T.x
-%     frequency_offset - estimated frequency offset [kHz]  (double)
+%     frequency_offset - estimated frequency offset [Hz]  (double)
 
     if nargin < 7 || isempty(T)
         T = freq_recovery.fxp_types('fixed16');
     end
+    if nargin < 8, data_aided = true; end
 
     %% ----------------------------------------------------------------
     %  Fixed-point constants
@@ -50,6 +54,11 @@ function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddl
     [L, N_pol] = size(training);
     Nsym       = size(x, 1);
     Nfft_c     = Nfft;
+    if data_aided
+        No = L;
+    else
+        No = D;
+    end
 
     %% ----------------------------------------------------------------
     %  FFT types (use fixed32 for butterfly precision inside FFT)
@@ -57,14 +66,16 @@ function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddl
     T_fft = fft.fft_fxp_types('fixed32');
 
     %% ----------------------------------------------------------------
-    %  Pre-compute training phases
+    %  Pre-compute training phases (training-aided mode only)
     %% ----------------------------------------------------------------
     training_fi = cast(training, 'like', T.x);
-    phi_tr = zeros(L, N_pol, 'like', T.theta);
-    for p = 1:N_pol
-        for k = 1:L
-            phi_tr(k, p) = cast(cordicangle(training_fi(k, p), CORDIC_ITS), ...
-                                 'like', T.theta);
+    if data_aided
+        phi_tr = zeros(L, N_pol, 'like', T.theta);
+        for p = 1:N_pol
+            for k = 1:L
+                phi_tr(k, p) = cast(cordicangle(training_fi(k, p), CORDIC_ITS), ...
+                                     'like', T.theta);
+            end
         end
     end
 
@@ -80,17 +91,29 @@ function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddl
 
     for p = 1:N_pol
 
-        %% Build z_unit: de-rotate and project onto unit circle via CORDIC
+        %% Build z_pad: unit-circle sequence, zero-padded to Nfft
         z_pad = complex(zeros(Nfft_c, 1, 'like', T.acc));
 
-        for k = 1:L
-            phi_x_k  = cast(cordicangle(x_fi(k, p), CORDIC_ITS), 'like', T.theta);
-            phi_z_k  = phi_x_k - phi_tr(k, p);
+        if data_aided
+            %% Training-aided: phi_z(k) = angle(x(k)) - angle(training(k))
+            for k = 1:L
+                phi_x_k  = cast(cordicangle(x_fi(k, p), CORDIC_ITS), 'like', T.theta);
+                phi_z_k  = phi_x_k - phi_tr(k, p);
 
-            unit_in   = complex(UNIT_RE, ZERO_ACC);
-            z_pad(k)  = cast(cordicrotate(phi_z_k, unit_in, CORDIC_ITS), 'like', T.acc);
+                unit_in  = complex(UNIT_RE, ZERO_ACC);
+                z_pad(k) = cast(cordicrotate(phi_z_k, unit_in, CORDIC_ITS), 'like', T.acc);
+            end
+        else
+            %% Blind: phi_z(k) = 4*angle(x_data(k)),  x_data = x(L+1..L+D)
+            for k = 1:D
+                phi_x_k  = cast(cordicangle(x_fi(L+k, p), CORDIC_ITS), 'like', T.theta);
+                phi_z_k  = cast(4.0 * double(phi_x_k), 'like', T.theta);
+
+                unit_in  = complex(UNIT_RE, ZERO_ACC);
+                z_pad(k) = cast(cordicrotate(phi_z_k, unit_in, CORDIC_ITS), 'like', T.acc);
+            end
         end
-        % Bins L+1 .. Nfft are already zero (zero-padding)
+        % Bins No+1 .. Nfft are already zero (zero-padding)
 
         %% Fixed-point FFT
         Z = fft.fft_fxp(z_pad, false, po2Twiddle, T_fft);   % [Nfft x 1]
@@ -143,6 +166,9 @@ function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddl
         frequency_offset_Hz = frequency_offset_Hz + f_per_pol(p);
     end
     frequency_offset_Hz = frequency_offset_Hz / double(N_pol);
+    if ~data_aided
+        frequency_offset_Hz = frequency_offset_Hz / 4.0;
+    end
 
     %% ----------------------------------------------------------------
     %  Phase correction: accumulated linear ramp via cordicrotate
@@ -158,5 +184,5 @@ function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddl
         end
     end
 
-    frequency_offset = frequency_offset_Hz / 1e3;   % Hz -> kHz
+    frequency_offset = frequency_offset_Hz;
 end

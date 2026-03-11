@@ -116,18 +116,18 @@ function [symbols, pilots, training, nSubframes] = modulate(bits)
         symbols(base + N_TRAIN + (1:nData1), 2) = dataY(dataIdx + (1:nData1));
         dataIdx = dataIdx + nData1;
 
-        % --- Blocks 2..116: 31 data + 1 pilot ---
+        % --- Blocks 2..116: 1 pilot + 31 data ---
         for blk = 2:N_BLOCKS
             blkBase = base + (blk - 1) * BLOCK_LEN;
 
-            % 31 data symbols
-            nDataBlk = BLOCK_LEN - 1;   % 31
-            symbols(blkBase + (1:nDataBlk), 1) = dataX(dataIdx + (1:nDataBlk));
-            symbols(blkBase + (1:nDataBlk), 2) = dataY(dataIdx + (1:nDataBlk));
-            dataIdx = dataIdx + nDataBlk;
+            % 1 pilot at position 1 of the block (first symbol)
+            symbols(blkBase + 1, :) = pilots(blk, :);
 
-            % 1 pilot at position 32
-            symbols(blkBase + BLOCK_LEN, :) = pilots(blk, :);
+            % 31 data symbols at positions 2..32
+            nDataBlk = BLOCK_LEN - 1;   % 31
+            symbols(blkBase + (2:BLOCK_LEN), 1) = dataX(dataIdx + (1:nDataBlk));
+            symbols(blkBase + (2:BLOCK_LEN), 2) = dataY(dataIdx + (1:nDataBlk));
+            dataIdx = dataIdx + nDataBlk;
         end
 
         % Overwrite position 1 with pilot (TS1 = pilot index 1, already done

@@ -35,7 +35,7 @@ function build_carrier_recovery_bps_fxp_mex(P, cfg)
         fprintf('  Deleted existing MEX file: %s\n', mexFile);
     end
 
-    T_bps = carrier_recovery.bps_fxp_types(fxp);
+    T_bps = carrier_recovery.fxp_types(fxp);
 
     % ----------------------------------------------------------------
     % z  –  variable-length complex fi matrix [Nsym x NPol]
@@ -45,18 +45,17 @@ function build_carrier_recovery_bps_fxp_mex(P, cfg)
     In_bps_type = coder.typeof(z_proto, [Inf, P.N_pol], [true, false]);
 
     % ----------------------------------------------------------------
-    % Pilots  –  fixed-length complex fi column vector [PilotLen x 1]
-    %            Size is known at compile time; declared fixed so codegen
-    %            can unroll the pilot correlation loop.
+    % Pilots  –  variable-size complex fi matrix [NBlocks x NPol]
+    %            Row count varies with signal length; column count fixed.
     % ----------------------------------------------------------------
     pilots_proto = fi(complex(0, 0), numerictype(T_bps.x), fimath(T_bps.x));
-    pilots_type  = coder.typeof(pilots_proto, [P.PilotLen, 1], [false, false]);
+    pilots_type  = coder.typeof(pilots_proto, [Inf, P.N_pol], [true, false]);
 
     cordic_its_type = coder.Constant(P.CordicIts);
 
     % ----------------------------------------------------------------
     % Build argument list — must match carrier_recovery.bps_fxp signature:
-    %   (z, N, NPol, M, B, BlockLen, StepSize, Pilots, UsePilots, PilotThreshold, T)
+    %   (z, N, NPol, M, B, BlockLen, StepSize, Pilots, PilotThreshold, CordicIts, T)
     % ----------------------------------------------------------------
     args_bps = { ...
         In_bps_type, ...               % z          [Nsym x NPol]   fi complex
@@ -66,10 +65,9 @@ function build_carrier_recovery_bps_fxp_mex(P, cfg)
         double(P.BPS_B), ...           % B           scalar          double
         double(P.BlockLen), ...        % BlockLen    scalar          double
         double(P.StepSize), ...        % StepSize    scalar          double
-        pilots_type, ...               % Pilots     [PilotLen x 1]  fi complex
-        logical(false), ...            % UsePilots   scalar          logical
+        pilots_type, ...               % Pilots     [NBlocks x NPol] fi complex
         double(P.PilotThreshold), ...  % PilotThreshold scalar       double
-        cordic_its_type, ...       % CordicIts   scalar          double
+        cordic_its_type, ...           % CordicIts   scalar          double
         T_bps};                        % T           struct of fi prototypes
 
     codegen('-config', cfg, ...

@@ -1,11 +1,10 @@
 classdef freq_recovery_comparison < matlab.unittest.TestCase
-%FREQ_RECOVERY_COMPARISON  Compare Tretter-Kay, FFT-search and Fitz
+%FREQ_RECOVERY_COMPARISON  Compare Tretter-Kay, FFT-search and LRP
 %   frequency estimators over a range of offsets and SNRs.
 %
-%   For each SNR one figure is produced showing the mean-squared
-%   frequency-estimation error (MSE, in kHz^2) versus true offset for
-%   all three algorithms.  Each point is averaged over NTrials
-%   independent AWGN realisations.
+%   For each selected frequency offset one figure is produced showing the
+%   normalised RMSE (RMSE / Rs) versus SNR for all three algorithms.
+%   Each point is averaged over NTrials independent AWGN realisations.
 %
 %   Run with:
 %       results = runtests('freq_recovery_comparison');
@@ -14,49 +13,17 @@ classdef freq_recovery_comparison < matlab.unittest.TestCase
     %  Parameters
     % ================================================================
     properties (Constant)
-        Rs        = 30.504432          % symbol rate [GBd]  (CPON spec)
-        NTrials   = 30                 % independent noise trials per point
-        SNR_dB_vec  = [5, 10, 15, 20] % SNR sweep [dB]
-        % Frequency offset sweep [MHz] — stay within Fitz unambiguity range
-        DeltaF_vec  = -1000 : 10 : 1000  % MHz
+        Rs        = 1e-9         % symbol rate normalized to 1 symbol/s
+        NTrials   = 1000                % independent noise trials per point
+        SNR_dB_vec  = 0:1:20             % SNR sweep [dB]
+        % Frequency offset sweep [normalised to Rs = 1] 
+        DeltaF_vec     = [0.3]
+        % Subset of offsets for which individual SNR-sweep figures are produced
+        PlotDeltaF_vec = [0.3]
 
-        % ---- Fixed-point configuration ----------------------------
-        FxpConfig_FR  = 'fixed32'    % 'fixed16' | 'fixed32'
-        CordicIts     = 16           % CORDIC iterations
-        FR_Fitz_N     = 5            % Fitz autocorrelation lag (< TrainingLen=11)
-        FR_Nfft       = 512          % FFT size for fft_search (power of 2, >= 11)
-        FR_Po2Twiddle = false        % power-of-2 twiddle factors in fft_fxp
-    end
-
-    methods (TestClassSetup)
-        function buildFxpMex(testCase)
-            %BUILDFXPMEX  Compile all three frequency-recovery MEX files once.
-            srcDir   = fullfile(fileparts(mfilename('fullpath')), '..', '..', 'src');
-            buildDir = fullfile(fileparts(mfilename('fullpath')), '..', '..', 'build');
-            addpath(srcDir);
-            addpath(buildDir);
-
-            P = struct();
-            P.N_pol         = 2;
-            P.TrainingLen   = 11;   % CPON: 11 training symbols per subframe
-            P.Rs            = testCase.Rs;
-            P.FxpConfig_FR  = testCase.FxpConfig_FR;
-            P.CordicIts     = testCase.CordicIts;
-            P.FR_Fitz_N     = testCase.FR_Fitz_N;
-            P.FR_Nfft       = testCase.FR_Nfft;
-            P.FR_Po2Twiddle = testCase.FR_Po2Twiddle;
-
-            cfg = coder.config('mex');
-            cfg.GenerateReport     = false;
-            cfg.EnableMexProfiling = false;
-
-            fprintf('\n--- Building freq_recovery MEX files (%s) ---\n', ...
-                    testCase.FxpConfig_FR);
-            build_freq_recovery_tretter_kay_fxp_mex(P, cfg);
-            build_freq_recovery_fitz_fxp_mex(P, cfg);
-            build_freq_recovery_fft_search_fxp_mex(P, cfg);
-            fprintf('--- MEX build complete ---\n\n');
-        end
+        % Zero-padding factor K for the floating-point fft_search
+        % K * TrainingLen(11) ≈ 1024
+        FR_FFT_K      = 40
     end
 
     methods (TestMethodSetup)
@@ -84,109 +51,95 @@ classdef freq_recovery_comparison < matlab.unittest.TestCase
             NF       = numel(DeltaF_v);
             NSNR     = numel(SNR_v);
 
-            % Pre-generate one symbol subframe (training fixed; symbols
-            % reused across trials — only the AWGN changes)
-            [symbols, training] = freq_recovery_comparison.generateSubframe();
+            % Results: NMSE_alg(SNR_idx, DeltaF_idx)
+            NMSE_fft = zeros(NSNR, NF);
+            NMSE_dk  = zeros(NSNR, NF);
 
-            % Fixed-point types and cast training once (same for every trial)
-            T_fr        = freq_recovery.fxp_types(testCase.FxpConfig_FR);
-            training_fi = cast(training, 'like', T_fr.x);
+            % Modified Cramér-Rao bound (MCRB) for frequency estimation
+            N_train   = 11;   % TrainingLen
+            SNR_lin   = 10.^(SNR_v(:)' ./ 10);
+            NMSE_MCRB = 3 * 0.5 ./ (2 * pi^2 * N_train^3 .* SNR_lin); % 0.5 for 2-pol average
 
-            % Results: MSE_alg(SNR_idx, DeltaF_idx)
-            MSE_tk  = zeros(NSNR, NF);
-            MSE_fft = zeros(NSNR, NF);
-            MSE_fz  = zeros(NSNR, NF);
+            % Pre-compute indices of the plot frequencies inside DeltaF_v
+            PlotDeltaF_v    = testCase.PlotDeltaF_vec;
+            NPlot           = numel(PlotDeltaF_v);
+            plot_df_indices = zeros(1, NPlot);
+            for pi_ = 1:NPlot
+                [~, plot_df_indices(pi_)] = min(abs(DeltaF_v - PlotDeltaF_v(pi_)));
+            end
 
             for si = 1:NSNR
                 SNR_dB = SNR_v(si);
                 fprintf('SNR = %d dB\n', SNR_dB);
 
                 for fi = 1:NF
-                    df       = DeltaF_v(fi);
-                    true_kHz = df * 1e3;   % MHz -> kHz
+                    df = DeltaF_v(fi);
 
-                    se_tk  = zeros(NT, 1);
                     se_fft = zeros(NT, 1);
-                    se_fz  = zeros(NT, 1);
-
-                    % Apply LO shift once — noise is the only thing
-                    % that changes between trials
-                    rx_shifted = channel.lo_freq_shift(symbols, df, Rs_, 1);
+                    se_dk  = zeros(NT, 1);
 
                     for tr = 1:NT
-                        rx   = channel.add_awgn(rx_shifted, SNR_dB);
-                        x_fi = cast(rx, 'like', T_fr.x);
+                        % Random ±3±3j training symbols (16-QAM corners), 11 x 2
+                        training = (2*randi([0 1], 11, 2) - 1)*3 + 1j*(2*randi([0 1], 11, 2) - 1)*3;
 
-                        [~, est_tk]  = freq_recovery.tretter_kay_fxp_mex( ...
-                            x_fi, training_fi, Rs_, testCase.CordicIts, T_fr);
-                        [~, est_fft] = freq_recovery.fft_search_fxp_mex( ...
-                            x_fi, training_fi, Rs_, testCase.FR_Nfft, ...
-                            testCase.FR_Po2Twiddle, testCase.CordicIts, T_fr);
-                        [~, est_fz]  = freq_recovery.fitz_fxp_mex( ...
-                            x_fi, training_fi, Rs_, testCase.FR_Fitz_N, ...
-                            testCase.CordicIts, T_fr);
+                        % Apply LO shift and AWGN to training block only
+                        % lo_freq_shift expects DeltaF in MHz; df is in Hz (Rs=1)
+                        rx_shifted = channel.lo_freq_shift(training, df * 1e-6, Rs_, 1);
+                        rx         = channel.add_awgn(rx_shifted, SNR_dB);
 
-                        se_tk(tr)  = (est_tk  - true_kHz)^2;
-                        se_fft(tr) = (est_fft - true_kHz)^2;
-                        se_fz(tr)  = (est_fz  - true_kHz)^2;
+                        [~, est_fft] = freq_recovery.fft_search( ...
+                            rx, training, Rs_, testCase.FR_FFT_K);
+                        [~, est_dk]  = freq_recovery.differential_kay( ...
+                            rx, training, Rs_);
+
+                        se_fft(tr) = (est_fft - df)^2;
+                        se_dk(tr)  = (est_dk  - df)^2;
                     end
 
-                    % Normalise by true offset squared; NaN at zero offset
-                    if true_kHz ~= 0
-                        norm = true_kHz^2;
-                    else
-                        norm = NaN;
-                    end
-
-                    MSE_tk(si,  fi) = mean(se_tk)  / norm;
-                    MSE_fft(si, fi) = mean(se_fft) / norm;
-                    MSE_fz(si,  fi) = mean(se_fz)  / norm;
+                    NMSE_fft(si, fi) = mean(se_fft);
+                    NMSE_dk(si,  fi) = mean(se_dk);
                 end
             end
 
             % ============================================================
-            %  Plot — one figure per SNR
+            %  Plot — one figure per selected frequency, SNR on x-axis
             % ============================================================
-            colors = lines(3);
-            algNames = {'Tretter-Kay', 'FFT search', 'Fitz'};
+            colors   = lines(2);
+            algNames = {'FFT search (float)', 'Diff+Kay (float)'};
 
-            for si = 1:NSNR
-                figure('Name', sprintf('Freq Recovery MSE | SNR = %d dB', SNR_v(si)), ...
-                       'Position', [60 + (si-1)*40, 60 + (si-1)*40, 820, 520], ...
+            for pi_ = 1:NPlot
+                df_idx    = plot_df_indices(pi_);
+                df_actual = DeltaF_v(df_idx);
+
+                figure('Name', sprintf('Freq Recovery NMSE | df = %g MHz', df_actual), ...
+                       'Position', [60 + (pi_-1)*40, 60 + (pi_-1)*40, 820, 520], ...
                        'Color', 'w');
 
-                semilogy(DeltaF_v, MSE_tk(si,:),  '-', ...
-                    'Color', colors(1,:), 'LineWidth', 1.8, ...
-                    'DisplayName', algNames{1});
+                semilogy(SNR_v, NMSE_fft(:, df_idx), '-',  'Color', colors(1,:), 'LineWidth', 1.8, 'DisplayName', algNames{1});
                 hold on;
-                semilogy(DeltaF_v, MSE_fft(si,:), '-', ...
-                    'Color', colors(2,:), 'LineWidth', 1.8, ...
-                    'DisplayName', algNames{2});
-                semilogy(DeltaF_v, MSE_fz(si,:),  '-', ...
-                    'Color', colors(3,:), 'LineWidth', 1.8, ...
-                    'DisplayName', algNames{3});
+                semilogy(SNR_v, NMSE_dk(:,  df_idx), '--', 'Color', colors(2,:), 'LineWidth', 1.8, 'DisplayName', algNames{2});
+                semilogy(SNR_v, NMSE_MCRB,            'k-', 'LineWidth', 2.0,     'DisplayName', sprintf('MCRB (N=%d)', N_train));
                 hold off;
 
                 grid on;
                 set(gca, 'FontSize', 13, 'LineWidth', 1, 'Box', 'on');
-                xlabel('True frequency offset [MHz]', 'FontSize', 14);
-                ylabel('Normalised MSE [-]',             'FontSize', 14);
+                xlabel('SNR [dB]', 'FontSize', 14);
+                ylabel('Normalised RMSE  (RMSE / R_s)  [-]', 'FontSize', 14);
                 legend('Location', 'best', 'FontSize', 12);
-                title(sprintf('Normalised Frequency Estimation MSE  |  SNR = %d dB  |  %d trials', ....
-                              SNR_v(si), NT));
+                title(sprintf('Normalised Frequency Estimation MSE  |  \Deltaf = %g MHz  |  %d trials', ...
+                              df_actual, NT));
             end
 
             % Print summary table
             fprintf('\n%-14s', 'DeltaF [MHz]');
             for si = 1:NSNR
-                fprintf('  SNR=%ddB TK      FFT      Fitz  ', SNR_v(si));
+                fprintf('  SNR=%ddB FFT      DiffKay', SNR_v(si));
             end
             fprintf('\n');
             for fi = 1:NF
                 fprintf('%-14.0f', DeltaF_v(fi));
                 for si = 1:NSNR
-                    fprintf('  %8.1f  %8.1f  %8.1f  ', ...
-                        MSE_tk(si,fi), MSE_fft(si,fi), MSE_fz(si,fi));
+                    fprintf('  %8.2e %8.2e', NMSE_fft(si,fi), NMSE_dk(si,fi));
                 end
                 fprintf('\n');
             end

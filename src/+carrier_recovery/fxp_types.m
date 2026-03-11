@@ -1,10 +1,10 @@
-function T = bps_fxp_types(dt) %#codegen
-%bps_FXP_TYPES  Data-type table for bps_fxp.
+function T = cr_fxp_types(dt) %#codegen
+%CR_FXP_TYPES  Shared fixed-point type table for bps_fxp and viterbiViterbi_fxp.
 %
-%   T = bps_fxp_types(dt)
+%   T = cr_fxp_types(dt)
 %
 %   Returns a struct of fi prototype objects that define every fixed-point
-%   type used inside bps_fxp.
+%   type used inside bps_fxp and viterbiViterbi_fxp.
 %
 %   Supported configurations
 %     'double'   - all types are double (floating-point baseline / reference)
@@ -14,30 +14,25 @@ function T = bps_fxp_types(dt) %#codegen
 %
 %   Fields
 %     T.x      - input / output signal (complex QAM samples, rotation factors)
-%     T.w      - reserved for filter coefficients (unused in BPS; provided
-%                for interface parity with carrier_recovery.viterbiViterbi_fxp_types)
+%     T.w      - filter coefficients (VV filter; unused in BPS but provided
+%                for interface parity)
 %     T.theta  - phase angle type (must accommodate ±pi ≈ ±3.14)
 %     T.acc    - wide accumulator for pilot correlation inner products
 %
 %   Numerical design notes
 %
 %   Signal range
-%     BPS operates on unit-average-power QAM symbols (|z| ≈ 1 with noise).
-%     The rotation factors exp(-j*theta) have unit magnitude.
-%     Rotated samples therefore also have magnitude ≈ 1.
-%     FL = 12 on a 16-bit word gives range ±8, LSB ≈ 2.4e-4 — comfortable.
+%     Unit-average-power QAM symbols and unit-magnitude rotation factors
+%     both have |z| ≈ 1.  WL=32 / FL=8 gives range ±128, LSB ≈ 3.9e-3.
 %
 %   Phase range
-%     BPS test phases span ±pi/4 (≈ ±0.785).  The unwrapped phase can reach
-%     ±pi but not beyond, so the same FL = 12 / range ±8 covers T.theta.
-%     (Same rationale as carrier_recovery.viterbiViterbi_fxp_types.)
+%     Test phases span ±pi/4; unwrapped phase stays within ±pi ≈ ±3.14.
+%     WL=32 / FL=28 gives range ±8, LSB ≈ 3.7e-9 — amply precise.
 %
-%   Accumulator width
-%     The BPS *metric* (sum of squared distances) is kept in double — see
-%     bps_fxp.  T.acc is only used for the pilot correlation sum:
-%       max terms = NPol * PilotLen products, each ≤ |z|^2 ≈ 1
-%     16 extra integer bits (32-bit FL12 acc) handle up to 2^16 = 65536
-%     terms without overflow — far more than any realistic pilot length.
+%   Accumulator width (fixed32)
+%     One pilot product per block; no summation across symbols needed.
+%     A 64-bit accumulator with FL=28 prevents overflow and preserves
+%     precision through the cordicangle call.
 %
 %   SpecifyPrecision fimath
 %     All fi arithmetic uses SpecifyPrecision so every product and sum is
@@ -61,53 +56,50 @@ function T = bps_fxp_types(dt) %#codegen
 
         %% ==============================================================
         case 'fixed16'
-            % --- Signal & rotation-factor type: 16-bit, FL = 12 ------
-            %   Range ±8,  LSB = 2^{-12} ≈ 2.4e-4
-            %   Covers unit-power QAM samples and unit-magnitude exp(-jθ).
+            % --- Signal & coefficient type: 32-bit, FL = 8 -----------
+            %   Range ±128, LSB = 2^{-8} ≈ 3.9e-3.
             Fx = fimath( ...
                 'RoundingMethod',        'Floor', ...
                 'OverflowAction',        'Wrap',  ...
                 'ProductMode',           'SpecifyPrecision', ...
                 'ProductWordLength',      32,     ...
-                'ProductFractionLength',  8,     ...
+                'ProductFractionLength',  8,      ...
                 'SumMode',               'SpecifyPrecision', ...
                 'SumWordLength',          32,     ...
                 'SumFractionLength',      8);
 
-            % --- Phase / angle type: 16-bit, FL = 12 -----------------
-            %   Same range as Fx; ±8 comfortably fits ±pi ≈ ±3.14.
+            % --- Phase / angle type: 32-bit, FL = 8 ------------------
+            %   Same range; ±128 comfortably fits ±pi ≈ ±3.14.
             Fth = fimath( ...
                 'RoundingMethod',        'Floor', ...
                 'OverflowAction',        'Wrap',  ...
                 'ProductMode',           'SpecifyPrecision', ...
                 'ProductWordLength',      32,     ...
-                'ProductFractionLength',  8,     ...
+                'ProductFractionLength',  8,      ...
                 'SumMode',               'SpecifyPrecision', ...
                 'SumWordLength',          32,     ...
                 'SumFractionLength',      8);
 
-            % --- Accumulator: 32-bit, FL = 12 ------------------------
-            %   Extra 16 integer bits absorb NPol*PilotLen pilot
-            %   correlation products without overflow.
+            % --- Accumulator: 32-bit, FL = 8 -------------------------
             Facc = fimath( ...
                 'RoundingMethod',        'Floor', ...
                 'OverflowAction',        'Wrap',  ...
                 'ProductMode',           'SpecifyPrecision', ...
                 'ProductWordLength',      32,     ...
-                'ProductFractionLength',  8,     ...
+                'ProductFractionLength',  8,      ...
                 'SumMode',               'SpecifyPrecision', ...
                 'SumWordLength',          32,     ...
                 'SumFractionLength',      8);
 
             T.x     = fi([], 1, 32, 8, Fx);
-            T.w     = fi([], 1, 32, 8, Fx);    % parity; unused in BPS
+            T.w     = fi([], 1, 32, 8, Fx);
             T.theta = fi([], 1, 32, 8, Fth);
             T.acc   = fi([], 1, 32, 8, Facc);
 
         %% ==============================================================
         case 'fixed32'
-            % --- Signal & rotation-factor type: 32-bit, FL = 24 ------
-            %   Range ±256, LSB = 2^{-24} ≈ 6e-8
+            % --- Signal & coefficient type: 32-bit, FL = 24 ----------
+            %   Range ±256, LSB = 2^{-24} ≈ 6e-8.
             Fx = fimath( ...
                 'RoundingMethod',        'Floor', ...
                 'OverflowAction',        'Wrap',  ...
@@ -119,7 +111,7 @@ function T = bps_fxp_types(dt) %#codegen
                 'SumFractionLength',      24);
 
             % --- Phase / angle type: 32-bit, FL = 28 -----------------
-            %   Range ±8 fits ±pi,  LSB ≈ 3.7e-9
+            %   Range ±8 fits ±pi,  LSB ≈ 3.7e-9.
             Fth = fimath( ...
                 'RoundingMethod',        'Floor', ...
                 'OverflowAction',        'Wrap',  ...
@@ -131,7 +123,7 @@ function T = bps_fxp_types(dt) %#codegen
                 'SumFractionLength',      28);
 
             % --- Accumulator: 64-bit, FL = 28 ------------------------
-            %   Handles arbitrarily long pilot sequences without saturation.
+            %   Handles the single-symbol pilot product without overflow.
             Facc = fimath( ...
                 'RoundingMethod',        'Floor', ...
                 'OverflowAction',        'Wrap',  ...
@@ -148,7 +140,7 @@ function T = bps_fxp_types(dt) %#codegen
             T.acc   = fi([], 1, 64, 28, Facc);
 
         otherwise
-            error('bps_fxp_types:BadType', ...
+            error('cr_fxp_types:BadType', ...
                 'Unknown type configuration ''%s''.', dt);
     end
 end

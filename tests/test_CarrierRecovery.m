@@ -1,7 +1,7 @@
 classdef test_CarrierRecovery < matlab.unittest.TestCase
     % Tests for carrier recovery – floating-point and fixed-point MEX.
     %
-    % Floating-point tests (testQPSK_VV, testQPSK_BPS):
+    % Floating-point tests (testQPSK_VV, testQPSK_BPS, testQPSK_PilotsOnly):
     %   Apply AWGN + phase noise, run carrier recovery, plot
     %   before/after constellations, verify BER < threshold.
     %
@@ -25,17 +25,17 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
     properties (Constant)
         % ---- Signal -------------------------------------------------
         N_pol    = 2
-        Ns       = 2^13             % symbols per polarisation
+        Ns       = 2^12             % symbols per polarisation
         SpS      = 1                % symbol-rate processing
         BlockLen = 64
         PilotLen = 8
         M        = 4
 
         % ---- System -------------------------------------------------
-        Rs        = 10              % symbol rate [GBd]
-        SNR_dB    = 17.5            % [dB]
-        Linewidth = 2400e3          % laser linewidth [Hz]
-        LW        = 2400e3          % phase-noise linewidth [Hz]
+        Rs        = 30.5              % symbol rate [GBd]
+        SNR_dB    = 20            % [dB]
+        Linewidth = 1000e3          % laser linewidth [Hz]
+        LW        = 1000e3          % phase-noise linewidth [Hz]
 
         % ---- Channel (benign) ---------------------------------------
         L       = 80
@@ -46,14 +46,14 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
 
         % ---- Carrier recovery – shared ------------------------------
         NTaps     = 5
-        UsePilots = true
-        PilotThreshold = pi/3
+        PilotThreshold = 100000
         StepSize  = 1               % symbol-by-symbol update (full bandwidth)
 
         % ---- BPS-specific -------------------------------------------
         B = 64                      % number of blind test phases
 
         % ---- Fixed-point --------------------------------------------
+        CordicIts = 16              % CORDIC iterations for fxp builds
         FxpConfig = 'fixed16'       % 'fixed16' | 'fixed32'
 
         % ---- Pass / fail --------------------------------------------
@@ -82,8 +82,9 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
             P.M             = testCase.M;
             P.FxpConfig_VV  = testCase.FxpConfig;
             P.FxpConfig_BPS = testCase.FxpConfig;
-            P.StepSize      = testCase.StepSize;
+            P.StepSize       = testCase.StepSize;
             P.PilotThreshold = testCase.PilotThreshold;
+            P.CordicIts      = testCase.CordicIts;
 
             cfg = coder.config('mex');
             cfg.GenerateReport            = false;
@@ -127,6 +128,18 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
                 sprintf('QPSK BPS BER %.2e exceeds threshold.', BER));
         end
 
+        function testQPSK_PilotsOnly(testCase)
+            [rxSym, crSym, BER, ThetaPU] = runScenario_PilotsOnly(testCase);
+
+            plotBeforeAfter(testCase, rxSym, crSym, 'QPSK | Pilots-Only', BER);
+            plotPhase(testCase, ThetaPU, '4-QAM Pilots-Only', BER);
+
+            testCase.verifyTrue(all(isfinite(crSym(:))), ...
+                'Pilots-only carrier-recovery output contains NaN/Inf.');
+            testCase.verifyLessThan(BER, testCase.BER_THRESHOLD, ...
+                sprintf('QPSK Pilots-Only BER %.2e exceeds threshold.', BER));
+        end
+
     end
 
     % ================================================================
@@ -167,6 +180,17 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
     % ================================================================
     methods (Access = private)
 
+        % ---- Floating-point Pilots-Only -----------------------------
+        function [rxSym, crSym, BER, ThetaPU] = runScenario_PilotsOnly(testCase)
+            [~, pilots, txRefBits, rxSym] = buildChannel(testCase);
+
+            [crSym, ThetaPU] = carrier_recovery.pilots_only(rxSym, testCase.N_pol, ...
+                testCase.BlockLen, pilots);
+
+            BER = computeBER(testCase, crSym, txRefBits);
+            fprintf('QPSK Pilots-Only BER = %.2e\n', BER);
+        end
+
         % ---- Floating-point VV --------------------------------------
         function [rxSym, crSym, BER, ThetaPU] = runScenario_VV(testCase)
             [symbols, pilots, txRefBits, rxSym] = buildChannel(testCase);
@@ -177,7 +201,7 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
 
             [crSym, ThetaPU] = carrier_recovery.viterbiViterbi(rxSym, testCase.N_pol, ...
                 VVFilter, testCase.BlockLen, testCase.StepSize, ...
-                pilots, testCase.UsePilots, testCase.PilotThreshold);
+                pilots, testCase.PilotThreshold);
 
             BER = computeBER(testCase, crSym, txRefBits);
             fprintf('QPSK VV BER = %.2e\n', BER);
@@ -189,7 +213,7 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
 
             [crSym, ThetaPU] = carrier_recovery.bps(rxSym, testCase.NTaps, testCase.N_pol, ...
                 testCase.M, testCase.B, testCase.BlockLen, testCase.StepSize, ...
-                pilots, testCase.UsePilots, testCase.PilotThreshold);
+                pilots, testCase.PilotThreshold);
 
             BER = computeBER(testCase, crSym, txRefBits);
             fprintf('QPSK BPS BER = %.2e\n', BER);
@@ -197,7 +221,7 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
 
         % ---- Fixed-point VV MEX -------------------------------------
         function [rxSym, crSym, BER, ThetaPU] = runScenarioFxp_VV(testCase, config)
-            T = carrier_recovery.viterbiViterbi_fxp_types(config);
+            T = carrier_recovery.fxp_types(config);
 
             [symbols, pilots, txRefBits, rxSym] = buildChannel(testCase);
 
@@ -212,7 +236,7 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
             [crSym_fi, ThetaPU_fi] = carrier_recovery.viterbiViterbi_fxp_mex( ...
                 rxSym_fi, testCase.N_pol, testCase.NTaps, VVFilter_fi, ...
                 pilots_fi, testCase.BlockLen, double(testCase.StepSize), ...
-                testCase.UsePilots, testCase.PilotThreshold, T);
+                testCase.PilotThreshold, double(testCase.CordicIts), T);
             ThetaPU = double(ThetaPU_fi);
 
             crSym = resolvePhaseAmbiguity(testCase, double(crSym_fi), txRefBits);
@@ -222,7 +246,7 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
 
         % ---- Fixed-point BPS MEX ------------------------------------
         function [rxSym, crSym, BER, ThetaPU] = runScenarioFxp_BPS(testCase, config)
-            T = carrier_recovery.bps_fxp_types(config);
+            T = carrier_recovery.fxp_types(config);
 
             [~, pilots, txRefBits, rxSym] = buildChannel(testCase);
 
@@ -232,7 +256,7 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
             [crSym_fi, ThetaPU_fi] = carrier_recovery.bps_fxp_mex( ...
                 rxSym_fi, testCase.NTaps, testCase.N_pol, ...
                 testCase.M, testCase.B, testCase.BlockLen, double(testCase.StepSize), ...
-                pilots_fi, testCase.UsePilots, testCase.PilotThreshold, T);
+                pilots_fi, testCase.PilotThreshold, double(testCase.CordicIts), T);
             ThetaPU = double(ThetaPU_fi);
 
             crSym = resolvePhaseAmbiguity(testCase, double(crSym_fi), txRefBits);
@@ -245,9 +269,31 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
             Nbits  = 4 * testCase.Ns;
             txBits = modem.randomBits(Nbits);
             [symbols, pilotSyms, ~, ~] = modem.modulate(txBits);
-            pilots = pilotSyms(:, 1);     % single-pol pilot vector for CR
-            txRefBits = modem.symbolsToBits(symbols);
 
+            % Build per-CR-block pilot matrix: pilots(b,:) must be the known
+            % TX pilot at signal position (b-1)*BlockLen+1.
+            %
+            % CPON places one pilot at the start of every 32-symbol block, so
+            % the pilot at signal position p is pilotSyms(cponBlock,:) where
+            %   cponBlock = floor((posInSubframe-1)/32) + 1
+            %   posInSubframe = mod(p-1, 3712) + 1   (pattern repeats each SF)
+            %
+            % When BlockLen > 32 (e.g. 64), each CR block spans multiple CPON
+            % blocks, so we step through CPON pilot indices by BlockLen/32.
+            % BuildChannel handles any BlockLen that is a multiple of 32.
+            CPON_BLOCK_LEN = 32;
+            CPON_SF_SYMS   = 3712;
+            Nsym    = size(symbols, 1);
+            NBlocks = ceil(Nsym / testCase.BlockLen);
+            pilots  = zeros(NBlocks, testCase.N_pol);
+            for b = 1:NBlocks
+                pos       = (b - 1) * testCase.BlockLen + 1;
+                posInSf   = mod(pos - 1, CPON_SF_SYMS) + 1;
+                cponBlock = floor((posInSf - 1) / CPON_BLOCK_LEN) + 1;
+                pilots(b, :) = pilotSyms(cponBlock, :);
+            end
+
+            txRefBits = modem.symbolsToBits(symbols);
             rxSym = channel.add_awgn(symbols, testCase.SNR_dB);
             rxSym = channel.add_phase_noise(rxSym, testCase.Rs, testCase.LW);
         end

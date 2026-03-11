@@ -1,22 +1,20 @@
 function [v, ThetaPU] = viterbiViterbi_fxp(x, NPol, NTaps, VVFilter, ...
                                                 Pilots, BlockLen, StepSize, ...
-                                                UsePilots, PilotThreshold,  CordicIts, T) %#codegen
+                                                PilotThreshold, CordicIts, T) %#codegen
 %vitERBIVITERBI_FXP  Fixed-point Viterbi-Viterbi carrier phase recovery
 %                        with step-based phase update and optional pilot-aided
 %                        cycle-slip correction.
 %
 %   [v, ThetaPU] = viterbiViterbi_fxp(x, NPol, NTaps, VVFilter, ...
-%                      Pilots, BlockLen, StepSize, UsePilots, T)
+%                      Pilots, BlockLen, StepSize, PilotThreshold, CordicIts, T)
 %
 %   Inputs
 %     x         - input signal [N x NPol] (fi or double, complex)
 %     NPol      - number of polarisations (double scalar)
 %     NTaps     - one-sided VV filter half-length; window = 2*NTaps+1 (double)
 %     VVFilter  - VV filter coefficients [(2*NTaps+1) x 1] (fi or double, real)
-%     Pilots    - pilot symbols at block start [P x 1] (complex fi or double)
-%                 Ignored when UsePilots = false
+%     Pilots    - pilot symbols, one per block [NBlocks x NPol] (complex fi or double)
 %     BlockLen  - block length in symbols (double scalar)
-%                 Pilots are taken from the first P symbols of each block.
 %     StepSize  - phase update interval in symbols (double scalar, 1..BlockLen)
 %                 The estimator, unwrapper and pilot correction fire once every
 %                 StepSize symbols, aligned to the start of each block.
@@ -24,10 +22,9 @@ function [v, ThetaPU] = viterbiViterbi_fxp(x, NPol, NTaps, VVFilter, ...
 %                   StepSize = 1        -> symbol-by-symbol (full bandwidth)
 %                   StepSize = BlockLen -> one update per block (minimum bandwidth)
 %                 Pilot symbols are treated as regular data by the VV estimator.
-%     UsePilots - logical: enable pilot-aided cycle-slip correction
 %     PilotThreshold - threshold for pilot-based cycle-slip correction in radians (double scalar)
 %     CordicIts - number of iterations for CORDIC operations (double scalar)
-%                 viterbiViterbi_fxp_types.  Defaults to 'fixed16'.
+%                 Defaults to 'fixed16'.
 %
 %   Outputs
 %     v       - phase-corrected signal [N x NPol], type T.x
@@ -55,8 +52,8 @@ function [v, ThetaPU] = viterbiViterbi_fxp(x, NPol, NTaps, VVFilter, ...
     %% ----------------------------------------------------------------
     %  Default types table
     %% ----------------------------------------------------------------
-    if nargin < 9 || isempty(T)
-        T = viterbiViterbi_fxp_types('fixed16');
+    if nargin < 10 || isempty(T)
+        T = carrier_recovery.fxp_types('fixed16');
     end
 
     %% ----------------------------------------------------------------
@@ -75,7 +72,6 @@ function [v, ThetaPU] = viterbiViterbi_fxp(x, NPol, NTaps, VVFilter, ...
     N       = size(x, 1);
     L_filt  = 2 * NTaps + 1;
     halfL   = floor(L_filt / 2);
-    P       = length(Pilots);
     NBlocks = ceil(N / BlockLen);
 
     %% ----------------------------------------------------------------
@@ -97,35 +93,22 @@ function [v, ThetaPU] = viterbiViterbi_fxp(x, NPol, NTaps, VVFilter, ...
     %  so that any step position can look up its block's reference
     %  without ordering constraints.
     %% ================================================================
-    PhiRef = zeros(NBlocks, NPol, 'like', T.theta);
+    PhiRef    = zeros(NBlocks, NPol, 'like', T.theta);
+    Pilots_fi = cast(Pilots, 'like', T.x);
 
-    if UsePilots
-        Pilots_fi = cast(Pilots, 'like', T.x);
+    for pol = 1:NPol
+        for blk = 1:min(NBlocks, size(Pilots, 1))
+            blockStart = (blk - 1) * BlockLen + 1;
+            if blockStart <= N
+                rx = x_fi(blockStart, pol);
 
-        for pol = 1:NPol
-            for blk = 1:NBlocks
-                blockStart = (blk - 1) * BlockLen + 1;
+                pilot_re =  cast(real(Pilots_fi(blk, pol)), 'like', T.acc);
+                pilot_im = -cast(imag(Pilots_fi(blk, pol)), 'like', T.acc);
+                rx_re    =  cast(real(rx), 'like', T.acc);
+                rx_im    =  cast(imag(rx), 'like', T.acc);
 
-                corr_re = ZERO_ACC;
-                corr_im = ZERO_ACC;
-
-                for p = 1:P
-                    idx = blockStart + p - 1;
-                    if idx >= 1 && idx <= N
-                        rx = x_fi(idx, pol);
-
-                        pilot_re =  real(Pilots_fi(p));
-                        pilot_im = -imag(Pilots_fi(p));       % conjugate
-
-                        rx_re = cast(real(rx), 'like', T.acc);
-                        rx_im = cast(imag(rx), 'like', T.acc);
-                        pr    = cast(pilot_re, 'like', T.acc);
-                        pi_c  = cast(pilot_im, 'like', T.acc);
-
-                        corr_re = corr_re + pr * rx_re - pi_c * rx_im;
-                        corr_im = corr_im + pr * rx_im + pi_c * rx_re;
-                    end
-                end
+                corr_re = pilot_re * rx_re - pilot_im * rx_im;
+                corr_im = pilot_re * rx_im + pilot_im * rx_re;
 
                 % cordicangle ignores fimath and returns FL = (input FL - 2).
                 % Cast immediately to T.theta to restore the correct
@@ -210,18 +193,16 @@ function [v, ThetaPU] = viterbiViterbi_fxp(x, NPol, NTaps, VVFilter, ...
                 %% ------------------------------------------------
                 %  Pilot-aided cycle-slip correction
                 %% ------------------------------------------------
-                if UsePilots
-                    BlockIdx = ceil(i / BlockLen);
+                BlockIdx = ceil(i / BlockLen);
 
-                    % Wrap difference to (-pi, pi] for shortest-path error,
-                    % then threshold at ±pi/2 to identify a one-quadrant slip.
-                    PhaseDiff_d = mod( ...
-                        double(theta_uw - PhiRef(BlockIdx, pol)) + pi, ...
-                        2*pi) - pi;
-                    n_slip = round(PhaseDiff_d / double(PilotThreshold));
-                    n_slip_fi = cast(n_slip, 'like', T.theta);
-                    theta_uw = theta_uw - n_slip_fi * PI_OVER2;
-                end
+                % Wrap difference to (-pi, pi] for shortest-path error,
+                % then threshold at ±pi/2 to identify a one-quadrant slip.
+                PhaseDiff_d = mod( ...
+                    double(theta_uw - PhiRef(BlockIdx, pol)) + pi, ...
+                    2*pi) - pi;
+                n_slip = round(PhaseDiff_d / double(PilotThreshold));
+                n_slip_fi = cast(n_slip, 'like', T.theta);
+                theta_uw = theta_uw - n_slip_fi * PI_OVER2;
 
                 ThetaPU(i, pol) = theta_uw;
                 ThetaPrev       = theta_uw;   % advance anchor to this step

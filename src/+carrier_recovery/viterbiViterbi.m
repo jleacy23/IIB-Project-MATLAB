@@ -1,24 +1,24 @@
 function [v, ThetaPU] = viterbiViterbi(x, NPol, VVFilter, BlockLen, ...
-                                            StepSize, Pilots, UsePilots, PilotThreshold)
-%vitERBIVITERBI  Viterbi-Viterbi carrier phase estimation & correction.
+                                            StepSize, Pilots, PilotThreshold)
+%viterbiViterbi  Viterbi-Viterbi carrier phase estimation & correction.
 %
 %   [v, ThetaPU] = viterbiViterbi(x, NPol, VVFilter, BlockLen,
-%                                     StepSize, Pilots, UsePilots)
+%                                     StepSize, Pilots, PilotThreshold)
 %
 %   Inputs
 %     x         - input signal [N x NPol]
 %     NPol      - number of polarisations
 %     VVFilter  - VV filter coefficients [(2*NTaps+1) x 1]
 %     BlockLen  - block length in symbols
-%                 Pilots are taken from the first P symbols of each block.
 %     StepSize  - phase update interval in symbols (1..BlockLen)
 %                 Estimation and unwrapping execute every StepSize symbols,
 %                 aligned to the start of each block.  Phase is held between
 %                 updates.
 %                   StepSize = 1        -> symbol-by-symbol (full bandwidth)
 %                   StepSize = BlockLen -> one update per block
-%     Pilots    - pilot symbols at block start [P x 1]
-%     UsePilots - logical: enable pilot-aided cycle-slip correction
+%     Pilots    - pilot symbols, one per block [NBlocks x NPol]
+%                 The first symbol of block b is correlated against Pilots(b,:)
+%                 for cycle-slip detection and correction.
 %     PilotThreshold - threshold for pilot-based cycle-slip correction in radians
 %
 %   Outputs
@@ -30,9 +30,8 @@ function [v, ThetaPU] = viterbiViterbi(x, NPol, VVFilter, BlockLen, ...
     %% ----------------------------------------------------------------
     %  Dimensions
     %% ----------------------------------------------------------------
-    N      = size(x, 1);
-    L_filt = length(VVFilter);
-    P      = length(Pilots);
+    N       = size(x, 1);
+    L_filt  = length(VVFilter);
     NBlocks = ceil(N / BlockLen);
 
     %% ================================================================
@@ -45,14 +44,10 @@ function [v, ThetaPU] = viterbiViterbi(x, NPol, VVFilter, BlockLen, ...
     %% ================================================================
     PhiRef = zeros(NBlocks, NPol);
 
-    if UsePilots
-        for b = 1:NBlocks
-            blockStart = (b - 1) * BlockLen + 1;
-            idxEnd     = min(blockStart + P - 1, N);
-            block      = x(blockStart:idxEnd, :);           % [P x NPol]
-            % Coherent combining across pols then take angle — matches fxp
-            corr = sum(conj(Pilots(1:size(block,1))) .* block, 1); % [1 x NPol]
-            PhiRef(b, :) = angle(corr);
+    for b = 1:min(NBlocks, size(Pilots, 1))
+        blockStart = (b - 1) * BlockLen + 1;
+        if blockStart <= N
+            PhiRef(b, :) = angle(conj(Pilots(b, :)) .* x(blockStart, :));
         end
     end
 
@@ -112,13 +107,11 @@ function [v, ThetaPU] = viterbiViterbi(x, NPol, VVFilter, BlockLen, ...
             theta_uw = ThetaML(i, :) + n * (pi/2);
 
             % Pilot-aided cycle-slip correction (per pol independently)
-            if UsePilots
-                BlockIdx    = ceil(i / BlockLen);
-                % Wrap to (-pi, pi] for shortest-path error, threshold at ±pi/2
-                PhaseDiff   = mod(theta_uw - PhiRef(BlockIdx, :) + pi, 2*pi) - pi;
-                n_slip      = round(PhaseDiff / PilotThreshold);
-                theta_uw    = theta_uw - n_slip * (pi/2);
-            end
+            BlockIdx  = ceil(i / BlockLen);
+            % Wrap to (-pi, pi] for shortest-path error, threshold at ±pi/2
+            PhaseDiff = mod(theta_uw - PhiRef(BlockIdx, :) + pi, 2*pi) - pi;
+            n_slip    = round(PhaseDiff / PilotThreshold);
+            theta_uw  = theta_uw - n_slip * (pi/2);
 
             ThetaPU(i, :) = theta_uw;
             ThetaPrev     = theta_uw;   % advance anchor to this step

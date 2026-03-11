@@ -16,13 +16,72 @@
 \maketitle
 
 \section{Introduction}
-Three frequency recovery algorithms are compared for use in the Cable Television Labs CPON specification \cite{CPON_PMD_2025}. Data is organized into subframes, consisting of 3712 symbols total with the first 11 being training symbols. A feed-forward DSP architecture is required so these training symbols are used to estimate the frequency offset which is then applied to the rest of the subframe. Further refinements within a block could be made with pilots but this is not investigated yet (see if this way is good enough first). The use of known training symbols avoids the need to eliminate the data dependence of the phase by raising it to the 4th power, thereby reducing the computational cost and improving the frequency range over which the estimate is valid.
+Three frequency recovery algorithms are compared for use in the Cable Television Labs CPON specification \cite{CPON_PMD_2025}. Data is organized into subframes, consisting of 3712 symbols total with the first 11 being training symbols. A feed-forward DSP architecture is required so these training symbols are used to estimate the frequency offset which is then applied to the rest of the subframe. Further refinements within a block could be made with pilots but this is not investigated yet (see if this way is good enough first).
+
+\section{Removing Data Dependence}
+All of the following algorithms require the phase of the data to be removed first. For QPSK symbols \(c[k] = e^{j(\pi/4 + m[k]\pi/2)}\), the noisy data
+\begin{equation}
+    x[k] = c[k]e^{j(2\pi f_d T k + \theta[k])} + n[k]
+\end{equation}
+can be raised to the 4th power
+\begin{equation}
+    x^4[k] = e^{j(8\pi f_d T k + 4 \theta[k])} + n'[k].
+\end{equation}
+This requires 3 complex multiplications and amplifies the effect of noise, which limits the performance of some of the following algorithms. With training symbols, the data is known so the phase is eliminated as
+\begin{equation}
+    z[k] = x[k]c^*[k] = e^{j(2\pi f_d T k + \theta[k])} + n[k].
+    \label{eq:zk}
+\end{equation}
+This only requires 1 complex multiplication and does not amplify noise.
+
 \section{Rife and Boorstyn}
-The Rife and Boorstyn algorithm computes the FFT of the training symbols to provide a coarse estimate of the frequency offset. This corresponds to the index \(k\) of the largest absolute value in the FFT. Parabolic interpolation can then be used to refine the frequency estimate \cite{Jacobsen2007}. The accuracy of the coarse search can be improved by zero-padding the training symbols and using a larger FFT, this increases the computational cost of both the FFT and search for the maximum index. Finally a division must be performed to interpolate, making this algorithm expensive.
+The Rife and Boorstyn algorithm computes the FFT of the training symbols to provide a coarse estimate of the frequency offset. This corresponds to the index \(k\) of the largest absolute value in the FFT. Parabolic interpolation can then be used to refine the frequency estimate \cite{Jacobsen2007}. The accuracy of the coarse search can be improved by zero-padding the training symbols and using a larger FFT, meaning the accuracy of the estimate is not limited by the number of training symbols. However, this increases the computational cost of both the FFT and search for the maximum index. Finally a division must be performed to interpolate, making this algorithm expensive.
 
-\section{Tretter/Kay}
-
-
+\section{Kay}
+An alternative is to perform a least-squares estimate of the gradient of \(\angle{z[k]}\). From \cref{eq:zk} it can be seen that
+\begin{equation}
+    \angle{z[k]} = 2 \pi f_d T k + \theta[k] + \eta[k]
+\end{equation}
+where \(\eta[k]\) is the noise in \(\angle{z[k]}\) due to the additive noise \(n[k]\). The Kay estimator \cite{Morelli1998} is used here to avoid a phase unwrapper, giving an estimate of the frequency offset
+\begin{equation}
+    \hat{f_d} = \frac{1}{2\pi T} \sum_{k=1}^{L-1} w_k \angle(z[k]z^*[k-1]).
+\end{equation}
+The cost of this algorithm is summarised in \cref{tab:kay}. \(\angle(z[k]z^*[k-1])\) can be split into \(\angle z[k] - \angle z[k-1]\) and implemented with CORDIC to avoid multiplications. The resulting phase must be wrapped to \([-\pi, \pi]\) using 2 comparators (equivalent to a real addition). The multiplications by the weights and \(\frac{1}{2\pi T}\) are fixed so can be implemented with adds and shifts.
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lcccc}
+        \toprule
+        Operation & RM & RA & BS \\
+        \midrule
+        Forming \(z[k]\) & \(3L\) & \(5L\) & 0 \\
+        Weighted sum & \(L-1\) & \((L-1)(3 + 6N_C + n)\) & \((L-1)(4N_C + n)\)\\
+        \(1/2\pi T\) & 0 & n & n \\
+        \bottomrule
+    \end{tabular}
+    \caption{Computational cost of the Kay estimator}
+    \label{tab:kay}
+\end{table}
+\section{Lank, Reed and Pollon}
+The Kay estimator has a small range of frequency offsets over which it can correct. The Lank, Reed and Pollon (LRP) uses a simple autocorrelation to estimate the frequency as
+\begin{equation}
+    \hat{f_d} = \frac{1}{2\pi NT} \angle(\sum_{k=N}^{L-1}z[k]z^*[k-N]),
+\end{equation}
+where \(N\) is a design parameter.
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lcccc}
+        \toprule
+        Operation & RM & RA & BS \\
+        \midrule
+        Forming \(z[k]\) & \(3L\) & \(5L\) & 0 \\
+        Autocorrelation & \(3(L-N)\) & \(5(L-N) + 2(L-N-1)\) & 0 \\
+        Finding argument & 0 & \(3N_C\) & \(2N_C\) \\
+        \(1/2\pi N T\) & 0 & n & n \\
+        \bottomrule
+    \end{tabular}
+    \caption{Computational cost of the LRP estimator}
+    \label{tab:kay}
+\end{table}
 \bibliographystyle{ieeetr}
 \bibliography{ref}
 \end{document}

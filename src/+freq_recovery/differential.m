@@ -1,13 +1,18 @@
-function [y, frequency_offset] = tretter_kay(x, training, Rs, data_aided, D)
-%TRETTER_KAY  Tretter/Kay frequency offset estimator and corrector.
+function [y, frequency_offset] = differential(x, training, Rs, data_aided, D)
+%DIFFERENTIAL  Simple differential-phase frequency offset estimator.
 %
-%   [y, frequency_offset] = tretter_kay(x, training, Rs)
-%   [y, frequency_offset] = tretter_kay(x, training, Rs, data_aided, D)
+%   [y, frequency_offset] = differential(x, training, Rs)
+%   [y, frequency_offset] = differential(x, training, Rs, data_aided, D)
 %
-%   Estimates the carrier frequency offset from the weighted phase
-%   differences of the observation sequence.  The offset is estimated
-%   independently for each polarisation and then averaged before
-%   correcting the full subframe.
+%   Forms the same observation sequence as the Tretter-Kay estimator and
+%   computes successive phase differences.  Rather than applying the
+%   optimal Kay weights, each difference is treated equally and the sum
+%   is divided by the observation length No:
+%
+%       f0_hat = Rs / (2*pi) * (1/No) * sum_k angle( z(k+1)*conj(z(k)) )
+%
+%   The estimate is computed independently for each polarisation and then
+%   averaged before correcting the full subframe.
 %
 %   When data_aided = true (default), the observation sequence is formed
 %   by de-rotating the L training symbols against the known sequence.
@@ -16,7 +21,7 @@ function [y, frequency_offset] = tretter_kay(x, training, Rs, data_aided, D)
 %
 %   Inputs
 %     x          - input subframe  [Nsym x NPol]
-%     training   - training symbols [L x NPol]
+%     training   - known training symbols [L x NPol]
 %     Rs         - symbol rate [GBd]
 %     data_aided - true = training-aided (default), false = blind 4th-power
 %     D          - number of data symbols to use in blind mode (required
@@ -34,23 +39,20 @@ function [y, frequency_offset] = tretter_kay(x, training, Rs, data_aided, D)
     if data_aided
         %% Training-aided: de-rotate with known sequence
         z  = x(1:L, :) .* conj(training);   % [L x NPol]
-        No = L;                              % observation length
+        No = L;
     else
         %% Blind: 4th-power of the D data symbols after training block
         x_data = x(L+1 : L+D, :);           % [D x NPol]
         z      = x_data .^ 4;               % [D x NPol]
-        No     = D;                          % observation length
+        No     = D;
     end
 
-    %% Weights w(k) = 6k(No-k) / (No(No^2-1))
-    k       = (1 : No-1).';
-    w_col   = 6 .* k .* (No - k) / (No * (No^2 - 1));
-    weights = repmat(w_col, 1, N_pol);
+    %% Successive phase differences
+    dz = z(2:end, :) .* conj(z(1:end-1, :));   % [No-1 x NPol]
 
-    %% Weighted phase-difference sum — one offset per polarisation
-    dz        = z(2:end, :) .* conj(z(1:end-1, :));
+    %% Average phase difference, scaled by observation length No (not No-1)
     f_coeff   = (Rs * 1e9) / (2 * pi);
-    f_per_pol = f_coeff * sum(weights .* angle(dz), 1);   % [1 x NPol] Hz
+    f_per_pol = f_coeff * sum(angle(dz), 1) / No;   % [1 x NPol] Hz
 
     %% In blind mode the 4th power maps f0 -> 4*f0; undo the factor
     if ~data_aided
@@ -63,13 +65,3 @@ function [y, frequency_offset] = tretter_kay(x, training, Rs, data_aided, D)
     n = (0 : Nsym-1).';
     y = x .* exp(-1j * 2*pi * frequency_offset / (Rs*1e9) .* n);
 end
-
-
-
-
-
-
-
-
-
-

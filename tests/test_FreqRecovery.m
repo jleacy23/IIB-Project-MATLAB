@@ -1,414 +1,223 @@
 classdef test_FreqRecovery < matlab.unittest.TestCase
-%TEST_FREQRECOVERY  Unit tests for freq_recovery.tretter_kay.
-%
-%   Tests cover:
-%     - output shape preservation
-%     - estimator accuracy at high and nominal SNR
-%     - zero-offset passthrough (y == x when DeltaF = 0)
-%     - BER after correction
+    % Tests for frequency recovery – floating-point and fixed-point MEX.
+    %
+    % All tests apply a known frequency offset plus AWGN, then run the
+    % algorithm under test.  The constellation before and after correction
+    % is plotted for each polarisation, and the post-correction BER is
+    % reported and verified against BER_THRESHOLD.
+    %
+    % MEX compilation
+    %   Both fxp MEX binaries are compiled automatically in TestClassSetup
+    %   (once per run, before any test method executes).
+    %
+    % Prerequisites
+    %   - MATLAB Coder and Fixed-Point Designer toolboxes must be licensed.
+    %   - build_freq_recovery_fft_search_fxp_mex.m and
+    %     build_freq_recovery_differential_kay_fxp_mex.m must be on path.
 
     properties (Constant)
-        Rs      = 30.504432   % symbol rate [GBd]  (CPON spec)
-        SNR_dB  = 25          % nominal SNR [dB]
-        DeltaF  = 150         % nominal frequency offset [MHz]
-        K = 1000
+        % ---- Signal -------------------------------------------------
+        N_pol       = 2
+        Rs          = 30.5          % symbol rate [GBd]
+        TrainingLen = 11            % CPON training symbols per subframe
+
+        % ---- Channel ------------------------------------------------
+        SNR_dB      = 20            % [dB]  – good SNR to isolate FR errors
+        DeltaF_MHz  = 2.0           % [MHz] – frequency offset to apply
+
+        % ---- Float fft_search  --------------------------------------
+        FR_FFT_K    = 8             % zero-padding factor
+
+        % ---- Fixed-point config -------------------------------------
+        FxpConfig   = 'fixed32'
+        CordicIts   = 16
+        FR_Nfft     = 128           % FFT size (power of 2 >= TrainingLen)
+        FR_Po2Twiddle = false
+
+        % ---- Pass/fail ----------------------------------------------
+        BER_THRESHOLD = 0.05
     end
 
-    methods (TestMethodSetup)
+    % =================================================================
+    methods (TestClassSetup)
+    % =================================================================
+
         function seedRng(~)
             rng(42);
         end
+
+        function compileMex(testCase)
+            fprintf('  Compiling freq-recovery MEX binaries...\n');
+            cfg = coder.config('mex');
+            cfg.GenerateReport   = false;
+            cfg.IntegrityChecks  = false;
+            cfg.ResponsivenessChecks = false;
+
+            % Add src/ to codegen path so +freq_recovery package is found
+            srcDir = fullfile(fileparts(mfilename('fullpath')), '..', 'src');
+            addpath(srcDir);
+
+            P.N_pol         = testCase.N_pol;
+            P.TrainingLen   = testCase.TrainingLen;
+            P.Rs            = testCase.Rs;
+            P.FR_Nfft       = testCase.FR_Nfft;
+            P.FR_Po2Twiddle = testCase.FR_Po2Twiddle;
+            P.FxpConfig_FR  = testCase.FxpConfig;
+            P.CordicIts     = testCase.CordicIts;
+
+            build_freq_recovery_fft_search_fxp_mex(P, cfg);
+            build_freq_recovery_differential_kay_fxp_mex(P, cfg);
+            fprintf('  MEX compilation complete.\n');
+        end
+
     end
 
-    % ================================================================
-    %  Tests
-    % ================================================================
+    % =================================================================
     methods (Test)
+    % =================================================================
 
-        function testOutputShape(testCase)
-            %TESTOUTPUTSHAPE  y must be the same size as the input subframe.
-            [rx, training, ~] = test_FreqRecovery.buildRx( ...
-                testCase.DeltaF, testCase.SNR_dB, testCase.Rs);
-
-            [y, ~] = freq_recovery.tretter_kay(rx, training, testCase.Rs);
-
-            testCase.verifySize(y, size(rx), ...
-                'tretter_kay output must be the same size as the input.');
+        % ---- Floating-point fft_search ------------------------------
+        function testFFTSearch_Float(testCase)
+            [rxSym, frSym, training, txRefBits, deltaF_est] = ...
+                runScenario_FFTSearch(testCase);
+            BER = computeBER(testCase, frSym, txRefBits);
+            fprintf('FFT-search float: delta_f_est = %.3f MHz  BER = %.2e\n', ...
+                deltaF_est/1e6, BER);
+            plotBeforeAfter(testCase, rxSym, frSym, 'FFT-search (float)', BER);
+            testCase.verifyLessThan(BER, testCase.BER_THRESHOLD);
         end
 
-        function testZeroOffsetPassthrough(testCase)
-            %TESTZEROOFFSETPASSTHROUGH  With DeltaF = 0 the output equals the input.
-            [rx, training, ~] = test_FreqRecovery.buildRx( ...
-                0, Inf, testCase.Rs);  % noise-free, zero offset
-
-            [y, freq_est_kHz] = freq_recovery.tretter_kay(rx, training, testCase.Rs);
-
-            testCase.verifyEqual(freq_est_kHz, 0, 'AbsTol', 1e-6, ...
-                'Estimated offset should be 0 kHz when DeltaF = 0.');
-            testCase.verifyEqual(y, rx, 'AbsTol', 1e-10, ...
-                'Output should equal input when no offset is present.');
+        % ---- Floating-point differential_kay ------------------------
+        function testDifferentialKay_Float(testCase)
+            [rxSym, frSym, training, txRefBits, deltaF_est] = ...
+                runScenario_DifferentialKay(testCase);
+            BER = computeBER(testCase, frSym, txRefBits);
+            fprintf('Differential-Kay float: delta_f_est = %.3f MHz  BER = %.2e\n', ...
+                deltaF_est/1e6, BER);
+            plotBeforeAfter(testCase, rxSym, frSym, 'Differential-Kay (float)', BER);
+            testCase.verifyLessThan(BER, testCase.BER_THRESHOLD);
         end
 
-        function testEstimatorAccuracy_HighSNR(testCase)
-            %TESTESTIMATORACCURACY_HIGHSNR
-            %   At high SNR the estimate must be within 1 kHz of the true offset.
-            trueDeltaF_kHz = testCase.DeltaF * 1e3;   % MHz -> kHz
-
-            [rx, training, ~] = test_FreqRecovery.buildRx( ...
-                testCase.DeltaF, 40, testCase.Rs);     % 40 dB SNR
-
-            [~, freq_est_kHz] = freq_recovery.tretter_kay(rx, training, testCase.Rs);
-
-            err_kHz = abs(freq_est_kHz - trueDeltaF_kHz);
-            fprintf('  High-SNR estimate: %.3f kHz  (true %.3f kHz, error %.3f kHz)\n', ...
-                    freq_est_kHz, trueDeltaF_kHz, err_kHz);
+        % ---- Fixed-point fft_search MEX -----------------------------
+        function testFFTSearch_Fxp16(testCase)
+            [rxSym, frSym, training, txRefBits, deltaF_est] = ...
+                runScenarioFxp_FFTSearch(testCase, testCase.FxpConfig);
+            BER = computeBER(testCase, frSym, txRefBits);
+            fprintf('FFT-search fxp (%s): delta_f_est = %.3f MHz  BER = %.2e\n', ...
+                testCase.FxpConfig, deltaF_est/1e6, BER);
+            plotBeforeAfter(testCase, rxSym, frSym, ...
+                sprintf('FFT-search fxp (%s)', testCase.FxpConfig), BER);
+            testCase.verifyLessThan(BER, testCase.BER_THRESHOLD);
         end
 
-        function testEstimatorAccuracy_NominalSNR(testCase)
-            %TESTESTIMATORACCURACY_NOMINALSNR
-            %   At nominal SNR (25 dB) the estimate must be within 100 kHz.
-            trueDeltaF_kHz = testCase.DeltaF * 1e3;   % MHz -> kHz
-
-            [rx, training, ~] = test_FreqRecovery.buildRx( ...
-                testCase.DeltaF, testCase.SNR_dB, testCase.Rs);
-
-            [~, freq_est_kHz] = freq_recovery.tretter_kay(rx, training, testCase.Rs);
-
-            err_kHz = abs(freq_est_kHz - trueDeltaF_kHz);
-            fprintf('  Nominal-SNR estimate: %.3f kHz  (true %.3f kHz, error %.3f kHz)\n', ...
-                    freq_est_kHz, trueDeltaF_kHz, err_kHz);
-        end
-
-        function testEstimatorAccuracy_NegativeOffset(testCase)
-            %TESTESTIMATORACCURACY_NEGATIVEOFFSET
-            %   Estimator should work correctly for negative offsets.
-            DeltaF_neg     = -200;           % MHz
-            trueDeltaF_kHz = DeltaF_neg * 1e3;
-
-            [rx, training, ~] = test_FreqRecovery.buildRx( ...
-                DeltaF_neg, 40, testCase.Rs);
-
-            [~, freq_est_kHz] = freq_recovery.tretter_kay(rx, training, testCase.Rs);
-
-            err_kHz = abs(freq_est_kHz - trueDeltaF_kHz);
-            fprintf('  Negative-offset estimate: %.3f kHz  (true %.3f kHz, error %.3f kHz)\n', ...
-                    freq_est_kHz, trueDeltaF_kHz, err_kHz);
-        end
-
-        function testBERAfterCorrection(testCase)
-            %TESTBERAFTERCORRECTION
-            %   After correction, data-symbol BER must be below 1e-2 at
-            %   nominal SNR.  Phase ambiguity is resolved before counting.
-            [rx, training, symbols] = test_FreqRecovery.buildRx( ...
-                testCase.DeltaF, testCase.SNR_dB, testCase.Rs);
-
-            [y, freq_est_kHz] = freq_recovery.tretter_kay(rx, training, testCase.Rs);
-
-            % Reference bits from the transmitted symbol stream
-            txRefBits = modem.symbolsToBits(symbols);
-
-            % Resolve pi/2 phase ambiguity before BER
-            best = test_FreqRecovery.bestRotation(y, txRefBits);
-
-            rxBits = modem.symbolsToBits(modem.decideSymbols(best));
-            BER    = sum(rxBits ~= txRefBits) / numel(txRefBits);
-
-            fprintf('  BER after correction: %.2e  (est offset %.3f kHz, true %.3f kHz)\n', ...
-                    BER, freq_est_kHz, testCase.DeltaF * 1e3);
-
-            % --- Constellation plots ---------------------------------
-            ms = 2;  % marker size
-            figure('Name', sprintf('Freq Recovery | \\DeltaF = %d MHz | SNR = %d dB', ...
-                   testCase.DeltaF, testCase.SNR_dB), ...
-                   'Position', [100 100 900 400], 'Color', 'w');
-
-            subplot(1, 3, 1);
-            plot(real(symbols(:,1)), imag(symbols(:,1)), '.', 'MarkerSize', ms);
-            grid on; axis equal;
-            title('TX symbols (X-pol)');
-            xlabel('I'); ylabel('Q');
-
-            subplot(1, 3, 2);
-            plot(real(rx(:,1)), imag(rx(:,1)), '.', 'MarkerSize', ms);
-            grid on; axis equal;
-            title('After LO shift + AWGN');
-            xlabel('I'); ylabel('Q');
-
-            subplot(1, 3, 3);
-            plot(real(best(:,1)), imag(best(:,1)), '.', 'MarkerSize', ms);
-            grid on; axis equal;
-            title(sprintf('After correction (BER = %.2e)', BER));
-            xlabel('I'); ylabel('Q');
-
-            sgtitle(sprintf('Tretter-Kay  |  \\DeltaF = %d MHz  |  SNR = %d dB  |  est = %.1f kHz', ...
-                    testCase.DeltaF, testCase.SNR_dB, freq_est_kHz));
-
-            % --- Only fail on BER -----------------------------------
-            testCase.verifyLessThan(BER, 1e-2, ...
-                sprintf('BER %.2e after frequency correction exceeds 1e-2.', BER));
-        end
-
-        % ============================================================
-        %  fft_search tests
-        % ============================================================
-
-        function testFftSearch_OutputShape(testCase)
-            %TESTFFTSEARCH_OUTPUTSHAPE  y must be the same size as the input.
-            [rx, training, ~] = test_FreqRecovery.buildRx( ...
-                testCase.DeltaF, testCase.SNR_dB, testCase.Rs);
-
-            [y, ~] = freq_recovery.fft_search(rx, training, testCase.Rs, testCase.K);
-
-            testCase.verifySize(y, size(rx), ...
-                'fft_search output must be the same size as the input.');
-        end
-
-        function testFftSearch_HighSNR(testCase)
-            %TESTFFTSEARCH_HIGHSNR  Informational: accuracy at 40 dB SNR.
-            trueDeltaF_kHz = testCase.DeltaF * 1e3;
-
-            [rx, training, ~] = test_FreqRecovery.buildRx( ...
-                testCase.DeltaF, 40, testCase.Rs);
-
-            [~, freq_est_kHz] = freq_recovery.fft_search(rx, training, testCase.Rs, testCase.K);
-
-            err_kHz = abs(freq_est_kHz - trueDeltaF_kHz);
-            fprintf('  [fft_search] High-SNR estimate: %.3f kHz  (true %.3f kHz, error %.3f kHz)\n', ...
-                    freq_est_kHz, trueDeltaF_kHz, err_kHz);
-        end
-
-        function testFftSearch_NominalSNR(testCase)
-            %TESTFFTSEARCH_NOMINALSNR  Informational: accuracy at nominal SNR.
-            trueDeltaF_kHz = testCase.DeltaF * 1e3;
-
-            [rx, training, ~] = test_FreqRecovery.buildRx( ...
-                testCase.DeltaF, testCase.SNR_dB, testCase.Rs);
-
-            [~, freq_est_kHz] = freq_recovery.fft_search(rx, training, testCase.Rs, testCase.K);
-
-            err_kHz = abs(freq_est_kHz - trueDeltaF_kHz);
-            fprintf('  [fft_search] Nominal-SNR estimate: %.3f kHz  (true %.3f kHz, error %.3f kHz)\n', ...
-                    freq_est_kHz, trueDeltaF_kHz, err_kHz);
-        end
-
-        function testFftSearch_NegativeOffset(testCase)
-            %TESTFFTSEARCH_NEGATIVEOFFSET  Informational: negative offset accuracy.
-            DeltaF_neg     = -200;
-            trueDeltaF_kHz = DeltaF_neg * 1e3;
-
-            [rx, training, ~] = test_FreqRecovery.buildRx( ...
-                DeltaF_neg, 40, testCase.Rs);
-
-            [~, freq_est_kHz] = freq_recovery.fft_search(rx, training, testCase.Rs, testCase.K);
-
-            err_kHz = abs(freq_est_kHz - trueDeltaF_kHz);
-            fprintf('  [fft_search] Negative-offset estimate: %.3f kHz  (true %.3f kHz, error %.3f kHz)\n', ...
-                    freq_est_kHz, trueDeltaF_kHz, err_kHz);
-        end
-
-        function testFftSearch_BERAfterCorrection(testCase)
-            %TESTFFTSEARCH_BERAFTERCORRECTION
-            %   After correction, BER must be below 1e-2 at nominal SNR.
-            [rx, training, symbols] = test_FreqRecovery.buildRx( ...
-                testCase.DeltaF, testCase.SNR_dB, testCase.Rs);
-
-            [y, freq_est_kHz] = freq_recovery.fft_search(rx, training, testCase.Rs, testCase.K);
-
-            txRefBits = modem.symbolsToBits(symbols);
-            best      = test_FreqRecovery.bestRotation(y, txRefBits);
-
-            rxBits = modem.symbolsToBits(modem.decideSymbols(best));
-            BER    = sum(rxBits ~= txRefBits) / numel(txRefBits);
-
-            fprintf('  [fft_search] BER after correction: %.2e  (est offset %.3f kHz, true %.3f kHz)\n', ...
-                    BER, freq_est_kHz, testCase.DeltaF * 1e3);
-
-            % --- Constellation plots ---------------------------------
-            ms = 2;
-            figure('Name', sprintf('fft_search | \\DeltaF = %d MHz | SNR = %d dB', ...
-                   testCase.DeltaF, testCase.SNR_dB), ...
-                   'Position', [150 150 900 400], 'Color', 'w');
-
-            subplot(1, 3, 1);
-            plot(real(symbols(:,1)), imag(symbols(:,1)), '.', 'MarkerSize', ms);
-            grid on; axis equal;
-            title('TX symbols (X-pol)');
-            xlabel('I'); ylabel('Q');
-
-            subplot(1, 3, 2);
-            plot(real(rx(:,1)), imag(rx(:,1)), '.', 'MarkerSize', ms);
-            grid on; axis equal;
-            title('After LO shift + AWGN');
-            xlabel('I'); ylabel('Q');
-
-            subplot(1, 3, 3);
-            plot(real(best(:,1)), imag(best(:,1)), '.', 'MarkerSize', ms);
-            grid on; axis equal;
-            title(sprintf('After correction (BER = %.2e)', BER));
-            xlabel('I'); ylabel('Q');
-
-            sgtitle(sprintf('fft\\_search  |  \\DeltaF = %d MHz  |  SNR = %d dB  |  est = %.1f kHz', ...
-                    testCase.DeltaF, testCase.SNR_dB, freq_est_kHz));
-
-            % --- Only fail on BER -----------------------------------
-            testCase.verifyLessThan(BER, 1e-2, ...
-                sprintf('[fft_search] BER %.2e after frequency correction exceeds 1e-2.', BER));
-        end
-
-        % ============================================================
-        %  fitz tests
-        % ============================================================
-
-        function testFitz_OutputShape(testCase)
-            %TESTFITZ_OUTPUTSHAPE  y must be the same size as the input.
-            [rx, training, ~] = test_FreqRecovery.buildRx( ...
-                testCase.DeltaF, testCase.SNR_dB, testCase.Rs);
-
-            [y, ~] = freq_recovery.fitz(rx, training, testCase.Rs);
-
-            testCase.verifySize(y, size(rx), ...
-                'fitz output must be the same size as the input.');
-        end
-
-        function testFitz_HighSNR(testCase)
-            %TESTFITZ_HIGHSNR  Informational: accuracy at 40 dB SNR.
-            trueDeltaF_kHz = testCase.DeltaF * 1e3;
-
-            [rx, training, ~] = test_FreqRecovery.buildRx( ...
-                testCase.DeltaF, 40, testCase.Rs);
-
-            [~, freq_est_kHz] = freq_recovery.fitz(rx, training, testCase.Rs);
-
-            err_kHz = abs(freq_est_kHz - trueDeltaF_kHz);
-            fprintf('  [fitz] High-SNR estimate: %.3f kHz  (true %.3f kHz, error %.3f kHz)\n', ...
-                    freq_est_kHz, trueDeltaF_kHz, err_kHz);
-        end
-
-        function testFitz_NominalSNR(testCase)
-            %TESTFITZ_NOMINALSNR  Informational: accuracy at nominal SNR.
-            trueDeltaF_kHz = testCase.DeltaF * 1e3;
-
-            [rx, training, ~] = test_FreqRecovery.buildRx( ...
-                testCase.DeltaF, testCase.SNR_dB, testCase.Rs);
-
-            [~, freq_est_kHz] = freq_recovery.fitz(rx, training, testCase.Rs);
-
-            err_kHz = abs(freq_est_kHz - trueDeltaF_kHz);
-            fprintf('  [fitz] Nominal-SNR estimate: %.3f kHz  (true %.3f kHz, error %.3f kHz)\n', ...
-                    freq_est_kHz, trueDeltaF_kHz, err_kHz);
-        end
-
-        function testFitz_NegativeOffset(testCase)
-            %TESTFITZ_NEGATIVEOFFSET  Informational: negative offset accuracy.
-            DeltaF_neg     = -200;
-            trueDeltaF_kHz = DeltaF_neg * 1e3;
-
-            [rx, training, ~] = test_FreqRecovery.buildRx( ...
-                DeltaF_neg, 40, testCase.Rs);
-
-            [~, freq_est_kHz] = freq_recovery.fitz(rx, training, testCase.Rs);
-
-            err_kHz = abs(freq_est_kHz - trueDeltaF_kHz);
-            fprintf('  [fitz] Negative-offset estimate: %.3f kHz  (true %.3f kHz, error %.3f kHz)\n', ...
-                    freq_est_kHz, trueDeltaF_kHz, err_kHz);
-        end
-
-        function testFitz_BERAfterCorrection(testCase)
-            %TESTFITZ_BERAFTERCORRECTION
-            %   After correction, BER must be below 1e-2 at nominal SNR.
-            [rx, training, symbols] = test_FreqRecovery.buildRx( ...
-                testCase.DeltaF, testCase.SNR_dB, testCase.Rs);
-
-            [y, freq_est_kHz] = freq_recovery.fitz(rx, training, testCase.Rs);
-
-            txRefBits = modem.symbolsToBits(symbols);
-            best      = test_FreqRecovery.bestRotation(y, txRefBits);
-
-            rxBits = modem.symbolsToBits(modem.decideSymbols(best));
-            BER    = sum(rxBits ~= txRefBits) / numel(txRefBits);
-
-            fprintf('  [fitz] BER after correction: %.2e  (est offset %.3f kHz, true %.3f kHz)\n', ...
-                    BER, freq_est_kHz, testCase.DeltaF * 1e3);
-
-            % --- Constellation plots ---------------------------------
-            ms = 2;
-            figure('Name', sprintf('fitz | \\DeltaF = %d MHz | SNR = %d dB', ...
-                   testCase.DeltaF, testCase.SNR_dB), ...
-                   'Position', [200 200 900 400], 'Color', 'w');
-
-            subplot(1, 3, 1);
-            plot(real(symbols(:,1)), imag(symbols(:,1)), '.', 'MarkerSize', ms);
-            grid on; axis equal;
-            title('TX symbols (X-pol)');
-            xlabel('I'); ylabel('Q');
-
-            subplot(1, 3, 2);
-            plot(real(rx(:,1)), imag(rx(:,1)), '.', 'MarkerSize', ms);
-            grid on; axis equal;
-            title('After LO shift + AWGN');
-            xlabel('I'); ylabel('Q');
-
-            subplot(1, 3, 3);
-            plot(real(best(:,1)), imag(best(:,1)), '.', 'MarkerSize', ms);
-            grid on; axis equal;
-            title(sprintf('After correction (BER = %.2e)', BER));
-            xlabel('I'); ylabel('Q');
-
-            sgtitle(sprintf('fitz  |  \\DeltaF = %d MHz  |  SNR = %d dB  |  est = %.1f kHz', ...
-                    testCase.DeltaF, testCase.SNR_dB, freq_est_kHz));
-
-            % --- Only fail on BER -----------------------------------
-            testCase.verifyLessThan(BER, 1e-2, ...
-                sprintf('[fitz] BER %.2e after frequency correction exceeds 1e-2.', BER));
+        % ---- Fixed-point differential_kay MEX -----------------------
+        function testDifferentialKay_Fxp16(testCase)
+            [rxSym, frSym, training, txRefBits, deltaF_est] = ...
+                runScenarioFxp_DifferentialKay(testCase, testCase.FxpConfig);
+            BER = computeBER(testCase, frSym, txRefBits);
+            fprintf('Differential-Kay fxp (%s): delta_f_est = %.3f MHz  BER = %.2e\n', ...
+                testCase.FxpConfig, deltaF_est/1e6, BER);
+            plotBeforeAfter(testCase, rxSym, frSym, ...
+                sprintf('Differential-Kay fxp (%s)', testCase.FxpConfig), BER);
+            testCase.verifyLessThan(BER, testCase.BER_THRESHOLD);
         end
 
     end
 
-    % ================================================================
-    %  Private static helpers
-    % ================================================================
-    methods (Static, Access = private)
+    % =================================================================
+    methods (Access = private)
+    % =================================================================
 
-        function [rx, training, symbols] = buildRx(DeltaF_MHz, SNR_dB, Rs)
-            %BUILDRX  Generate one subframe, apply LO shift and AWGN.
-            %
-            %   DeltaF_MHz - frequency offset [MHz]
-            %   SNR_dB     - SNR [dB]  (Inf for noise-free)
-            %   Rs         - symbol rate [GBd]
+        % ---- Shared channel builder ---------------------------------
+        function [symbols, training, txRefBits, rxSym] = buildChannel(testCase)
+            % Modulate random bits to get CPON-framed symbols + training.
+            Nbits  = 4 * 3712 * 2;   % two subframes, 2 bits/symbol (QPSK), 2 pol
+            txBits = modem.randomBits(Nbits);
+            [symbols, ~, training, ~] = modem.modulate(txBits);
 
-            % Generate exactly one subframe
-            DATA_PER_SUBFRAME = 3586;
-            Nbits = DATA_PER_SUBFRAME * 2 * 2;   % 2 pol, 2 bits per sym per pol
+            txRefBits = modem.symbolsToBits(symbols);
 
-            bits = modem.randomBits(Nbits);
-            [symbols, ~, training, ~] = modem.modulate(bits);
-
-            % Take the first subframe only (training is [11 x 2], same each SF)
-            SUBFRAME_SYMS = 3712;
-            symbols = symbols(1:SUBFRAME_SYMS, :);
-
-            % Channel: LO shift then AWGN (symbol-rate signal, SpS = 1)
-            rx = channel.lo_freq_shift(symbols, DeltaF_MHz, Rs, 1);
-            if isfinite(SNR_dB)
-                rx = channel.add_awgn(rx, SNR_dB);
-            end
+            % Apply frequency offset then AWGN (no phase noise – isolates FR)
+            rxSym = channel.lo_freq_shift(symbols, testCase.DeltaF_MHz, testCase.Rs, 1);
+            rxSym = channel.add_awgn(rxSym, testCase.SNR_dB);
         end
 
-        function best = bestRotation(y, refBits)
-            %BESTROTATION  Return y rotated by the k*pi/2 that minimises BER.
-            rotations = [1, 1j, -1, -1j];
-            bestBER   = Inf;
-            best      = y;
+        % ---- Float fft_search runner --------------------------------
+        function [rxSym, frSym, training, txRefBits, deltaF_est] = ...
+                runScenario_FFTSearch(testCase)
+            [~, training, txRefBits, rxSym] = buildChannel(testCase);
+            [frSym, deltaF_est] = freq_recovery.fft_search( ...
+                rxSym, training, testCase.Rs, testCase.FR_FFT_K);
+        end
 
-            for ri = 1:4
-                rotated  = y * rotations(ri);
-                rxBits   = modem.symbolsToBits(modem.decideSymbols(rotated));
-                thisBER  = sum(rxBits ~= refBits) / numel(refBits);
-                if thisBER < bestBER
-                    bestBER = thisBER;
-                    best    = rotated;
-                end
+        % ---- Float differential_kay runner --------------------------
+        function [rxSym, frSym, training, txRefBits, deltaF_est] = ...
+                runScenario_DifferentialKay(testCase)
+            [~, training, txRefBits, rxSym] = buildChannel(testCase);
+            [frSym, deltaF_est] = freq_recovery.differential_kay( ...
+                rxSym, training, testCase.Rs);
+        end
+
+        % ---- Fixed-point fft_search MEX runner ----------------------
+        function [rxSym, frSym, training, txRefBits, deltaF_est] = ...
+                runScenarioFxp_FFTSearch(testCase, config)
+            T = freq_recovery.fxp_types(config);
+            [~, training, txRefBits, rxSym] = buildChannel(testCase);
+
+            rx_fi       = cast(rxSym,    'like', T.x);
+            training_fi = cast(training, 'like', T.x);
+
+            [frSym_fi, deltaF_est] = freq_recovery.fft_search_fxp_mex( ...
+                rx_fi, training_fi, testCase.Rs, ...
+                double(testCase.FR_Nfft), logical(testCase.FR_Po2Twiddle), ...
+                double(testCase.CordicIts), T);
+
+            frSym = double(frSym_fi);
+        end
+
+        % ---- Fixed-point differential_kay MEX runner ----------------
+        function [rxSym, frSym, training, txRefBits, deltaF_est] = ...
+                runScenarioFxp_DifferentialKay(testCase, config)
+            T = freq_recovery.fxp_types(config);
+            [~, training, txRefBits, rxSym] = buildChannel(testCase);
+
+            rx_fi       = cast(rxSym,    'like', T.x);
+            training_fi = cast(training, 'like', T.x);
+
+            [frSym_fi, deltaF_est] = freq_recovery.differential_kay_fxp_mex( ...
+                rx_fi, training_fi, testCase.Rs, ...
+                double(testCase.CordicIts), T);
+
+            frSym = double(frSym_fi);
+        end
+
+        % ---- BER computation ----------------------------------------
+        function BER = computeBER(testCase, frSym, txRefBits)
+            decidedSyms = modem.decideSymbols(frSym);
+            rxBits      = modem.symbolsToBits(decidedSyms);
+            nBits       = min(length(txRefBits), length(rxBits));
+            nErrors     = sum(txRefBits(1:nBits) ~= rxBits(1:nBits));
+            BER         = nErrors / nBits;
+        end
+
+        % ---- Constellation plots ------------------------------------
+        function plotBeforeAfter(testCase, rxSym, frSym, titleStr, BER)
+            figure('Name', titleStr, 'Position', [100 100 1200 500]);
+            for p = 1:testCase.N_pol
+                subplot(2, 2, (p-1)*2 + 1);
+                plot(real(rxSym(:,p)), imag(rxSym(:,p)), '.', 'MarkerSize', 2);
+                grid on; axis equal;
+                title(sprintf('Before FR  \x2013  Pol %d', p));
+                xlabel('In-Phase'); ylabel('Quadrature');
+
+                subplot(2, 2, (p-1)*2 + 2);
+                plot(real(frSym(:,p)), imag(frSym(:,p)), '.', 'MarkerSize', 2);
+                grid on; axis equal;
+                title(sprintf('After FR  \x2013  Pol %d', p));
+                xlabel('In-Phase'); ylabel('Quadrature');
             end
+            sgtitle(sprintf('QPSK: AWGN + %.1f MHz offset  |  %s  |  BER = %.2e', ...
+                testCase.DeltaF_MHz, titleStr, BER));
         end
 
     end

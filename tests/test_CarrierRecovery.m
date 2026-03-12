@@ -36,6 +36,7 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
         SNR_dB    = 20            % [dB]
         Linewidth = 1000e3          % laser linewidth [Hz]
         LW        = 1000e3          % phase-noise linewidth [Hz]
+        frequency_offset = 10       %[MHz]
 
         % ---- Channel (benign) ---------------------------------------
         L       = 80
@@ -46,7 +47,7 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
 
         % ---- Carrier recovery – shared ------------------------------
         NTaps     = 5
-        PilotThreshold = 100000
+        PilotThreshold = 5 * pi / 9
         StepSize  = 1               % symbol-by-symbol update (full bandwidth)
 
         % ---- BPS-specific -------------------------------------------
@@ -58,6 +59,8 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
 
         % ---- Pass / fail --------------------------------------------
         BER_THRESHOLD = 5e-2
+
+        Rebuild = true
     end
 
     % ================================================================
@@ -90,11 +93,13 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
             cfg.GenerateReport            = false;
             cfg.SaturateOnIntegerOverflow = false;
 
-            fprintf('  Compiling cr_viterbiViterbi_fxp_mex...\n');
-            build_carrier_recovery_viterbiViterbi_fxp_mex(P, cfg);
+            if testCase.Rebuild
+                fprintf('  Compiling cr_viterbiViterbi_fxp_mex...\n');
+                build_carrier_recovery_viterbiViterbi_fxp_mex(P, cfg);
 
-            fprintf('  Compiling cr_bps_fxp_mex...\n');
-            build_carrier_recovery_bps_fxp_mex(P, cfg);
+                fprintf('  Compiling cr_bps_fxp_mex...\n');
+                build_carrier_recovery_bps_fxp_mex(P, cfg);
+            end
         end
 
     end
@@ -148,10 +153,13 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
     methods (Test)
 
         function testQPSK_VV_Fxp16(testCase)
-            [rxSym, crSym, BER, ThetaPU] = runScenarioFxp_VV(testCase, testCase.FxpConfig);
+            [rxSym, crSym, BER, ThetaPU, crSymTheta, BERTheta] = ...
+                runScenarioFxp_VV(testCase, testCase.FxpConfig);
 
             plotBeforeAfter(testCase, rxSym, crSym, ...
                 sprintf('QPSK | VV fxp (%s)', testCase.FxpConfig), BER);
+            plotBeforeAfter(testCase, rxSym, crSymTheta, ...
+                sprintf('QPSK | VV float e^{-j\\theta} (%s)', testCase.FxpConfig), BERTheta);
             plotPhase(testCase, ThetaPU, '4-QAM VV Fxp', BER);
 
             testCase.verifyTrue(all(isfinite(crSym(:))), ...
@@ -161,10 +169,13 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
         end
 
         function testQPSK_BPS_Fxp16(testCase)
-            [rxSym, crSym, BER, ThetaPU] = runScenarioFxp_BPS(testCase, testCase.FxpConfig);
+            [rxSym, crSym, BER, ThetaPU, crSymTheta, BERTheta] = ...
+                runScenarioFxp_BPS(testCase, testCase.FxpConfig);
 
             plotBeforeAfter(testCase, rxSym, crSym, ...
                 sprintf('QPSK | BPS fxp (%s)', testCase.FxpConfig), BER);
+            plotBeforeAfter(testCase, rxSym, crSymTheta, ...
+                sprintf('QPSK | BPS float e^{-j\\theta} (%s)', testCase.FxpConfig), BERTheta);
             plotPhase(testCase, ThetaPU, '4-QAM BPS Fxp', BER);
 
             testCase.verifyTrue(all(isfinite(crSym(:))), ...
@@ -220,7 +231,7 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
         end
 
         % ---- Fixed-point VV MEX -------------------------------------
-        function [rxSym, crSym, BER, ThetaPU] = runScenarioFxp_VV(testCase, config)
+        function [rxSym, crSym, BER, ThetaPU, crSymTheta, BERTheta] = runScenarioFxp_VV(testCase, config)
             T = carrier_recovery.fxp_types(config);
 
             [symbols, pilots, txRefBits, rxSym] = buildChannel(testCase);
@@ -241,11 +252,17 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
 
             crSym = resolvePhaseAmbiguity(testCase, double(crSym_fi), txRefBits);
             BER   = computeBER(testCase, crSym, txRefBits);
-            fprintf('QPSK VV fxp (%s) BER = %.2e\n', config, BER);
+
+            crSymTheta = applyFloatPhaseCorrection(testCase, rxSym, ThetaPU);
+            crSymTheta = resolvePhaseAmbiguity(testCase, crSymTheta, txRefBits);
+            BERTheta   = computeBER(testCase, crSymTheta, txRefBits);
+
+            fprintf('QPSK VV fxp (%s) BER = %.2e | float e^{-jtheta} BER = %.2e\n', ...
+                config, BER, BERTheta);
         end
 
         % ---- Fixed-point BPS MEX ------------------------------------
-        function [rxSym, crSym, BER, ThetaPU] = runScenarioFxp_BPS(testCase, config)
+        function [rxSym, crSym, BER, ThetaPU, crSymTheta, BERTheta] = runScenarioFxp_BPS(testCase, config)
             T = carrier_recovery.fxp_types(config);
 
             [~, pilots, txRefBits, rxSym] = buildChannel(testCase);
@@ -261,7 +278,13 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
 
             crSym = resolvePhaseAmbiguity(testCase, double(crSym_fi), txRefBits);
             BER   = computeBER(testCase, crSym, txRefBits);
-            fprintf('QPSK BPS fxp (%s) BER = %.2e\n', config, BER);
+
+            crSymTheta = applyFloatPhaseCorrection(testCase, rxSym, ThetaPU);
+            crSymTheta = resolvePhaseAmbiguity(testCase, crSymTheta, txRefBits);
+            BERTheta   = computeBER(testCase, crSymTheta, txRefBits);
+
+            fprintf('QPSK BPS fxp (%s) BER = %.2e | float e^{-jtheta} BER = %.2e\n', ...
+                config, BER, BERTheta);
         end
 
         % ---- Shared channel builder ---------------------------------
@@ -295,6 +318,7 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
 
             txRefBits = modem.symbolsToBits(symbols);
             rxSym = channel.add_awgn(symbols, testCase.SNR_dB);
+            rxSym = channel.lo_freq_shift(rxSym, testCase.frequency_offset, testCase.Rs, testCase.SpS)
             rxSym = channel.add_phase_noise(rxSym, testCase.Rs, testCase.LW);
         end
 
@@ -313,6 +337,20 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
                     bestSym = rotated;
                 end
             end
+        end
+
+        % ---- Diagnostic: apply ThetaPU in floating-point -----------
+        function y = applyFloatPhaseCorrection(~, rxSym, ThetaPU)
+            y = rxSym;
+
+            nRows = min(size(rxSym, 1), size(ThetaPU, 1));
+            nPol  = min(size(rxSym, 2), size(ThetaPU, 2));
+            if nRows == 0 || nPol == 0
+                return;
+            end
+
+            rot = exp(-1j * ThetaPU(1:nRows, 1:nPol));
+            y(1:nRows, 1:nPol) = rxSym(1:nRows, 1:nPol) .* rot;
         end
 
         % ---- BER computation ----------------------------------------

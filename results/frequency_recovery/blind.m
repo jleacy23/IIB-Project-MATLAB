@@ -1,5 +1,5 @@
-classdef freq_recovery_comparison_blind < matlab.unittest.TestCase
-%FREQ_RECOVERY_COMPARISON_BLIND  Blind frequency estimator MSE comparison.
+classdef blind < matlab.unittest.TestCase
+%blind  Blind frequency estimator MSE comparison.
 %
 %   Runs Tretter-Kay, FFT-search and LRP in blind (4th-power) mode over a
 %   range of data observation lengths D and SNRs.  For each selected
@@ -11,7 +11,7 @@ classdef freq_recovery_comparison_blind < matlab.unittest.TestCase
 %   the estimate is divided by 4 inside each estimator.
 %
 %   Run with:
-%       results = runtests('freq_recovery_comparison_blind');
+%       results = runtests('blind');
 
     % ================================================================
     %  Parameters

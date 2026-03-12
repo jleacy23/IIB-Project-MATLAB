@@ -60,6 +60,7 @@ function [v, ThetaPU] = viterbiViterbi_fxp(x, NPol, NTaps, VVFilter, ...
     %  Fixed-point constants
     %% ----------------------------------------------------------------
     PI_OVER2 = cast(pi/2, 'like', T.theta);
+    PI_VAL   = cast(pi,   'like', T.theta);
     PI_OVER4 = cast(pi/4, 'like', T.theta);
     ZERO_TH  = cast(0, 'like', T.theta);
     QUARTER  = cast(0.25, 'like', T.theta);
@@ -225,8 +226,30 @@ function [v, ThetaPU] = viterbiViterbi_fxp(x, NPol, NTaps, VVFilter, ...
         %  cordicrotate output cast to T.x to enforce SpecifyPrecision.
         %% ------------------------------------------------------------
         for i = 1:N
-            neg_theta = cast(-ThetaPU(i, pol), 'like', T.theta);
-            v(i, pol) = cast(cordicrotate(neg_theta, x_fi(i, pol), CORDIC_ITS), 'like', T.x);
+            % CORDIC rotation is most reliable in the principal range.
+            % Reduce angle to [-pi, pi], then map to [-pi/2, pi/2]
+            % using a sign flip of the input symbol for quadrant handling.
+            theta_d = mod(double(-ThetaPU(i, pol)) + pi, 2*pi) - pi;
+            s_in    = x_fi(i, pol);
+
+            if theta_d > pi/2
+                theta_d = theta_d - pi;
+                s_in    = -s_in;
+            elseif theta_d < -pi/2
+                theta_d = theta_d + pi;
+                s_in    = -s_in;
+            end
+
+            theta_safe = cast(theta_d, 'like', T.theta);
+            if theta_safe > PI_OVER2
+                theta_safe = theta_safe - PI_VAL;
+                s_in       = -s_in;
+            elseif theta_safe < -PI_OVER2
+                theta_safe = theta_safe + PI_VAL;
+                s_in       = -s_in;
+            end
+
+            v(i, pol) = cast(cordicrotate(theta_safe, s_in, CORDIC_ITS), 'like', T.x);
         end
 
     end  % for pol

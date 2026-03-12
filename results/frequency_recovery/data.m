@@ -1,5 +1,5 @@
-classdef freq_recovery_comparison < matlab.unittest.TestCase
-%FREQ_RECOVERY_COMPARISON  Compare Tretter-Kay, FFT-search and LRP
+classdef data < matlab.unittest.TestCase
+%data  Compare Tretter-Kay, FFT-search and LRP
 %   frequency estimators over a range of offsets and SNRs.
 %
 %   For each selected frequency offset one figure is produced showing the
@@ -7,7 +7,7 @@ classdef freq_recovery_comparison < matlab.unittest.TestCase
 %   Each point is averaged over NTrials independent AWGN realisations.
 %
 %   Run with:
-%       results = runtests('freq_recovery_comparison');
+%       results = runtests('data');
 
     % ================================================================
     %  Parameters

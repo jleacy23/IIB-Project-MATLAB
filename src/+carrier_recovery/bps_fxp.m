@@ -64,6 +64,7 @@ function [v, ThetaPU] = bps_fxp(z, N, NPol, M, B, BlockLen, StepSize, ...
     %  Fixed-point constants
     %% ----------------------------------------------------------------
     PI_OVER2 = cast(pi/2, 'like', T.theta);
+    PI_VAL   = cast(pi,   'like', T.theta);
     ZERO_ACC = cast(0,    'like', T.acc);
     CORDIC_ITS = coder.const(CordicIts);
 
@@ -243,8 +244,30 @@ function [v, ThetaPU] = bps_fxp(z, N, NPol, M, B, BlockLen, StepSize, ...
     %% ================================================================
     for i = 1:Nsym
         for pol = 1:NPol
-            neg_theta = cast(-ThetaPU(i, pol), 'like', T.theta);
-            v(i, pol) = cast(cordicrotate(neg_theta, z_fi(i, pol), CORDIC_ITS), 'like', T.x);
+            % CORDIC rotation is most reliable in the principal range.
+            % Reduce angle to [-pi, pi], then map to [-pi/2, pi/2]
+            % using a sign flip of the input symbol for quadrant handling.
+            theta_d = mod(double(-ThetaPU(i, pol)) + pi, 2*pi) - pi;
+            s_in    = z_fi(i, pol);
+
+            if theta_d > pi/2
+                theta_d = theta_d - pi;
+                s_in    = -s_in;
+            elseif theta_d < -pi/2
+                theta_d = theta_d + pi;
+                s_in    = -s_in;
+            end
+
+            theta_safe = cast(theta_d, 'like', T.theta);
+            if theta_safe > PI_OVER2
+                theta_safe = theta_safe - PI_VAL;
+                s_in       = -s_in;
+            elseif theta_safe < -PI_OVER2
+                theta_safe = theta_safe + PI_VAL;
+                s_in       = -s_in;
+            end
+
+            v(i, pol) = cast(cordicrotate(theta_safe, s_in, CORDIC_ITS), 'like', T.x);
         end
     end
 end

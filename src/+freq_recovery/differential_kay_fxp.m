@@ -38,8 +38,10 @@ function [y, frequency_offset] = differential_kay_fxp(x, training, Rs, CordicIts
     %% ----------------------------------------------------------------
     %  Fixed-point constants
     %% ----------------------------------------------------------------
-    ZERO_TH  = cast(0, 'like', T.theta);
+    ZERO_TH  = cast(0,   'like', T.theta);
     CORDIC_ITS = coder.const(CordicIts);
+    PI_VAL   = cast(pi,   'like', T.theta);
+    PI_OVER2 = cast(pi/2, 'like', T.theta);
 
     Nsym  = size(x, 1);
     N_pol = size(x, 2);
@@ -85,7 +87,20 @@ function [y, frequency_offset] = differential_kay_fxp(x, training, Rs, CordicIts
     for p = 1:N_pol
         theta_fi = ZERO_TH;
         for i = 1:Nsym
-            y(i, p)  = cast(cordicrotate(theta_fi, x_fi(i, p), CORDIC_ITS), 'like', T.x);
+            theta_d = mod(double(theta_fi) + pi, 2*pi) - pi;
+            s_in = x_fi(i, p);
+            if theta_d > pi/2
+                theta_d = theta_d - pi;  s_in = -s_in;
+            elseif theta_d < -pi/2
+                theta_d = theta_d + pi;  s_in = -s_in;
+            end
+            theta_safe = cast(theta_d, 'like', T.theta);
+            if theta_safe > PI_OVER2
+                theta_safe = theta_safe - PI_VAL;  s_in = -s_in;
+            elseif theta_safe < -PI_OVER2
+                theta_safe = theta_safe + PI_VAL;  s_in = -s_in;
+            end
+            y(i, p)  = cast(cordicrotate(theta_safe, s_in, CORDIC_ITS), 'like', T.x);
             theta_fi = theta_fi + delta_theta;
         end
     end

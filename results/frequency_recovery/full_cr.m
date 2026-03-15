@@ -25,15 +25,18 @@ classdef full_cr < matlab.unittest.TestCase
         % System
         Rs          = 30.5              % symbol rate [GBd]
         N_pol       = 2
-        NTrials     = 100                % independent channel realisations per point
+        TrainingLen = 11                % training symbols per subframe
+        NTrials     = 100               % independent channel realisations per point
 
         % Sweep grids
         SNR_dB_vec    = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]   % [dB]
         DeltaF_Hz_vec = [3e9]               % frequency offset [Hz]
         LW_Hz_vec     = [1000e3]            % laser linewidth  [Hz]
 
-        % FFT pruning factor
-        FFT_K = 47
+        % Frequency recovery — fixed-point settings
+        FxpConfig_FR  = 'fixed32'       % 'fixed16' | 'fixed32'
+        FR_Nfft       = 512             % FFT size for fft_search_fxp (power of 2)
+        FR_Po2Twiddle = false           % round FFT twiddles to powers of 2
 
         % Phase recovery — shared settings
         BlockLen       = 32             % CPON block length [symbols]
@@ -51,9 +54,9 @@ classdef full_cr < matlab.unittest.TestCase
         % Enable/disable figure output
         Plot = true
 
-        % Fixed-point configuration (CR only)
+        % Fixed-point configuration (CR)
         FxpConfig = 'fixed16'           % 'fixed16' | 'fixed32'
-        CordicIts = 16                  % CORDIC iterations
+        CordicIts = 16                  % CORDIC iterations (shared FR + CR)
 
         % Enable/disable MEX rebuild
         Rebuild = true
@@ -86,8 +89,13 @@ classdef full_cr < matlab.unittest.TestCase
 
             P.Rs             = testCase.Rs;
             P.N_pol          = testCase.N_pol;
+            P.TrainingLen    = testCase.TrainingLen;
+            P.FR_Nfft        = testCase.FR_Nfft;
+            P.FR_Po2Twiddle  = testCase.FR_Po2Twiddle;
+            P.FxpConfig_FR   = testCase.FxpConfig_FR;
             P.FxpConfig_BPS  = testCase.FxpConfig;
             P.FxpConfig_VV   = testCase.FxpConfig;
+            P.FxpConfig_PO   = testCase.FxpConfig;
             P.CordicIts      = testCase.CordicIts;
             P.BPS_N          = testCase.BPS_N;
             P.BPS_B          = testCase.BPS_B;
@@ -103,8 +111,11 @@ classdef full_cr < matlab.unittest.TestCase
 
             if testCase.Rebuild
                 fprintf('Building MEX objects...\n');
+                build_freq_recovery_fft_search_fxp_mex(P, cfg);
+                build_freq_recovery_differential_kay_fxp_mex(P, cfg);
                 build_carrier_recovery_bps_fxp_mex(P, cfg);
                 build_carrier_recovery_viterbiViterbi_fxp_mex(P, cfg);
+                build_carrier_recovery_pilots_only_fxp_mex(P, cfg);
                 fprintf('All MEX objects built.\n');
             end
         end
@@ -220,10 +231,10 @@ classdef full_cr < matlab.unittest.TestCase
                             %         sprintf('After VV fxp | %s | SNR=%ddB', strrep(fr_algo,'_',' '), SNR_dB));
                             % end
 
-                            %-- Pilots only (float) --
-                            [cr_po, ~] = carrier_recovery.pilots_only( ...
-                                fr_out, P.N_pol, P.BlockLen, pilots);
-                            cr_po = full_cr.resolvePhaseAmbiguity(cr_po, txRefBits);
+                            %-- Pilots only (fxp MEX) --
+                            [cr_po, ~] = carrier_recovery.pilots_only_fxp_mex( ...
+                                fr_out_fi, P.N_pol, P.BlockLen, pilots_fi, double(P.CordicIts), T_cr);
+                            cr_po = full_cr.resolvePhaseAmbiguity(double(cr_po), txRefBits);
                             BER_all(tr, si, fi, li, 3) = full_cr.computeBER(cr_po, txRefBits);
                             % if doPlot
                             %     full_cr.plotConstellation(cr_po, ...
@@ -276,16 +287,22 @@ classdef full_cr < matlab.unittest.TestCase
             rx = channel.add_awgn(rx, SNR_dB);
             rx = channel.add_phase_noise(rx, P.Rs, LW);
 
-            % Frequency recovery (floating-point)
+            % Frequency recovery (fixed-point MEX)
             rx_preFR = rx;
+            T_fr   = freq_recovery.fxp_types(P.FxpConfig_FR);
+            rx_fi  = cast(rx,       'like', T_fr.x);
+            tr_fi  = cast(training, 'like', T_fr.x);
             switch fr_algo
                 case 'fft_search'
-                    [fr_out, freq_offset] = freq_recovery.fft_search(rx, training, P.Rs, P.FFT_K);
+                    [fr_out, freq_offset] = freq_recovery.fft_search_fxp_mex( ...
+                        rx_fi, tr_fi, P.Rs, P.FR_Nfft, P.FR_Po2Twiddle, P.CordicIts, T_fr);
                 case 'differential_kay'
-                    [fr_out, freq_offset] = freq_recovery.differential_kay(rx, training, P.Rs);
+                    [fr_out, freq_offset] = freq_recovery.differential_kay_fxp_mex( ...
+                        rx_fi, tr_fi, P.Rs, P.CordicIts, T_fr);
                 otherwise
                     error('full_cr:unknownFR', 'Unknown FR algorithm: %s', fr_algo);
             end
+            fr_out = double(fr_out);
 
             % Build per-CR-block pilot matrix [NBlocks x N_pol].
             % For any BlockLen, CR block b starts at signal position
@@ -413,8 +430,8 @@ classdef full_cr < matlab.unittest.TestCase
                 end
             end
 
-            sgtitle(sprintf('BER vs SNR  |  FR: %s  |  %d trials per point', ...
-                fr_title, P.NTrials), 'FontSize', 14, 'FontWeight', 'bold');
+            sgtitle(sprintf('BER vs SNR  |  FR: %s', ...
+                fr_title), 'FontSize', 14, 'FontWeight', 'bold');
         end
 
     end

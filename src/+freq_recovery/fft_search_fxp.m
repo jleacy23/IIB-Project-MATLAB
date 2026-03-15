@@ -43,10 +43,12 @@ function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddl
     %% ----------------------------------------------------------------
     %  Fixed-point constants
     %% ----------------------------------------------------------------
-    ZERO_TH    = cast(0, 'like', T.theta);
-    UNIT_RE    = cast(1, 'like', T.acc);
-    ZERO_ACC   = cast(0, 'like', T.acc);
+    ZERO_TH    = cast(0,   'like', T.theta);
+    UNIT_RE    = cast(1,   'like', T.acc);
+    ZERO_ACC   = cast(0,   'like', T.acc);
     CORDIC_ITS = coder.const(CordicIts);
+    PI_VAL     = cast(pi,   'like', T.theta);
+    PI_OVER2   = cast(pi/2, 'like', T.theta);
 
     %% ----------------------------------------------------------------
     %  Dimensions
@@ -107,7 +109,7 @@ function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddl
             %% Blind: phi_z(k) = 4*angle(x_data(k)),  x_data = x(L+1..L+D)
             for k = 1:D
                 phi_x_k  = cast(cordicangle(x_fi(L+k, p), CORDIC_ITS), 'like', T.theta);
-                phi_z_k  = cast(4.0 * double(phi_x_k), 'like', T.theta);
+                phi_z_k  = cast(mod(4.0 * double(phi_x_k), 2*pi) - pi, 'like', T.theta);
 
                 unit_in  = complex(UNIT_RE, ZERO_ACC);
                 z_pad(k) = cast(cordicrotate(phi_z_k, unit_in, CORDIC_ITS), 'like', T.acc);
@@ -179,7 +181,20 @@ function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddl
     for p = 1:N_pol
         theta_fi = ZERO_TH;
         for i = 1:Nsym
-            y(i, p) = cast(cordicrotate(theta_fi, x_fi(i, p), CORDIC_ITS), 'like', T.x);
+            theta_d = mod(double(theta_fi) + pi, 2*pi) - pi;
+            s_in = x_fi(i, p);
+            if theta_d > pi/2
+                theta_d = theta_d - pi;  s_in = -s_in;
+            elseif theta_d < -pi/2
+                theta_d = theta_d + pi;  s_in = -s_in;
+            end
+            theta_safe = cast(theta_d, 'like', T.theta);
+            if theta_safe > PI_OVER2
+                theta_safe = theta_safe - PI_VAL;  s_in = -s_in;
+            elseif theta_safe < -PI_OVER2
+                theta_safe = theta_safe + PI_VAL;  s_in = -s_in;
+            end
+            y(i, p) = cast(cordicrotate(theta_safe, s_in, CORDIC_ITS), 'like', T.x);
             theta_fi = theta_fi + delta_theta;
         end
     end

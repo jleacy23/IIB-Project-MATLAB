@@ -21,7 +21,6 @@ function [v, ThetaPU] = pilots_only(x, NPol, BlockLen, Pilots)
 %     BlockLen - block length in symbols
 %     Pilots   - pilot symbols, one per block [NBlocks x NPol]
 %                Pilots(b, pol) is the known pilot at the start of block b.
-%
 %   Outputs
 %     v       - phase-corrected signal [Nsym x NPol]
 %     ThetaPU - phase estimate [Nsym x NPol]
@@ -43,7 +42,7 @@ function [v, ThetaPU] = pilots_only(x, NPol, BlockLen, Pilots)
     for b = 1:NBlocks
         blockStart = (b - 1) * BlockLen + 1;
         if blockStart <= Nsym
-            ThetaEst(b, :) = angle(conj(Pilots(b, :)) .* x(blockStart, :));
+            ThetaEst(b, :) = angle(sum(conj(Pilots(b, :)) .* x(blockStart, :)));
         end
     end
 

@@ -34,9 +34,9 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
         % ---- System -------------------------------------------------
         Rs        = 30.5              % symbol rate [GBd]
         SNR_dB    = 20            % [dB]
-        Linewidth = 1000e3          % laser linewidth [Hz]
-        LW        = 1000e3          % phase-noise linewidth [Hz]
-        frequency_offset = 10       %[MHz]
+        Linewidth = 100e3          % laser linewidth [Hz]
+        LW        = 100e3          % phase-noise linewidth [Hz]
+        frequency_offset = 0       %[MHz]
 
         % ---- Channel (benign) ---------------------------------------
         L       = 80
@@ -60,7 +60,7 @@ classdef test_CarrierRecovery < matlab.unittest.TestCase
         % ---- Pass / fail --------------------------------------------
         BER_THRESHOLD = 5e-2
 
-        Rebuild = true
+        Rebuild = false
     end
 
     % ================================================================

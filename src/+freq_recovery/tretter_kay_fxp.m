@@ -13,14 +13,10 @@ function [y, frequency_offset] = tretter_kay_fxp(x, training, Rs, CordicIts, T, 
 %     1. Build phase of de-rotated observation (same as differential_fxp).
 %     2. Form successive phase differences:
 %          dphi(k) = phi_z(k+1) - phi_z(k)
-%     3. Apply Kay optimal weights (computed in double):
+%     3. Apply Kay optimal weights (cast to T.acc):
 %          w(k) = 6*k*(No-k) / (No*(No^2-1))
-%     4. Weighted sum accumulated in double; scaled to Hz.
+%     4. Weighted sum accumulated in T.acc (fixed-point); scaled to Hz.
 %     5. Average across polarisations; apply phase ramp via CORDIC.
-%
-%   Kay weights are double because they are small rational constants that
-%   do not quantise well to the fixed-point grid; only the input phase
-%   differences (computed from quantised signal data) are in T.theta.
 %
 %   Inputs
 %     x          - input subframe  [Nsym x NPol]  (fi or castable to T.x)
@@ -43,8 +39,13 @@ function [y, frequency_offset] = tretter_kay_fxp(x, training, Rs, CordicIts, T, 
     %% ----------------------------------------------------------------
     %  Fixed-point constants
     %% ----------------------------------------------------------------
-    ZERO_TH  = cast(0, 'like', T.theta);
+    ZERO_TH  = cast(0,   'like', T.theta);
+    ZERO_ACC = cast(0,   'like', T.acc);
     CORDIC_ITS = coder.const(CordicIts);
+    TWOPI_TH = cast(2*pi, 'like', T.theta);
+    PI_TH    = cast(pi,   'like', T.theta);
+    PI_VAL   = cast(pi,   'like', T.theta);
+    PI_OVER2 = cast(pi/2, 'like', T.theta);
 
     %% ----------------------------------------------------------------
     %  Dimensions
@@ -75,12 +76,17 @@ function [y, frequency_offset] = tretter_kay_fxp(x, training, Rs, CordicIts, T, 
                 phi_x = cast(cordicangle(x_fi(k, p), CORDIC_ITS), 'like', T.theta);
                 phi_t = cast(cordicangle(training_fi(k, p), CORDIC_ITS), 'like', T.theta);
                 phi_z(k, p) = phi_x - phi_t;
+                if phi_z(k, p) > PI_TH
+                    phi_z(k, p) = phi_z(k, p) - TWOPI_TH;
+                elseif phi_z(k, p) < -PI_TH
+                    phi_z(k, p) = phi_z(k, p) + TWOPI_TH;
+                end 
             end
         else
             %% Blind: phi_z(k) = 4 * angle(x_data(k))
             for k = 1:D
                 phi_x = cast(cordicangle(x_fi(L + k, p), CORDIC_ITS), 'like', T.theta);
-                phi_z(k, p) = cast(4.0 * double(phi_x), 'like', T.theta);
+                phi_z(k, p) = cast(mod(4.0 * double(phi_x), 2*pi) - pi, 'like', T.theta);
             end
         end
     end
@@ -89,8 +95,8 @@ function [y, frequency_offset] = tretter_kay_fxp(x, training, Rs, CordicIts, T, 
     %  Step 2 & 3 – Weighted phase-difference sum
     %
     %  w(k) = 6*k*(No-k) / (No*(No^2-1)),  k = 1 .. No-1
-    %  Weights computed in double; phase differences cast to double for
-    %  the multiply-accumulate.
+    %  w_k computed in double then cast to T.acc; dphi stays in T.theta;
+    %  product and accumulation performed in T.acc.
     %% ----------------------------------------------------------------
     No_d       = double(No);
     w_denom    = No_d * (No_d * No_d - 1.0);   % No*(No^2-1)
@@ -99,14 +105,20 @@ function [y, frequency_offset] = tretter_kay_fxp(x, training, Rs, CordicIts, T, 
     f_coeff    = Rs_Hz / (2.0 * pi);
 
     for p = 1:N_pol
-        w_acc = 0.0;   % double weighted accumulator
+        w_acc = ZERO_ACC;   % T.acc fixed-point accumulator
         for k = 1:No - 1
-            k_d  = double(k);
-            w_k  = 6.0 * k_d * (No_d - k_d) / w_denom;
-            dphi = double(phi_z(k + 1, p) - phi_z(k, p));
-            w_acc = w_acc + w_k * dphi;
+            k_d    = double(k);
+            w_k_fi = cast(6.0 * k_d * (No_d - k_d) / w_denom, 'like', T.acc);
+            dphi   = phi_z(k + 1, p) - phi_z(k, p);
+            if dphi > PI_TH
+                dphi = dphi - TWOPI_TH;
+            elseif dphi < -PI_TH
+                dphi = dphi + TWOPI_TH;
+            end
+            dphi_acc = cast(dphi, 'like', T.acc);
+            w_acc    = w_acc + cast(w_k_fi * dphi_acc, 'like', T.acc);
         end
-        f_per_pol(p) = f_coeff * w_acc;
+        f_per_pol(p) = f_coeff * double(w_acc);
     end
 
     %% ----------------------------------------------------------------
@@ -136,10 +148,23 @@ function [y, frequency_offset] = tretter_kay_fxp(x, training, Rs, CordicIts, T, 
     for p = 1:N_pol
         theta_fi = ZERO_TH;
         for i = 1:Nsym
-            y(i, p)  = cast(cordicrotate(theta_fi, x_fi(i, p), CORDIC_ITS), 'like', T.x);
+            theta_d = mod(double(theta_fi) + pi, 2*pi) - pi;
+            s_in = x_fi(i, p);
+            if theta_d > pi/2
+                theta_d = theta_d - pi;  s_in = -s_in;
+            elseif theta_d < -pi/2
+                theta_d = theta_d + pi;  s_in = -s_in;
+            end
+            theta_safe = cast(theta_d, 'like', T.theta);
+            if theta_safe > PI_OVER2
+                theta_safe = theta_safe - PI_VAL;  s_in = -s_in;
+            elseif theta_safe < -PI_OVER2
+                theta_safe = theta_safe + PI_VAL;  s_in = -s_in;
+            end
+            y(i, p)  = cast(cordicrotate(theta_safe, s_in, CORDIC_ITS), 'like', T.x);
             theta_fi = theta_fi + delta_theta;
         end
     end
 
-    frequency_offset = frequency_offset_Hz;
+    frequency_offset = frequency_offset_Hz
 end

@@ -23,7 +23,7 @@ classdef test_FreqRecovery < matlab.unittest.TestCase
 
         % ---- Channel ------------------------------------------------
         SNR_dB      = 20            % [dB]  – good SNR to isolate FR errors
-        DeltaF_MHz  = 2.0           % [MHz] – frequency offset to apply
+        DeltaF_MHz  = 3e3           % [MHz] – frequency offset to apply
 
         % ---- Float fft_search  --------------------------------------
         FR_FFT_K    = 8             % zero-padding factor

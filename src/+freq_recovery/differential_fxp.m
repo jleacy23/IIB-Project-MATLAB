@@ -44,6 +44,10 @@ function [y, frequency_offset] = differential_fxp(x, training, Rs, CordicIts, T,
     ZERO_TH  = cast(0, 'like', T.theta);
     ZERO_ACC = cast(0, 'like', T.acc);
     CORDIC_ITS = coder.const(CordicIts);
+    PI_TH    = cast(pi,   'like', T.theta);
+    TWOPI_TH = cast(2*pi, 'like', T.theta);
+    PI_VAL   = cast(pi,   'like', T.theta);
+    PI_OVER2 = cast(pi/2, 'like', T.theta);
 
     %% ----------------------------------------------------------------
     %  Dimensions
@@ -75,12 +79,17 @@ function [y, frequency_offset] = differential_fxp(x, training, Rs, CordicIts, T,
                 phi_x = cast(cordicangle(x_fi(k, p), CORDIC_ITS), 'like', T.theta);
                 phi_t = cast(cordicangle(training_fi(k, p), CORDIC_ITS), 'like', T.theta);
                 phi_z(k, p) = phi_x - phi_t;
+                if phi_z(k, p) > PI_TH
+                    phi_z(k, p) = phi_z(k, p) - TWOPI_TH;
+                elseif phi_z(k, p) < -PI_TH
+                    phi_z(k, p) = phi_z(k, p) + TWOPI_TH;
+                end
             end
         else
             %% Blind: phi_z(k) = 4 * angle(x_data(k))
             for k = 1:D
                 phi_x = cast(cordicangle(x_fi(L + k, p), CORDIC_ITS), 'like', T.theta);
-                phi_z(k, p) = cast(4.0 * double(phi_x), 'like', T.theta);
+                phi_z(k, p) = cast(mod(4.0 * double(phi_x), 2*pi) - pi, 'like', T.theta);
             end
         end
     end
@@ -95,7 +104,13 @@ function [y, frequency_offset] = differential_fxp(x, training, Rs, CordicIts, T,
     for p = 1:N_pol
         acc = ZERO_ACC;
         for k = 1:No - 1
-            dphi = cast(phi_z(k + 1, p) - phi_z(k, p), 'like', T.acc);
+            dphi = phi_z(k + 1, p) - phi_z(k, p);
+            if dphi > PI_TH
+                dphi = dphi - TWOPI_TH;
+            elseif dphi < -PI_TH
+                dphi = dphi + TWOPI_TH;
+            end
+            dphi = cast(dphi, "like", T.acc);
             acc  = acc + dphi;
         end
         % Divide by No (observation length, matching the float version)
@@ -129,10 +144,23 @@ function [y, frequency_offset] = differential_fxp(x, training, Rs, CordicIts, T,
     for p = 1:N_pol
         theta_fi = ZERO_TH;
         for i = 1:Nsym
-            y(i, p)  = cast(cordicrotate(theta_fi, x_fi(i, p), CORDIC_ITS), 'like', T.x);
+            theta_d = mod(double(theta_fi) + pi, 2*pi) - pi;
+            s_in = x_fi(i, p);
+            if theta_d > pi/2
+                theta_d = theta_d - pi;  s_in = -s_in;
+            elseif theta_d < -pi/2
+                theta_d = theta_d + pi;  s_in = -s_in;
+            end
+            theta_safe = cast(theta_d, 'like', T.theta);
+            if theta_safe > PI_OVER2
+                theta_safe = theta_safe - PI_VAL;  s_in = -s_in;
+            elseif theta_safe < -PI_OVER2
+                theta_safe = theta_safe + PI_VAL;  s_in = -s_in;
+            end
+            y(i, p)  = cast(cordicrotate(theta_safe, s_in, CORDIC_ITS), 'like', T.x);
             theta_fi = theta_fi + delta_theta;
         end
     end
 
-    frequency_offset = frequency_offset_Hz;
+    frequency_offset = frequency_offset_Hz
 end

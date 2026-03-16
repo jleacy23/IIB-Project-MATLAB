@@ -14,6 +14,7 @@ function build_freq_recovery_fft_search_fxp_mex(P, cfg)
 %     P.FR_Po2Twiddle   - logical: use power-of-2 twiddle factors in fft_fxp
 %     P.FxpConfig_FR    - fixed-point config string: 'fixed16' | 'fixed32'
 %     P.CordicIts       - number of CORDIC iterations
+%     P.MaxFreq         - phase-scaling factor (double)
 %
 %   Note on FFT size
 %     fft.fft_fxp requires N to be a power of 2.  P.FR_Nfft must satisfy
@@ -50,7 +51,7 @@ function build_freq_recovery_fft_search_fxp_mex(P, cfg)
 
     % ----------------------------------------------------------------
     % Build argument list — must match freq_recovery.fft_search_fxp signature:
-    %   (x, training, Rs, Nfft, po2Twiddle, CordicIts, T)
+    %   (x, training, Rs, Nfft, po2Twiddle, CordicIts, max_freq, T)
     % ----------------------------------------------------------------
     args = { ...
         In_fr_type, ...                   % x           [Nsym x NPol]       fi complex
@@ -59,6 +60,7 @@ function build_freq_recovery_fft_search_fxp_mex(P, cfg)
         double(P.FR_Nfft), ...            % Nfft         scalar              double  (power of 2)
         logical(P.FR_Po2Twiddle), ...     % po2Twiddle   scalar              logical
         cordic_its_type, ...              % CordicIts    scalar              double
+        double(P.MaxFreq), ...            % max_freq     scalar              double
         T_fr};                            % T            struct of fi prototypes
 
     codegen('-config', cfg, ...

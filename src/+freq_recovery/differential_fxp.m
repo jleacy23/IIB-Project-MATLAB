@@ -1,4 +1,4 @@
-function [y, frequency_offset] = differential_fxp(x, training, Rs, CordicIts, T, data_aided, D) %#codegen
+function [y, frequency_offset] = differential_fxp(x, training, Rs, CordicIts, T, data_aided, D, max_freq) %#codegen
 %DIFFERENTIAL_FXP  Fixed-point simple differential-phase frequency estimator.
 %
 %   [y, frequency_offset] = differential_fxp(x, training, Rs, CordicIts)
@@ -37,6 +37,11 @@ function [y, frequency_offset] = differential_fxp(x, training, Rs, CordicIts, T,
         T = freq_recovery.fxp_types('fixed16');
     end
     if nargin < 6, data_aided = true; end
+    if nargin < 8 || isempty(max_freq), max_freq = 1.0; end
+    if max_freq <= 0
+        error('freq_recovery:differential_fxp:BadMaxFreq', ...
+              'max_freq must be positive.');
+    end
 
     %% ----------------------------------------------------------------
     %  Fixed-point constants
@@ -46,8 +51,6 @@ function [y, frequency_offset] = differential_fxp(x, training, Rs, CordicIts, T,
     CORDIC_ITS = coder.const(CordicIts);
     PI_TH    = cast(pi,   'like', T.theta);
     TWOPI_TH = cast(2*pi, 'like', T.theta);
-    PI_VAL   = cast(pi,   'like', T.theta);
-    PI_OVER2 = cast(pi/2, 'like', T.theta);
 
     %% ----------------------------------------------------------------
     %  Dimensions
@@ -136,29 +139,23 @@ function [y, frequency_offset] = differential_fxp(x, training, Rs, CordicIts, T,
     frequency_offset_Hz = frequency_offset_Hz / double(N_pol);
 
     %% ----------------------------------------------------------------
-    %  Phase correction: linear ramp applied sample-by-sample via CORDIC
+    %  Phase correction: keep scaled phase in T.theta, then cast back to
+    %  double and apply exp(+j*theta) in floating point.
     %% ----------------------------------------------------------------
-    delta_theta = cast(-2.0 * pi * frequency_offset_Hz / Rs_Hz, 'like', T.theta);
+    delta_theta = cast(-2.0 * pi * frequency_offset_Hz / (Rs_Hz * max_freq), 'like', T.theta);
     y = complex(zeros(Nsym, N_pol, 'like', T.x));
+    x_float = double(x_fi);
+    theta_wrap = pi / max_freq;
 
     for p = 1:N_pol
         theta_fi = ZERO_TH;
         for i = 1:Nsym
-            theta_d = mod(double(theta_fi) + pi, 2*pi) - pi;
-            s_in = x_fi(i, p);
-            if theta_d > pi/2
-                theta_d = theta_d - pi;  s_in = -s_in;
-            elseif theta_d < -pi/2
-                theta_d = theta_d + pi;  s_in = -s_in;
-            end
-            theta_safe = cast(theta_d, 'like', T.theta);
-            if theta_safe > PI_OVER2
-                theta_safe = theta_safe - PI_VAL;  s_in = -s_in;
-            elseif theta_safe < -PI_OVER2
-                theta_safe = theta_safe + PI_VAL;  s_in = -s_in;
-            end
-            y(i, p)  = cast(cordicrotate(theta_safe, s_in, CORDIC_ITS), 'like', T.x);
-            theta_fi = theta_fi + delta_theta;
+            theta = double(theta_fi) * max_freq;
+            y(i, p) = cast(x_float(i, p) * exp(1j * theta), 'like', T.x);
+
+            theta_next = double(theta_fi + delta_theta);
+            theta_next = mod(theta_next + theta_wrap, 2 * theta_wrap) - theta_wrap;
+            theta_fi = cast(theta_next, 'like', T.theta);
         end
     end
 

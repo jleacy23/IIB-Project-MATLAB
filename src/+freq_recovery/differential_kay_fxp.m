@@ -1,4 +1,4 @@
-function [y, frequency_offset] = differential_kay_fxp(x, training, Rs, CordicIts, T, data_aided, D) %#codegen
+function [y, frequency_offset] = differential_kay_fxp(x, training, Rs, CordicIts, T, data_aided, D, max_freq) %#codegen
 %DIFFERENTIAL_KAY_FXP  Fixed-point two-stage differential + Tretter-Kay estimator.
 %
 %   [y, frequency_offset] = differential_kay_fxp(x, training, Rs, CordicIts)
@@ -34,14 +34,16 @@ function [y, frequency_offset] = differential_kay_fxp(x, training, Rs, CordicIts
         T = freq_recovery.fxp_types('fixed16');
     end
     if nargin < 6, data_aided = true; end
+    if nargin < 8 || isempty(max_freq), max_freq = 1.0; end
+    if max_freq <= 0
+        error('freq_recovery:differential_kay_fxp:BadMaxFreq', ...
+              'max_freq must be positive.');
+    end
 
     %% ----------------------------------------------------------------
     %  Fixed-point constants
     %% ----------------------------------------------------------------
     ZERO_TH  = cast(0,   'like', T.theta);
-    CORDIC_ITS = coder.const(CordicIts);
-    PI_VAL   = cast(pi,   'like', T.theta);
-    PI_OVER2 = cast(pi/2, 'like', T.theta);
 
     Nsym  = size(x, 1);
     N_pol = size(x, 2);
@@ -54,10 +56,10 @@ function [y, frequency_offset] = differential_kay_fxp(x, training, Rs, CordicIts
     %% ----------------------------------------------------------------
     if data_aided
         [x_coarse, f_coarse] = freq_recovery.differential_fxp( ...
-            x_fi, training, Rs, CordicIts, T);
+            x_fi, training, Rs, CordicIts, T, true, 0, max_freq);
     else
         [x_coarse, f_coarse] = freq_recovery.differential_fxp( ...
-            x_fi, training, Rs, CordicIts, T, false, D);
+            x_fi, training, Rs, CordicIts, T, false, D, max_freq);
     end
 
     %% ----------------------------------------------------------------
@@ -66,10 +68,10 @@ function [y, frequency_offset] = differential_kay_fxp(x, training, Rs, CordicIts
     %% ----------------------------------------------------------------
     if data_aided
         [~, f_fine] = freq_recovery.tretter_kay_fxp( ...
-            x_coarse, training, Rs, CordicIts, T);
+            x_coarse, training, Rs, CordicIts, T, true, 0, max_freq);
     else
         [~, f_fine] = freq_recovery.tretter_kay_fxp( ...
-            x_coarse, training, Rs, CordicIts, T, false, D);
+            x_coarse, training, Rs, CordicIts, T, false, D, max_freq);
     end
 
     %% ----------------------------------------------------------------
@@ -78,30 +80,24 @@ function [y, frequency_offset] = differential_kay_fxp(x, training, Rs, CordicIts
     frequency_offset_Hz = f_coarse + f_fine;
 
     %% ----------------------------------------------------------------
-    %  Apply total correction to the original input in a single pass
-    %  (avoids accumulating quantisation error from the two-stage path)
+    %  Apply total correction to the original input in a single pass.
+    %  Keep scaled phase in T.theta, then cast back to double and apply
+    %  exp(+j*theta) in floating point.
     %% ----------------------------------------------------------------
-    delta_theta = cast(-2.0 * pi * frequency_offset_Hz / Rs_Hz, 'like', T.theta);
+    delta_theta = cast(-2.0 * pi * frequency_offset_Hz / (Rs_Hz * max_freq), 'like', T.theta);
     y = complex(zeros(Nsym, N_pol, 'like', T.x));
+    x_float = double(x_fi);
+    theta_wrap = pi / max_freq;
 
     for p = 1:N_pol
         theta_fi = ZERO_TH;
         for i = 1:Nsym
-            theta_d = mod(double(theta_fi) + pi, 2*pi) - pi;
-            s_in = x_fi(i, p);
-            if theta_d > pi/2
-                theta_d = theta_d - pi;  s_in = -s_in;
-            elseif theta_d < -pi/2
-                theta_d = theta_d + pi;  s_in = -s_in;
-            end
-            theta_safe = cast(theta_d, 'like', T.theta);
-            if theta_safe > PI_OVER2
-                theta_safe = theta_safe - PI_VAL;  s_in = -s_in;
-            elseif theta_safe < -PI_OVER2
-                theta_safe = theta_safe + PI_VAL;  s_in = -s_in;
-            end
-            y(i, p)  = cast(cordicrotate(theta_safe, s_in, CORDIC_ITS), 'like', T.x);
-            theta_fi = theta_fi + delta_theta;
+            theta = double(theta_fi) * max_freq;
+            y(i, p) = cast(x_float(i, p) * exp(1j * theta), 'like', T.x);
+
+            theta_next = double(theta_fi + delta_theta);
+            theta_next = mod(theta_next + theta_wrap, 2 * theta_wrap) - theta_wrap;
+            theta_fi = cast(theta_next, 'like', T.theta);
         end
     end
 

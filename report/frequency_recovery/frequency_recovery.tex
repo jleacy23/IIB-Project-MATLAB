@@ -8,7 +8,7 @@
 \usepackage{cleveref}
 
 
-\title{A Comparison of Frequency Recovery Algorithms for Energy Efficient Coherent Receivers}
+\title{Carrier Recovery}
 \author{Joe Leacy}
 
 \begin{document}
@@ -16,72 +16,46 @@
 \maketitle
 
 \section{Introduction}
-Three frequency recovery algorithms are compared for use in the Cable Television Labs CPON specification \cite{CPON_PMD_2025}. Data is organized into subframes, consisting of 3712 symbols total with the first 11 being training symbols. A feed-forward DSP architecture is required so these training symbols are used to estimate the frequency offset which is then applied to the rest of the subframe. Further refinements within a block could be made with pilots but this is not investigated yet (see if this way is good enough first).
+The performance and energy consumption of several combinations of frequency and phase recovery algorithms are compared. CORDIC will be used to find angles and approximated as 3n additions. Direct complex multiplication used to apply phase rotations. Bit shifts will be assumed to have negligible energy cost.
 
-\section{Removing Data Dependence}
-All of the following algorithms require the phase of the data to be removed first. For QPSK symbols \(c[k] = e^{j(\pi/4 + m[k]\pi/2)}\), the noisy data
+\section{Frequency Recovery}
+\subsection{Isolating CFO}
+All frequency recovery algorithms first require that the phase of the data be removed before estimation. For QPSK symbols \(c[i] = e^{j\frac{\pi}{4} + m[i]\frac{\pi}{2}}\) this can be done by raising each received symbol \(x[i] = c[i]e^{j(2\pi f_d i + \theta[i])} + n[i]\) to the fourth power to give
 \begin{equation}
-    x[k] = c[k]e^{j(2\pi f_d T k + \theta[k])} + n[k]
+    z[i] = x^4[i] = e^{j(8\pi f_d i + 4 \theta[i])} + n'[i]
+    \label{eq:blind_noise}
 \end{equation}
-can be raised to the 4th power
+where \(\theta\) is phase noise, \(f_d\) is the CFO, and \(n\) is additive noise. This allows all data symbols to be used in CFO estimation, but ampifies phase and additive noise which degrades the estimation quality. The fourth power operation also requires three complex multiplications. An alternative is to use pilot symbols where the data phase is known beforehand, giving
 \begin{equation}
-    x^4[k] = e^{j(8\pi f_d T k + 4 \theta[k])} + n'[k].
+    z[i] = x[i]c^*[i] = e^{j(2\pi f_d i + \theta[i])} + n[i],
 \end{equation}
-This requires 3 complex multiplications and amplifies the effect of noise, which limits the performance of some of the following algorithms. With training symbols, the data is known so the phase is eliminated as
+which is more robust to noise and less computationally expensive. Some algorithms only require \(\arg(z[i])\) which is efficiently found using CORDIC as
 \begin{equation}
-    z[k] = x[k]c^*[k] = e^{j(2\pi f_d T k + \theta[k])} + n[k].
-    \label{eq:zk}
+    \arg(z[i]) = \arg(x[i]) - \arg(c[i]).
 \end{equation}
-This only requires 1 complex multiplication and does not amplify noise.
-
-\section{Rife and Boorstyn}
-The Rife and Boorstyn algorithm computes the FFT of the training symbols to provide a coarse estimate of the frequency offset. This corresponds to the index \(k\) of the largest absolute value in the FFT. Parabolic interpolation can then be used to refine the frequency estimate \cite{Jacobsen2007}. The accuracy of the coarse search can be improved by zero-padding the training symbols and using a larger FFT, meaning the accuracy of the estimate is not limited by the number of training symbols. However, this increases the computational cost of both the FFT and search for the maximum index. Finally a division must be performed to interpolate, making this algorithm expensive.
-
-\section{Kay}
-An alternative is to perform a least-squares estimate of the gradient of \(\angle{z[k]}\). From \cref{eq:zk} it can be seen that
+\subsection{Rife and Boorstyn (FFT Search)}
+The value of the CFO will appear as the strongest peak in the frequency spectrum of \(z[i], z[i+1], \dots, z[i+L]\) where \(L\) is the observation length. The Rife and Boorstyn algorithm first performs an FFT on the observed sequence and finds the index \(k\) corresponding to the strongest peak. This coarse estimation is refined with a parabolic interpolation on the complex FFT values \(X_{k-1}, X_k, X_{k+1}\) to give
 \begin{equation}
-    \angle{z[k]} = 2 \pi f_d T k + \theta[k] + \eta[k]
+    \delta = -Re\left[\frac{X_{k+1} - X_{k-1}}{2x_k - X_{k-1} - X_{k+1}}\right].
 \end{equation}
-where \(\eta[k]\) is the noise in \(\angle{z[k]}\) due to the additive noise \(n[k]\). The Kay estimator \cite{Morelli1998} is used here to avoid a phase unwrapper, giving an estimate of the frequency offset
+The updated index \(k' = k + \delta\), which is then scaled by the sampling rate to find the true CFO. The CPON specification allows for 11 training symbols at the start of each subframe. The resolution in \(k\) is determined by the FFT size \(N_{FFT}\) as \(\epsilon(k)= 1 / 2N_{FFT}\). For data-aided operation, only the 11 training symbols are available. This would give a resolution of \(\epsilon(k) \approx 0.05\). In terms of the estimated frequency \(\hat{f_d}\) and symbol rate \(R_s\), \(\epsilon(\hat{f_d}) \approx 0.05 R_s\). This would likely be too large for the downstream phase recovery to correct, so a larger FFT can be used with zeros padded at the end of the observed sequence. The normalised mean squared-error (MSE) in the estimated CFO is shown in \cref{fig:fft_mcrb_data} for data-aided operation with 11 training symbols. A CFO estimate is computed for both polarizations and averaged to reduce the MSE. The modified Cramer-Rao bound (MCRB) gives a lower bound on the achievable MSE and is given by
 \begin{equation}
-    \hat{f_d} = \frac{1}{2\pi T} \sum_{k=1}^{L-1} w_k \angle(z[k]z^*[k-1]).
+    MCRB = \frac{3}{2 \pi^2 L^3 \times SNR}.
 \end{equation}
-The cost of this algorithm is summarised in \cref{tab:kay}. \(\angle(z[k]z^*[k-1])\) can be split into \(\angle z[k] - \angle z[k-1]\) and implemented with CORDIC to avoid multiplications. The resulting phase must be wrapped to \([-\pi, \pi]\) using 2 comparators (equivalent to a real addition). The multiplications by the weights and \(\frac{1}{2\pi T}\) are fixed so can be implemented with adds and shifts.
-\begin{table}[H]
+The Rife and Boorstyn achieves this bound for SNRs over \(\approx 4 \ dB\). At lower SNRs, the noise has a significant contribution to the FFT values and can lead to an incorrect index being chosen.
+\begin{figure}[H]
     \centering
-    \begin{tabular}{lcccc}
-        \toprule
-        Operation & RM & RA & BS \\
-        \midrule
-        Forming \(z[k]\) & \(3L\) & \(5L\) & 0 \\
-        Weighted sum & \(L-1\) & \((L-1)(3 + 6N_C + n)\) & \((L-1)(4N_C + n)\)\\
-        \(1/2\pi T\) & 0 & n & n \\
-        \bottomrule
-    \end{tabular}
-    \caption{Computational cost of the Kay estimator}
-    \label{tab:kay}
-\end{table}
-\section{Lank, Reed and Pollon}
-The Kay estimator has a small range of frequency offsets over which it can correct. The Lank, Reed and Pollon (LRP) uses a simple autocorrelation to estimate the frequency as
-\begin{equation}
-    \hat{f_d} = \frac{1}{2\pi NT} \angle(\sum_{k=N}^{L-1}z[k]z^*[k-N]),
-\end{equation}
-where \(N\) is a design parameter.
-\begin{table}[H]
+    \includegraphics[width=0.8\textwidth]{MCRB_fft_data.png}
+    \caption{Normalised MSE of the Rife and Boorstyn algorithm with FFT size \(N_{FFT} = 512\) compared to the MCRB for \(N=11\) training symbols.}
+    \label{fig:fft_mcrb_data}
+\end{figure}
+Data-aided operation is constrained by the length of the training sequence but the accuracy of the Rife and Boorstyn algorithm improves with longer observation lengths, as shown in \cref{fig:fft_mcrb_blind} for non data-aided operation. The SNR threshold at which this algorithm begins to deviate from the MCRB is much higher with data aided operation due to the amplification of noise as seen in \cref{eq:blind_noise}. Combined with the increased computational cost of removing the data phase in non data-aided operation, this makes the use of training symbols preferrable so long as the training sequence is not too short.
+\begin{figure}[H]
     \centering
-    \begin{tabular}{lcccc}
-        \toprule
-        Operation & RM & RA & BS \\
-        \midrule
-        Forming \(z[k]\) & \(3L\) & \(5L\) & 0 \\
-        Autocorrelation & \(3(L-N)\) & \(5(L-N) + 2(L-N-1)\) & 0 \\
-        Finding argument & 0 & \(3N_C\) & \(2N_C\) \\
-        \(1/2\pi N T\) & 0 & n & n \\
-        \bottomrule
-    \end{tabular}
-    \caption{Computational cost of the LRP estimator}
-    \label{tab:kay}
-\end{table}
-\bibliographystyle{ieeetr}
-\bibliography{ref}
+    \includegraphics[width=0.8\textwidth]{MCRB_fft_blind.png}
+    \caption{Normalised MSE of the Rife and Boorstyn algorithm with FFT size \(N_{FFT} = 512\) compared to the MCRB for \(N=11\) training symbols.}
+    \label{fig:fft_mcrb_blind}
+\end{figure}
+
+
 \end{document}

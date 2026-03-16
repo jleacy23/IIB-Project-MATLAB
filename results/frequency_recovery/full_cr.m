@@ -26,7 +26,7 @@ classdef full_cr < matlab.unittest.TestCase
         Rs          = 30.5              % symbol rate [GBd]
         N_pol       = 2
         TrainingLen = 11                % training symbols per subframe
-        NTrials     = 100               % independent channel realisations per point
+        NTrials     = 50               % independent channel realisations per point
 
         % Sweep grids
         SNR_dB_vec    = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]   % [dB]
@@ -34,9 +34,10 @@ classdef full_cr < matlab.unittest.TestCase
         LW_Hz_vec     = [1000e3]            % laser linewidth  [Hz]
 
         % Frequency recovery — fixed-point settings
-        FxpConfig_FR  = 'fixed32'       % 'fixed16' | 'fixed32'
+        FxpConfig_FR  = 'fixed16'       % 'fixed16' | 'fixed32'
         FR_Nfft       = 512             % FFT size for fft_search_fxp (power of 2)
         FR_Po2Twiddle = false           % round FFT twiddles to powers of 2
+        MaxFreq = 1
 
         % Phase recovery — shared settings
         BlockLen       = 32             % CPON block length [symbols]
@@ -105,6 +106,7 @@ classdef full_cr < matlab.unittest.TestCase
             P.StepSize       = testCase.StepSize;
             P.PilotThreshold = testCase.PilotThreshold;
             P.PilotLen       = 1;
+            P.MaxFreq        = testCase.MaxFreq;
 
             cfg = coder.config('mex');
             cfg.GenerateReport = false;
@@ -295,10 +297,10 @@ classdef full_cr < matlab.unittest.TestCase
             switch fr_algo
                 case 'fft_search'
                     [fr_out, freq_offset] = freq_recovery.fft_search_fxp_mex( ...
-                        rx_fi, tr_fi, P.Rs, P.FR_Nfft, P.FR_Po2Twiddle, P.CordicIts, T_fr);
+                        rx_fi, tr_fi, P.Rs, P.FR_Nfft, P.FR_Po2Twiddle, P.CordicIts, P.MaxFreq, T_fr);
                 case 'differential_kay'
                     [fr_out, freq_offset] = freq_recovery.differential_kay_fxp_mex( ...
-                        rx_fi, tr_fi, P.Rs, P.CordicIts, T_fr);
+                        rx_fi, tr_fi, P.Rs, P.CordicIts, T_fr, true, 0, P.MaxFreq);
                 otherwise
                     error('full_cr:unknownFR', 'Unknown FR algorithm: %s', fr_algo);
             end

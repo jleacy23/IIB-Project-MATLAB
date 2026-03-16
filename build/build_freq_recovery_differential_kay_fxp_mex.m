@@ -16,6 +16,7 @@ function build_freq_recovery_differential_kay_fxp_mex(P, cfg)
 %     P.Rs           - symbol rate [GBd]
 %     P.FxpConfig_FR - fixed-point config string: 'fixed16' | 'fixed32'
 %     P.CordicIts    - number of CORDIC iterations
+%     P.MaxFreq      - phase-scaling factor (double)
 
     srcDir = fullfile(fileparts(mfilename('fullpath')), '..', 'src');
     fxp = P.FxpConfig_FR;
@@ -45,16 +46,18 @@ function build_freq_recovery_differential_kay_fxp_mex(P, cfg)
 
     % ----------------------------------------------------------------
     % Build argument list — matches differential_kay_fxp signature:
-    %   (x, training, Rs, CordicIts, T)
-    % Omitting data_aided and D compiles the training-aided path only
-    % (nargin == 5 < 6 → data_aided = true inside the function).
+    %   (x, training, Rs, CordicIts, T, data_aided, D, max_freq)
+    % Explicitly compile the training-aided path with max_freq.
     % ----------------------------------------------------------------
     args = { ...
         In_fr_type, ...          % x           [Nsym x NPol]       fi complex
         tr_type, ...             % training    [TrainingLen x NPol] fi complex
         double(P.Rs), ...        % Rs           scalar              double  [GBd]
         cordic_its_type, ...     % CordicIts    scalar              constant
-        T_fr};                   % T            struct of fi prototypes
+        T_fr, ...                % T            struct of fi prototypes
+        true, ...                % data_aided   scalar              logical
+        0, ...                   % D            scalar              double (unused)
+        double(P.MaxFreq)};      % max_freq     scalar              double
 
     codegen('-config', cfg, ...
             'freq_recovery.differential_kay_fxp', ...

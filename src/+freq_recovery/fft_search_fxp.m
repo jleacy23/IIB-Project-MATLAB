@@ -1,4 +1,4 @@
-function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddle, CordicIts, T, data_aided, D) %#codegen
+function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddle, CordicIts, max_freq, T, data_aided, D) %#codegen
 %FFT_SEARCH_FXP  Fixed-point FFT-based frequency offset estimator.
 %
 %   [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddle, CordicIts, T)
@@ -26,19 +26,28 @@ function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddl
 %     Nfft       - FFT size (integer power of 2, >= L)
 %     po2Twiddle - logical: round twiddle factors to powers of 2 for fft_fxp
 %     CordicIts  - number of CORDIC iterations
+%     max_freq   - maximum allowed frequency offset normalized 
 %     T          - fixed-point types table from freq_recovery.fxp_types
 %     data_aided - true = training-aided (default), false = blind 4th-power
 %     D          - number of data symbols for blind mode (required when
 %                  data_aided = false)
+%     max_freq   - maximum allowed frequency offset normalized to Rs
 %
 %   Outputs
 %     y                - frequency-corrected subframe [Nsym x NPol], type T.x
 %     frequency_offset - estimated frequency offset [Hz]  (double)
 
-    if nargin < 7 || isempty(T)
+    if nargin < 7 || isempty(max_freq)
+        max_freq = 1.0;
+    end
+    if max_freq <= 0
+        error('freq_recovery:fft_search_fxp:BadMaxFreq', ...
+              'max_freq must be positive.');
+    end
+    if nargin < 8 || isempty(T)
         T = freq_recovery.fxp_types('fixed16');
     end
-    if nargin < 8, data_aided = true; end
+    if nargin < 9, data_aided = true; end
 
     %% ----------------------------------------------------------------
     %  Fixed-point constants
@@ -47,8 +56,6 @@ function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddl
     UNIT_RE    = cast(1,   'like', T.acc);
     ZERO_ACC   = cast(0,   'like', T.acc);
     CORDIC_ITS = coder.const(CordicIts);
-    PI_VAL     = cast(pi,   'like', T.theta);
-    PI_OVER2   = cast(pi/2, 'like', T.theta);
 
     %% ----------------------------------------------------------------
     %  Dimensions
@@ -56,23 +63,17 @@ function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddl
     [L, N_pol] = size(training);
     Nsym       = size(x, 1);
     Nfft_c     = Nfft;
-    if data_aided
-        No = L;
-    else
-        No = D;
-    end
-
     %% ----------------------------------------------------------------
     %  FFT types (use fixed32 for butterfly precision inside FFT)
     %% ----------------------------------------------------------------
-    T_fft = fft.fft_fxp_types('fixed32');
+    T_fft = fft.fft_fxp_types('fixed16');
 
     %% ----------------------------------------------------------------
     %  Pre-compute training phases (training-aided mode only)
     %% ----------------------------------------------------------------
     training_fi = cast(training, 'like', T.x);
+    phi_tr = zeros(L, N_pol, 'like', T.theta);
     if data_aided
-        phi_tr = zeros(L, N_pol, 'like', T.theta);
         for p = 1:N_pol
             for k = 1:L
                 phi_tr(k, p) = cast(cordicangle(training_fi(k, p), CORDIC_ITS), ...
@@ -173,29 +174,26 @@ function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddl
     end
 
     %% ----------------------------------------------------------------
-    %  Phase correction: accumulated linear ramp via cordicrotate
+    %  Phase correction: keep scaled phase in T.theta, then cast back to
+    %  double and apply exp(+j*theta) in floating point.
+    %  delta_theta already carries the negative sign for derotation.
     %% ----------------------------------------------------------------
-    delta_theta = cast(-2.0 * pi * frequency_offset_Hz / (Rs * 1e9), 'like', T.theta);
+    delta_theta = cast(-2.0 * pi * frequency_offset_Hz / (Rs * 1e9 * max_freq), 'like', T.theta);
     y = complex(zeros(Nsym, N_pol, 'like', T.x));
+    x_float = double(x_fi);
+    theta_wrap = pi / max_freq;
 
     for p = 1:N_pol
         theta_fi = ZERO_TH;
         for i = 1:Nsym
-            theta_d = mod(double(theta_fi) + pi, 2*pi) - pi;
-            s_in = x_fi(i, p);
-            if theta_d > pi/2
-                theta_d = theta_d - pi;  s_in = -s_in;
-            elseif theta_d < -pi/2
-                theta_d = theta_d + pi;  s_in = -s_in;
-            end
-            theta_safe = cast(theta_d, 'like', T.theta);
-            if theta_safe > PI_OVER2
-                theta_safe = theta_safe - PI_VAL;  s_in = -s_in;
-            elseif theta_safe < -PI_OVER2
-                theta_safe = theta_safe + PI_VAL;  s_in = -s_in;
-            end
-            y(i, p) = cast(cordicrotate(theta_safe, s_in, CORDIC_ITS), 'like', T.x);
-            theta_fi = theta_fi + delta_theta;
+            theta = double(theta_fi) * max_freq;
+            y(i, p) = cast(x_float(i, p) * exp(1j * theta), 'like', T.x);
+
+            % Explicit phase wrap in scaled domain. Do not rely on fi
+            % overflow, which wraps at numeric range rather than 2*pi.
+            theta_next = double(theta_fi + delta_theta);
+            theta_next = mod(theta_next + theta_wrap, 2 * theta_wrap) - theta_wrap;
+            theta_fi = cast(theta_next, 'like', T.theta);
         end
     end
 

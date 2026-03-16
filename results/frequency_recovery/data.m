@@ -15,15 +15,15 @@ classdef data < matlab.unittest.TestCase
     properties (Constant)
         Rs        = 1e-9         % symbol rate normalized to 1 symbol/s
         NTrials   = 1000                % independent noise trials per point
-        SNR_dB_vec  = 0:1:20             % SNR sweep [dB]
+        SNR_dB_vec  = 0:1:24             % SNR sweep [dB]
         % Frequency offset sweep [normalised to Rs = 1] 
-        DeltaF_vec     = [0.3]
+        DeltaF_vec     = [0.0]
         % Subset of offsets for which individual SNR-sweep figures are produced
-        PlotDeltaF_vec = [0.3]
+        PlotDeltaF_vec = [0.0]
 
         % Zero-padding factor K for the floating-point fft_search
         % K * TrainingLen(11) ≈ 1024
-        FR_FFT_K      = 40
+        FR_FFT_K      = 46
     end
 
     methods (TestMethodSetup)
@@ -117,16 +117,17 @@ classdef data < matlab.unittest.TestCase
 
                 semilogy(SNR_v, NMSE_fft(:, df_idx), '-',  'Color', colors(1,:), 'LineWidth', 1.8, 'DisplayName', algNames{1});
                 hold on;
-                semilogy(SNR_v, NMSE_dk(:,  df_idx), '--', 'Color', colors(2,:), 'LineWidth', 1.8, 'DisplayName', algNames{2});
-                semilogy(SNR_v, NMSE_MCRB,            'k-', 'LineWidth', 2.0,     'DisplayName', sprintf('MCRB (N=%d)', N_train));
+                % semilogy(SNR_v, NMSE_dk(:,  df_idx), '-',  'Color', colors(2,:), 'LineWidth', 1.8, 'DisplayName', algNames{2});
+                % hold on;
+                semilogy(SNR_v, NMSE_MCRB,            'k--','LineWidth', 2.0,     'DisplayName', sprintf('MCRB (N=%d)', N_train));
                 hold off;
 
                 grid on;
                 set(gca, 'FontSize', 13, 'LineWidth', 1, 'Box', 'on');
                 xlabel('SNR [dB]', 'FontSize', 14);
-                ylabel('Normalised RMSE  (RMSE / R_s)  [-]', 'FontSize', 14);
+                ylabel('Normalised MSE', 'FontSize', 14);
                 legend('Location', 'best', 'FontSize', 12);
-                title(sprintf('Normalised Frequency Estimation MSE  |  \Deltaf = %g MHz  |  %d trials', ...
+                title(sprintf('Normalised Frequency Estimation MSE  \Deltaf = %g MHz  |  %d trials', ...
                               df_actual, NT));
             end
 

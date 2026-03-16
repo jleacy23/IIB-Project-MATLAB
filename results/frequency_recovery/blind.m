@@ -19,12 +19,12 @@ classdef blind < matlab.unittest.TestCase
     properties (Constant)
         Rs             = 1e-9          % symbol rate (normalised, same as training-aided test)
         NTrials        = 1000          % independent noise trials per point
-        SNR_dB_vec     = 0:2:30        % SNR sweep [dB]
-        DeltaF_vec     = [0.03]         % frequency offset(s) to sweep
-        PlotDeltaF_vec = [0.03]         % subset of offsets for which figures are produced
+        SNR_dB_vec     = 0:2:24        % SNR sweep [dB]
+        DeltaF_vec     = [0.00]         % frequency offset(s) to sweep
+        PlotDeltaF_vec = [0.00]         % subset of offsets for which figures are produced
         D_vec          = [16, 32, 64, 128]   % blind observation lengths [symbols]
         TrainingLen    = 11            % training block length (sets start of data block)
-        FR_FFT_K       = 100             % zero-padding factor for fft_search
+        FR_FFT_K       = 46             % zero-padding factor for fft_search
     end
 
     methods (TestMethodSetup)
@@ -161,10 +161,10 @@ classdef blind < matlab.unittest.TestCase
                     grid on;
                     set(gca, 'FontSize', 13, 'LineWidth', 1, 'Box', 'on', 'YScale', 'log');
                     xlabel('SNR [dB]', 'FontSize', 14);
-                    ylabel('MSE  (normalised, R_s = 1)  [-]', 'FontSize', 14);
+                    ylabel('Normalised MSE', 'FontSize', 14);
                     legend('Location', 'best', 'FontSize', 11);
-                    title(sprintf('%s — Blind MSE  |  \\Deltaf = %g  |  %d trials', ...
-                                  alg_names{ai}, df_actual, NT));
+                    title(sprintf('%s', ...
+                                  alg_names{ai}));
                 end
             end
 

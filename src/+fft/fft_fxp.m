@@ -31,7 +31,7 @@ function X = fft_fxp(x, inverse, po2Twiddle, T) %#codegen
 
     %% Defaults
     if nargin < 4 || isempty(T)
-        T = fft_fxp_types('fixed32');
+        T = fft.fft_fxp_types('fixed32');
     end
 
     N         = size(x, 1);

@@ -105,7 +105,7 @@ classdef data < matlab.unittest.TestCase
             %  Plot — one figure per selected frequency, SNR on x-axis
             % ============================================================
             colors   = lines(2);
-            algNames = {'FFT search (float)', 'Diff+Kay (float)'};
+            algNames = {'FFT search (float)', 'Diff Phase(float)'};
 
             for pi_ = 1:NPlot
                 df_idx    = plot_df_indices(pi_);
@@ -115,10 +115,10 @@ classdef data < matlab.unittest.TestCase
                        'Position', [60 + (pi_-1)*40, 60 + (pi_-1)*40, 820, 520], ...
                        'Color', 'w');
 
-                semilogy(SNR_v, NMSE_fft(:, df_idx), '-',  'Color', colors(1,:), 'LineWidth', 1.8, 'DisplayName', algNames{1});
-                hold on;
-                % semilogy(SNR_v, NMSE_dk(:,  df_idx), '-',  'Color', colors(2,:), 'LineWidth', 1.8, 'DisplayName', algNames{2});
+                % semilogy(SNR_v, NMSE_fft(:, df_idx), '-',  'Color', colors(1,:), 'LineWidth', 1.8, 'DisplayName', algNames{1});
                 % hold on;
+                semilogy(SNR_v, NMSE_dk(:,  df_idx), '-',  'Color', colors(2,:), 'LineWidth', 1.8, 'DisplayName', algNames{2});
+                hold on;
                 semilogy(SNR_v, NMSE_MCRB,            'k--','LineWidth', 2.0,     'DisplayName', sprintf('MCRB (N=%d)', N_train));
                 hold off;
 

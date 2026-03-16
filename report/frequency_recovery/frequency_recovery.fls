@@ -90,6 +90,17 @@ INPUT ./MCRB_fft_blind.png
 INPUT ./MCRB_fft_blind.png
 INPUT ./MCRB_fft_blind.png
 INPUT ./MCRB_fft_blind.png
+INPUT ./MCRB_diff_data.png
+INPUT ./MCRB_diff_data.png
+INPUT ./MCRB_diff_data.png
+INPUT ./MCRB_diff_data.png
+INPUT ./MCRB_diff_data.png
+INPUT ./MCRB_diffkay_data.png
+INPUT ./MCRB_diffkay_data.png
+INPUT ./MCRB_diffkay_data.png
+INPUT ./MCRB_diffkay_data.png
+INPUT ./MCRB_diffkay_data.png
+INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmbx12.tfm
 INPUT frequency_recovery.aux
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb

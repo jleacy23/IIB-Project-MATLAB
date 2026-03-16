@@ -26,7 +26,7 @@ classdef full_cr < matlab.unittest.TestCase
         Rs          = 30.5              % symbol rate [GBd]
         N_pol       = 2
         TrainingLen = 11                % training symbols per subframe
-        NTrials     = 50               % independent channel realisations per point
+        NTrials     = 2               % independent channel realisations per point
 
         % Sweep grids
         SNR_dB_vec    = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]   % [dB]
@@ -34,21 +34,21 @@ classdef full_cr < matlab.unittest.TestCase
         LW_Hz_vec     = [1000e3]            % laser linewidth  [Hz]
 
         % Frequency recovery — fixed-point settings
-        FxpConfig_FR  = 'fixed16'       % 'fixed16' | 'fixed32'
+        FxpConfig_FR  = 'fixed32'       % 'fixed16' | 'fixed32'
         FR_Nfft       = 512             % FFT size for fft_search_fxp (power of 2)
         FR_Po2Twiddle = false           % round FFT twiddles to powers of 2
         MaxFreq = 1
 
         % Phase recovery — shared settings
         BlockLen       = 32             % CPON block length [symbols]
-        StepSize       = 1
+        StepSize       = 32
         PilotThreshold = 5 * pi / 9           % cycle-slip detection threshold [rad]
 
         % Viterbi-Viterbi
-        VV_NTaps = 5
+        VV_NTaps = 10
 
         % BPS
-        BPS_N = 5
+        BPS_N = 10
         BPS_B = 64
         BPS_M = 4                       % QPSK
 
@@ -56,11 +56,11 @@ classdef full_cr < matlab.unittest.TestCase
         Plot = true
 
         % Fixed-point configuration (CR)
-        FxpConfig = 'fixed16'           % 'fixed16' | 'fixed32'
+        FxpConfig = 'fixed32'           % 'fixed16' | 'fixed32'
         CordicIts = 16                  % CORDIC iterations (shared FR + CR)
 
         % Enable/disable MEX rebuild
-        Rebuild = true
+        Rebuild = false
 
     end
 
@@ -406,7 +406,7 @@ classdef full_cr < matlab.unittest.TestCase
                     set(ax, 'YScale', 'log', 'FontSize', 11, 'Box', 'on', 'Color', 'w');
                     hold(ax, 'on');
 
-                    for pr = 1:3
+                    for pr = 2:3
                         semilogy(ax, P.SNR_dB_vec, BER(:, fi, li, pr), ...
                             PR_styles{pr}, 'LineWidth', 1.8,            ...
                             'Color',       PR_colors(pr, :),            ...

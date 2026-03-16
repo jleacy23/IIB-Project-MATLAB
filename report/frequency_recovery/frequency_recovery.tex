@@ -37,6 +37,7 @@ which is more robust to noise and less computationally expensive. Some algorithm
 The value of the CFO will appear as the strongest peak in the frequency spectrum of \(z[i], z[i+1], \dots, z[i+L]\) where \(L\) is the observation length. The Rife and Boorstyn algorithm first performs an FFT on the observed sequence and finds the index \(k\) corresponding to the strongest peak. This coarse estimation is refined with a parabolic interpolation on the complex FFT values \(X_{k-1}, X_k, X_{k+1}\) to give
 \begin{equation}
     \delta = -Re\left[\frac{X_{k+1} - X_{k-1}}{2x_k - X_{k-1} - X_{k+1}}\right].
+    \label{eq:fft_refined}
 \end{equation}
 The updated index \(k' = k + \delta\), which is then scaled by the sampling rate to find the true CFO. The CPON specification allows for 11 training symbols at the start of each subframe. The resolution in \(k\) is determined by the FFT size \(N_{FFT}\) as \(\epsilon(k)= 1 / 2N_{FFT}\). For data-aided operation, only the 11 training symbols are available. This would give a resolution of \(\epsilon(k) \approx 0.05\). In terms of the estimated frequency \(\hat{f_d}\) and symbol rate \(R_s\), \(\epsilon(\hat{f_d}) \approx 0.05 R_s\). This would likely be too large for the downstream phase recovery to correct, so a larger FFT can be used with zeros padded at the end of the observed sequence. The normalised mean squared-error (MSE) in the estimated CFO is shown in \cref{fig:fft_mcrb_data} for data-aided operation with 11 training symbols. A CFO estimate is computed for both polarizations and averaged to reduce the MSE. The modified Cramer-Rao bound (MCRB) gives a lower bound on the achievable MSE and is given by
 \begin{equation}
@@ -46,16 +47,89 @@ The Rife and Boorstyn achieves this bound for SNRs over \(\approx 4 \ dB\). At l
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{MCRB_fft_data.png}
-    \caption{Normalised MSE of the Rife and Boorstyn algorithm with FFT size \(N_{FFT} = 512\) compared to the MCRB for \(N=11\) training symbols.}
+    \caption{Normalised MSE of the Rife and Boorstyn algorithm with FFT size \(N_{FFT} = 512\) compared to the MCRB for \(L=11\) training symbols.}
     \label{fig:fft_mcrb_data}
 \end{figure}
 Data-aided operation is constrained by the length of the training sequence but the accuracy of the Rife and Boorstyn algorithm improves with longer observation lengths, as shown in \cref{fig:fft_mcrb_blind} for non data-aided operation. The SNR threshold at which this algorithm begins to deviate from the MCRB is much higher with data aided operation due to the amplification of noise as seen in \cref{eq:blind_noise}. Combined with the increased computational cost of removing the data phase in non data-aided operation, this makes the use of training symbols preferrable so long as the training sequence is not too short.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{MCRB_fft_blind.png}
-    \caption{Normalised MSE of the Rife and Boorstyn algorithm with FFT size \(N_{FFT} = 512\) compared to the MCRB for \(N=11\) training symbols.}
+    \caption{Normalised MSE of the Rife and Boorstyn algorithm for non data-aided operation and different observation lengths}
     \label{fig:fft_mcrb_blind}
 \end{figure}
 
+\subsection{Differential Phase + Kay Estimator}
+The Rife and Boorstyn algorithm exhibits good performance even at low SNRs but is computationally expensive. The FFT requires \(\frac{N_{FFT}}{2} \log_2(N_{FFT})\) complex multiplications and \(N_{FFT}\log_2(N_{FFT})\) complex additions. The fine search from \cref{eq:fft_refined} also requires a complex division. A much cheaper approach would involve computing the phase difference
+\begin{equation}
+    \arg (z[i]) - \arg (z[i-1]) = 2 \pi f_d T_s + \theta[i] - \theta[i-1] + \eta[i]
+    \label{eq:phase_diff}
+\end{equation}
+over several symbols and averaging to remove the effect of \(\theta\). Estimating \(f_d\) like this is vulnerable to the effect of additive noise on the phase \(\eta[i]\) so exhibits poor accuracy as shown in \cref{fig:diffphase_data}. This can be improve with a second pass using the Kay estimator. The Kay estimator uses a least-squares approach, computing the estimated CFO as
+\begin{equation}
+    \hat{f_d} = \frac{R_s}{2 \pi} \sum_{k=1}^{L} \frac{6k(L-k)}{L(L^2 - 1)} \arg (z[k]z^*[k-1]).
+\end{equation}
+where \(\arg(z[k]z^*[k-1])\) computes the phase difference from \cref{eq:phase_diff} and \(\frac{6k(L-k)}{L(L^2 - 1)}\) is a weighting term that prioritises the contribution of phase differences in the middle of the observed sequence. This estimator is able to achieve the MCRB but the least-squares approach considers phase differences of non-adjacent symbols, making it vulnerable to phase wrapping that distorts the estimate when the CFO is high enough. This is demonstrated by considering the phase of symbols at either end of the observation sequence. The phase drift between these symbols \(\Delta \phi = 2 \pi f_d L T_s\). If \(|\Delta \phi| > 2 \pi\) then a phase wrap is guaranteed to occur, giving an estimated phase drift \(\Delta \hat{\phi} = \Delta \phi \pm 2 \pi\) and an estimated CFO \(\hat{f_d} = f_d \pm \frac{1}{L T_s}\). Thus the CFO correction from first pass is needed to bring the residual CFO within range for the Kay estimator.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{MCRB_diff_data.png}
+    \caption{Normalised MSE of frequency estimation with data-aided differential phase for \(L = 11\) training symbols.}
+    \label{fig:diffphase_data}
+\end{figure}
+The performance of the combined differential phase and Kay estimator for data-aided operation is shown in \cref{fig:diffkay_data}. The MCRB is achieved above an SNR of \(\approx 7 \ dB\). This is higher than for Rife and Boorstyn but at a significantly reduced computational cost.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{MCRB_diffkay_data.png}
+    \caption{Normalised MSE of frequency estimation with data-aided differential phase and Kay estimator for \(L = 11\) training symbols.}
+    \label{fig:diffkay_data}
+\end{figure}
+
+\subsection{Computational Complexity}
+Here the computational complexity of both frequency recovery algorithms are compared in terms of real multiplications and real additions. CORDIC is used to find phases and is assumed to cost the same as a real multiplication. Real division will also be assumed to cost the same as multiplication as it is only performed once (this would be a suitable approximation if look-up tables are used to find reciprocals at the cost of accuracy). All analysis is for data-aided operation, avoiding the fourth power operation in \cref{eq:blind_noise} and is only for a single polarization. If averaging is done over both polarizations then all operations are doubled.
+\subsubsection{Rife and Boorstyn}
+The Rife and Boorstyn algorithm requires an FFT followed by \(N_{FFT}\) comparisons of the magnitudes in the coarse search. Many of the FFT entries are 0 due to padding, which reduces the total number of operations needed. The interpolation requires the real part of a complex division
+\begin{equation}
+Re \left[\frac{a + bj}{c + dj}\right] = \frac{ac + bd}{c^2 + d^2}.
+\end{equation}
+The total complexity is summarised in \cref{tab:fft_cost}.
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lcccc}
+        \toprule
+        Operation & RM & RA \\
+        \midrule
+        Forming \(z[i], \dots, z[i+L]\) & \(4L\) & \(2L\)\\
+        FFT & \(2N_{FFT} \log_2(N_{FFT}/L)\) & \(3N_{FFT} \log_2(N_{FFT}/L)\)\\
+        Search & \(2N_{FFT}\) & \(2N_{FFT}\)\\
+        Interpolation & \(5\) & \(4\) \\ 
+        \bottomrule
+    \end{tabular}
+    \caption{Computational complexity of estimating CFO with Rife and Boorstyn algorithm}
+    \label{tab:fft_cost}
+\end{table}
+\subsubsection{Differential Phase + Kay}
+The proposed differential phase and Kay estimator is much less complex, only requiring CORDIC, real additions, and real multiplications. The fixed multiplications by the weights of the Kay estimator could also be optimised into a low-energy shift-add circuit. The first pass CFO correction involves forming the phase corrections of each training symbol as \(\phi[i] = \hat{f_d}i\), then applying them with CORDIC.
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lcccc}
+        \toprule
+        Operation & RM & RA \\
+        \midrule
+        Forming \(\arg(z[i]), \dots, \arg(z[i+L])\) & \(2L\) & \(L\)\\
+        Differential Phase & \(1\) & \(L-1\)\\
+        First Pass Correction & \(2L\) & \(0\)\\
+        Forming \(\arg(z[i]), \dots, \arg(z[i+L])\) & \(2L\) & \(L\) \\
+        Kay & \(L\) & \(L-1\) \\ 
+        \bottomrule
+    \end{tabular}
+    \caption{Computational complexity of estimating CFO with the proposed differential phase and Kay estimator}
+    \label{tab:diffkay_cost}
+\end{table}
+
+\section{Phase Recovery}
+\subsection{Feed-Forward vs PLL Algorithms}
+One of the first techniques investigated for phase recovery was a digital phase-locked loop (PLL) to incrementally correct the phase of each symbol with feedback. This dramatically simplifies the phase estimation and correction due to the use of small angle approximations. The CPON spec sets the symbol rate at 30.5 GBd. With an oversampling rate of \(8/7\) the total samples per second would be 35 GSa/s. This is beyond the achievable clock speed of CMOS, so symbols must be processed in blocks of e.g 32 symbols with a clock speed of 1.1 GHz. This approach hinders the effectiveness of a PLL, as updates can only be made every 32 symbols. For this reason, feed-forward algorithms that can operate on blocks of data were preferred.
+
+\subsection{Viterbi \& Viterbi}
+The Viterbi \& Viterbi algorithm removes data phase with the fourth power operation of \cref{eq:blind_noise}. It then applies a maximum-likelihood filter to estimate the phase error due to Wiener phase noise from the combined laser linewidth and any residual CFO. A phase unwrapper is then applied before the phase error is corrected. This is readily adapted to block-based processing. If blocks of 32 symbols are used again, the ML filter can be applied on all symbols in the block and the estimated phase error applied to the entire block. This is only valid if the phase difference between the start and end of the block is small, meaning the laser linewidth cannot be too large and the preceding frequency recovery algorithm must correct most of the CFO. By increasing the time between phase estimates, block processing also increases the chance of cycle-slips in the phase uwnrapper. The CPON spec supplies 1 pilot symbol in every 32 symbol block that can be used to correct this. 
 
 \end{document}

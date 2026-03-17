@@ -1,5 +1,13 @@
 # Fdb version 4
-["pdflatex"] 1773694954.19529 "c:/Users/joele/Downloads/iib_project/report/frequency_recovery/frequency_recovery.tex" "frequency_recovery.pdf" "frequency_recovery" 1773694954.67543 0
+["bibtex frequency_recovery"] 1773771631.36635 "frequency_recovery.aux" "frequency_recovery.bbl" "frequency_recovery" 1773771631.83514 0
+  "./ref.bib" 1773739320 1595 7ef8b0a320794548fb30b06a6d7c92b8 ""
+  "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/bibtex/bst/base/ieeetr.bst" 1772596520 18361 1a00e58565e7f19bf2b3e1bfb82254ae ""
+  "frequency_recovery.aux" 1773771631 5783 4189fe1e4f65bab0e23a54074b28bc85 "pdflatex"
+  (generated)
+  "frequency_recovery.bbl"
+  "frequency_recovery.blg"
+  (rewritten before read)
+["pdflatex"] 1773771631.4076 "c:/Users/joele/Downloads/iib_project/report/frequency_recovery/frequency_recovery.tex" "frequency_recovery.pdf" "frequency_recovery" 1773771631.8354 0
   "MCRB_diff_data.png" 1773680529 68607 461a22e0e90fbafe608ab15f4b96dcd8 ""
   "MCRB_diffkay_data.png" 1773683538 68506 336167fecc974ac81de511252a4c5871 ""
   "MCRB_fft_blind.png" 1773678719 115552 4048384856245eff79eb7b9ef8278d1c ""
@@ -15,6 +23,7 @@
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmsy10.tfm" 1772596488 1124 6c73e740cf17375f03eec0ee63599741 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmsy6.tfm" 1772596488 1116 933a60c408fc0a863a92debe84b2d294 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmsy8.tfm" 1772596488 1120 8b7d695260f3cff42e636090a8002094 ""
+  "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmti12.tfm" 1772596488 1484 ed72f8f5cf654cda15ecc8e32bfcbee5 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb" 1772596518 32080 340ef9bf63678554ee606688e7b5339d ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb" 1772596518 30251 6afa5cb1d0204815a708a080681d4674 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb" 1772596518 36741 0ee9e374ec3e30da87cdfb0ea3575226 ""
@@ -26,6 +35,7 @@
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb" 1772596518 32726 39f0f9e62e84beb801509898a605dbd5 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb" 1772596518 32569 5e5ddc8df908dea60932f3c484a54c0d ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb" 1772596518 32626 5abc8bb2f28aa647d4c70f8ea38cc0d3 ""
+  "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb" 1772596518 36118 fad905eba93cff5bce1e185fe980a177 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/iftex/iftex.sty" 1772596526 7984 7dbb9280f03c0a315425f1b4f35d43ee ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/iftex/ifvtex.sty" 1772596526 1057 525c2192b5febbd8c1f662c9468335bb ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/ltxcmds/ltxcmds.sty" 1772596532 17865 1a9bd36b4f98178fa551aca822290953 ""
@@ -39,6 +49,7 @@
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty" 1772596522 13886 d1306dcf79a944f6988e688c1785f9ce ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/etoolbox/etoolbox.sty" 1772596522 46885 8953c67ffba03252c6090aa19568b8ba ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/float/float.sty" 1772596524 6749 16d2656a1984957e674b149555f1ea1d ""
+  "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/gensymb/gensymb.sty" 1773741021 4629 bbc3d88bc1fe1146ecbefa95c41cab26 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/geometry/geometry.sty" 1772596524 41601 9cf6c5257b1bc7af01a58859749dd37a ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/graphics-cfg/graphics.cfg" 1772596524 1224 978390e9c2234eab29404bc21b268d1e ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/graphics-def/pdftex.def" 1772596524 19626 23e2822b9b2b5005f4c549ca98b9334d ""
@@ -55,9 +66,11 @@
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1772596550 94259 aec9939469efac8f0cf917369f632359 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/web2c/pdftex/pdflatex.fmt" 1772596566 2236130 036198fdb3bbb46401ac4d671e71ba73 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf.cnf" 1772596498 903 164c5b127cd0d6dc91abad2f62421ea2 ""
-  "c:/Users/joele/Downloads/iib_project/report/frequency_recovery/frequency_recovery.tex" 1773694953 12468 3a3a489c0ba08f0a83f9819e3855b411 ""
-  "frequency_recovery.aux" 1773694954 3669 425fadef6cba761246ba59c78cce3b0e "pdflatex"
-  "frequency_recovery.tex" 1773694953 12468 3a3a489c0ba08f0a83f9819e3855b411 ""
+  "c:/Users/joele/Downloads/iib_project/report/frequency_recovery/frequency_recovery.tex" 1773771630 16644 5891d958e303057a4206bafbafdf3dec ""
+  "cr_16_16.png" 1773771425 89776 2b1b1e30f0170579354bba2844741add ""
+  "frequency_recovery.aux" 1773771631 5783 4189fe1e4f65bab0e23a54074b28bc85 "pdflatex"
+  "frequency_recovery.bbl" 1773771631 308 cf1a54f04eef78062759e7832d1099dd "bibtex frequency_recovery"
+  "frequency_recovery.tex" 1773771630 16644 5891d958e303057a4206bafbafdf3dec ""
   (generated)
   "frequency_recovery.aux"
   "frequency_recovery.log"

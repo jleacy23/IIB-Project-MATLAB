@@ -1,13 +1,6 @@
 \begin{thebibliography}{1}
 
-\bibitem{CPON_PMD_2025}
-{Cable Television Laboratories, Inc.}, ``{Coherent PON Physical Media Dependent Layer 1.0 Specification},'' Tech. Rep. CPON-SP-PMDv1.0-I01-251216, CableLabs, Dec. 2025.
-\newblock Issued specification, version I01.
-
-\bibitem{Jacobsen2007}
-E.~Jacobsen and P.~Kootsookos, ``Fast, accurate frequency estimators,'' {\em IEEE Signal Processing Magazine}, vol.~24, pp.~123--125, May 2007.
-
-\bibitem{Morelli1998}
-M.~Morelli and U.~Mengali, ``Feedforward frequency estimation for {PSK}: A tutorial review,'' {\em European Transactions on Telecommunications}, vol.~9, pp.~103--116, Mar. 1998.
+\bibitem{Cheng2013PilotCycleSlip}
+H.~Cheng, Y.~Li, F.~Zhang, J.~Wu, J.~Lu, G.~Zhang, J.~Xu, and J.~Lin, ``Pilot-symbols-aided cycle slip mitigation for dp-16qam optical communication systems,'' {\em Optics Express}, vol.~21, no.~19, pp.~22166--22172, 2013.
 
 \end{thebibliography}

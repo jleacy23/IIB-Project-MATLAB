@@ -1,11 +1,11 @@
-classdef test_phase_recovery_pilotthreshold < matlab.unittest.TestCase
-%TEST_PHASE_RECOVERY_PILOTTHRESHOLD
+classdef threshold < matlab.unittest.TestCase
+%threshold
 %   PilotThreshold sweep for floating-point VV and BPS carrier recovery.
 %   For each SNR, BER vs PilotThreshold is plotted with one curve per
 %   linewidth.  All (SNR_i, LW_j) combinations are evaluated.
 %
 %   Run with:
-%       runtests('test_phase_recovery_pilotthreshold')
+%       runtests('threshold')
 
     %% ================================================================
     %  Constant Parameters
@@ -17,10 +17,10 @@ classdef test_phase_recovery_pilotthreshold < matlab.unittest.TestCase
         N_pol      = 2
         Ns         = 2^11          % symbols per polarisation per trial
         Rs         = 30.5            % symbol rate [GBd]
-        NTrials    = 20
+        NTrials    = 2
 
         % SNR and linewidth grids
-        SNR_dB_vec = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]                      % [dB]
+        SNR_dB_vec = [0, 2, 4, 6, 8, 10]                     % [dB]
         LW_vec     = [100e3, 1000e3, 10000e3]          % [Hz]
 
         % PilotThreshold sweep
@@ -112,7 +112,7 @@ classdef test_phase_recovery_pilotthreshold < matlab.unittest.TestCase
 
                         % One channel realisation shared across threshold sweep
                         [~, pilots, txRefBits, rxSym] = ...
-                            test_phase_recovery_pilotthreshold.buildChannel( ...
+                            threshold.buildChannel( ...
                                 P.Ns, SNR_dB, LW, P.Rs, P.BlockLen, P.N_pol);
 
                         for ti = 1:NT
@@ -127,7 +127,7 @@ classdef test_phase_recovery_pilotthreshold < matlab.unittest.TestCase
                                 P.BlockLen, P.StepSize, pilots, thresh);
 
                             BER_VV_all(tr, ti, si, li) = ...
-                                test_phase_recovery_pilotthreshold.computeBER( ...
+                                threshold.computeBER( ...
                                     cr_vv, txRefBits);
 
                             %% BPS (floating-point)
@@ -137,7 +137,7 @@ classdef test_phase_recovery_pilotthreshold < matlab.unittest.TestCase
                                 pilots, thresh);
 
                             BER_BPS_all(tr, ti, si, li) = ...
-                                test_phase_recovery_pilotthreshold.computeBER( ...
+                                threshold.computeBER( ...
                                     cr_bps, txRefBits);
 
                         end  % threshold loop
@@ -197,9 +197,9 @@ classdef test_phase_recovery_pilotthreshold < matlab.unittest.TestCase
                     semilogy(ax, SNR_dB_vec, BER_VV_min(:, li), 's-', ...
                         'LineWidth', 2, 'Color', LW_colors(li, :), ...
                         'DisplayName', sprintf('VV  LW=%.0f kHz', LW_vec(li)/1e3));
-                    semilogy(ax, SNR_dB_vec, BER_BPS_min(:, li), 'd--', ...
-                        'LineWidth', 2, 'Color', LW_colors(li, :), ...
-                        'DisplayName', sprintf('BPS LW=%.0f kHz', LW_vec(li)/1e3));
+                    % semilogy(ax, SNR_dB_vec, BER_BPS_min(:, li), 'd--', ...
+                    %     'LineWidth', 2, 'Color', LW_colors(li, :), ...
+                    %     'DisplayName', sprintf('BPS LW=%.0f kHz', LW_vec(li)/1e3));
                 end
 
                 grid on;

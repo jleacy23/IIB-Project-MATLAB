@@ -1,0 +1,46 @@
+This is BibTeX, Version 0.99e (TeX Live 2026)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: frequency_recovery.aux
+The style file: ieeetr.bst
+Database file #1: ref.bib
+You've used 1 entry,
+            1876 wiz_defined-function locations,
+            486 strings with 3768 characters,
+and the built_in function-call counts, 508 in all, are:
+= -- 48
+> -- 26
+< -- 0
++ -- 9
+- -- 8
+* -- 42
+:= -- 78
+add.period$ -- 1
+call.type$ -- 1
+change.case$ -- 1
+chr.to.int$ -- 0
+cite$ -- 1
+duplicate$ -- 21
+empty$ -- 37
+format.name$ -- 8
+if$ -- 116
+int.to.chr$ -- 0
+int.to.str$ -- 1
+missing$ -- 1
+newline$ -- 6
+num.names$ -- 1
+pop$ -- 1
+preamble$ -- 1
+purify$ -- 0
+quote$ -- 0
+skip$ -- 20
+stack$ -- 0
+substring$ -- 48
+swap$ -- 13
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 0
+warning$ -- 0
+while$ -- 4
+width$ -- 2
+write$ -- 13

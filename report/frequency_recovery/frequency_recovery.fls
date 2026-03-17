@@ -52,6 +52,8 @@ INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/etoolbox/etool
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/etoolbox/etoolbox.sty
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/cleveref/cleveref.sty
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/cleveref/cleveref.sty
+INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/gensymb/gensymb.sty
+INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/gensymb/gensymb.sty
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
 INPUT ./frequency_recovery.aux
@@ -101,6 +103,15 @@ INPUT ./MCRB_diffkay_data.png
 INPUT ./MCRB_diffkay_data.png
 INPUT ./MCRB_diffkay_data.png
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmbx12.tfm
+INPUT ./cr_16_16.png
+INPUT ./cr_16_16.png
+INPUT ./cr_16_16.png
+INPUT ./cr_16_16.png
+INPUT ./cr_16_16.png
+INPUT ./frequency_recovery.bbl
+INPUT ./frequency_recovery.bbl
+INPUT frequency_recovery.bbl
+INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmti12.tfm
 INPUT frequency_recovery.aux
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb
@@ -113,3 +124,4 @@ INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfo
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb
+INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb

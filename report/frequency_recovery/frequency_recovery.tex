@@ -6,6 +6,7 @@
 \usepackage{booktabs}
 \usepackage{parskip}
 \usepackage{cleveref}
+\usepackage{gensymb}
 
 
 \title{Carrier Recovery}
@@ -28,6 +29,7 @@ All frequency recovery algorithms first require that the phase of the data be re
 where \(\theta\) is phase noise, \(f_d\) is the CFO, and \(n\) is additive noise. This allows all data symbols to be used in CFO estimation, but ampifies phase and additive noise which degrades the estimation quality. The fourth power operation also requires three complex multiplications. An alternative is to use pilot symbols where the data phase is known beforehand, giving
 \begin{equation}
     z[i] = x[i]c^*[i] = e^{j(2\pi f_d i + \theta[i])} + n[i],
+    \label{eq:data_noise}
 \end{equation}
 which is more robust to noise and less computationally expensive. Some algorithms only require \(\arg(z[i])\) which is efficiently found using CORDIC as
 \begin{equation}
@@ -97,7 +99,7 @@ The total complexity is summarised in \cref{tab:fft_cost}.
         \toprule
         Operation & RM & RA \\
         \midrule
-        Forming \(z[i], \dots, z[i+L]\) & \(4L\) & \(2L\)\\
+        Forming \(z[i], \dots, z[i+L]\) & \(4L\) & \(3L\)\\
         FFT & \(2N_{FFT} \log_2(N_{FFT}/L)\) & \(3N_{FFT} \log_2(N_{FFT}/L)\)\\
         Search & \(2N_{FFT}\) & \(2N_{FFT}\)\\
         Interpolation & \(5\) & \(4\) \\ 
@@ -125,11 +127,78 @@ The proposed differential phase and Kay estimator is much less complex, only req
     \label{tab:diffkay_cost}
 \end{table}
 
+\subsection{Optimising Bit Width}
+These frequency recovery algorithms compute an estimate of the normalised CFO \(f_d / R_s\). For \(n\) bits of precision, the smallest normalised CFO that can be estimated is \(2^{-n}\) when \(0 \leq |f_d / R_s| \leq 1\) is the estimation range. In reality a much smaller range of CFOs needs to be estimated. If the maximum permitted value of \(|f_d / R_s| = 2^{-d}\), \(d\) bits of precision that would otherwise be redundant can be utilised by scaling each estimate by \(2^d\) during calculation then inserting \(d\) bits in the final answer to recover the true normalised CFO. This improves the resolution to \(2^{-(n+d)}\)  without any increase in energy consumption.
+
 \section{Phase Recovery}
 \subsection{Feed-Forward vs PLL Algorithms}
-One of the first techniques investigated for phase recovery was a digital phase-locked loop (PLL) to incrementally correct the phase of each symbol with feedback. This dramatically simplifies the phase estimation and correction due to the use of small angle approximations. The CPON spec sets the symbol rate at 30.5 GBd. With an oversampling rate of \(8/7\) the total samples per second would be 35 GSa/s. This is beyond the achievable clock speed of CMOS, so symbols must be processed in blocks of e.g 32 symbols with a clock speed of 1.1 GHz. This approach hinders the effectiveness of a PLL, as updates can only be made every 32 symbols. For this reason, feed-forward algorithms that can operate on blocks of data were preferred.
+One of the first techniques investigated for phase recovery was a digital phase-locked loop (PLL) to incrementally correct the phase of each symbol with feedback. This dramatically simplifies the phase estimation and correction due to the use of small angle approximations. The CPON spec sets the symbol rate at 30.5 GBd. With an oversampling rate of \(8/7\) the total samples per second would be 35 GSa/s. This is beyond the achievable clock speed of CMOS, so symbols must be processed in blocks of e.g 32 symbols with a clock speed of 1.1 GHz. This approach hinders the effectiveness of a PLL, as updates can only be made every 32 symbols. For this reason, feed-forward algorithms that can operate on blocks of data were used instead.
 
 \subsection{Viterbi \& Viterbi}
-The Viterbi \& Viterbi algorithm removes data phase with the fourth power operation of \cref{eq:blind_noise}. It then applies a maximum-likelihood filter to estimate the phase error due to Wiener phase noise from the combined laser linewidth and any residual CFO. A phase unwrapper is then applied before the phase error is corrected. This is readily adapted to block-based processing. If blocks of 32 symbols are used again, the ML filter can be applied on all symbols in the block and the estimated phase error applied to the entire block. This is only valid if the phase difference between the start and end of the block is small, meaning the laser linewidth cannot be too large and the preceding frequency recovery algorithm must correct most of the CFO. By increasing the time between phase estimates, block processing also increases the chance of cycle-slips in the phase uwnrapper. The CPON spec supplies 1 pilot symbol in every 32 symbol block that can be used to correct this. 
+The Viterbi \& Viterbi algorithm is well suited to QPSK andremoves data phase with the fourth power operation of \cref{eq:blind_noise}. It then applies a maximum-likelihood filter \(w_{ML}[i]\) to estimate the phase error due to Wiener phase noise from the combined laser linewidth and any residual CFO as
+\begin{equation}
+    \hat{\theta}_{ML}[i] = \frac{1}{4} \arg\left(\sum_{i = 1}^{N} w_{ML}^*[i] z[i] \right) - \frac{\pi}{4}.
+\end{equation} 
+A phase unwrapper is then applied before the phase error is corrected. This is readily adapted to block-based processing. If blocks of 32 symbols are used again, the ML filter can be applied on all symbols in the block and the estimated phase error applied to the entire block. This is only valid if the phase difference between the start and end of the block is small, meaning the laser linewidth cannot be too large and the preceding frequency recovery algorithm must correct most of the CFO. By increasing the time between phase estimates, block processing also increases the chance of cycle-slips in the phase uwnrapper. The CPON spec supplies 1 pilot symbol in every 32 symbol block that can be used to correct this \cite{Cheng2013PilotCycleSlip}. The correction uses a reference phase error measured from the pilot, then adds or subtracts multiples of the period of the phase unwrapper if the difference between the estimated and reference phases exceeds a threshold. The thresholds that gave the lowest BER are shown in \cref{tab:cycle_slip_thresholds} for low SNRs, where cycle slips are more likely to occur. A threshold in the range \(90-112.5\degree\) seems optimal and doesn't change with SNR or linewidth.
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lccc}
+        \toprule
+        SNR (dB) & 100 kHz & 1 MHz & 10 MHz \\
+        \midrule
+        0 & 90 & 90 & 90 \\
+        2 & 90 & 90 & 90 \\
+        4 & 90 & 90 & 90, 112.5 \\
+        6 & 90 & 90 & 112.5 \\
+        8 & 112.5 & 90 & 112.5 \\
+        10 & 90 & 112.5 & 112.5 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Optimal threshold (\(\degree\)) for pilot-based cycle slip correction in the Viterbi \& Viterbi algorithm for different combinations of SNR and laser linewidth}
+    \label{tab:cycle_slip_thresholds}
+\end{table}
+\subsection{Pilot-Only Correction}
+While Viterbi \& Viterbi is commonly used for QPSK, a simpler approach would be to just compute the phase error from the pilot symbol using \cref{eq:data_noise} and apply this to the whole block. This also relies on a small phase change across the block and is more vulnerable to additive noise. However, QPSK allows for \(\pm 45\degree\) error in the phase estimate before an incorrect symbol decision is made which makes it robust to the drop in accuracy associated with this approach.
 
+\subsection{Computational Complexity}
+\subsubsection{Viterbi \& Viterbi}
+For a block-based approach, the length of the filter will be the block length. Phases are again found with CORDIC. The cost of the phase estimate for each block is shown in \cref{tab:viterbi_cost}.
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lcccc}
+        \toprule
+        Operation & RM & RA \\
+        \midrule
+        Forming \(z[i], \dots, z[i+N]\) & \(12N\) & \(9N\)\\
+        Computing \(\hat{\theta}_{ML}\) & \(4N+1\) & \(3N+2(N-1)+1\)\\
+        \bottomrule
+    \end{tabular}
+    \caption{Computational complexity of block-based Viterbi \& Viterbi}
+    \label{tab:viterbi_cost}
+\end{table}
+\subsubsection{Pilot-Only}
+Only phases are needed here so the entire estimation can be performed with CORDIC. The pilot phase is also known beforehand so doesn't contribute to the computational cost. The total cost of the phase estimate is shown in \cref{tab:pilot_cost}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lcccc}
+        \toprule
+        Operation & RM & RA \\
+        \midrule
+        Forming \(\arg(z[i]) = \hat{\theta}\) & \(1\) & \(1\)\\
+        \bottomrule
+    \end{tabular}
+    \caption{Computational complexity of proposed pilot-only correction.}
+    \label{tab:pilot_cost}
+\end{table}
+
+\section{Combined Performance}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{cr_16_16.png}
+    \caption{BER of carrier recovery with Rife and Boorstyn}
+    \label{fig:cr_16_16}
+\end{figure}
+
+\bibliographystyle{ieeetr}
+\bibliography{ref}
 \end{document}

@@ -3,7 +3,7 @@ classdef full_cr < matlab.unittest.TestCase
 %
 %   Tests every combination of:
 %     Frequency Recovery : fft_search, differential_kay
-%     Phase Recovery     : BPS, Viterbi-Viterbi, pilots_only
+%     Phase Recovery     : Viterbi-Viterbi, pilots_only
 %   across a grid of SNRs, frequency offsets and laser linewidths.
 %
 %   One figure is produced per frequency-recovery algorithm.  Each figure
@@ -26,7 +26,7 @@ classdef full_cr < matlab.unittest.TestCase
         Rs          = 30.5              % symbol rate [GBd]
         N_pol       = 2
         TrainingLen = 11                % training symbols per subframe
-        NTrials     = 2               % independent channel realisations per point
+        NTrials     = 100               % independent channel realisations per point
 
         % Sweep grids
         SNR_dB_vec    = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]   % [dB]
@@ -47,11 +47,6 @@ classdef full_cr < matlab.unittest.TestCase
         % Viterbi-Viterbi
         VV_NTaps = 10
 
-        % BPS
-        BPS_N = 10
-        BPS_B = 64
-        BPS_M = 4                       % QPSK
-
         % Enable/disable figure output
         Plot = true
 
@@ -60,7 +55,7 @@ classdef full_cr < matlab.unittest.TestCase
         CordicIts = 16                  % CORDIC iterations (shared FR + CR)
 
         % Enable/disable MEX rebuild
-        Rebuild = false
+        Rebuild = true
 
     end
 
@@ -82,6 +77,8 @@ classdef full_cr < matlab.unittest.TestCase
 
         function seedRng(~)
             rng(42);
+            full_cr.fecSummaryStore('reset');
+            full_cr.berSummaryStore('reset');
         end
 
         function buildMex(testCase)
@@ -94,13 +91,9 @@ classdef full_cr < matlab.unittest.TestCase
             P.FR_Nfft        = testCase.FR_Nfft;
             P.FR_Po2Twiddle  = testCase.FR_Po2Twiddle;
             P.FxpConfig_FR   = testCase.FxpConfig_FR;
-            P.FxpConfig_BPS  = testCase.FxpConfig;
             P.FxpConfig_VV   = testCase.FxpConfig;
             P.FxpConfig_PO   = testCase.FxpConfig;
             P.CordicIts      = testCase.CordicIts;
-            P.BPS_N          = testCase.BPS_N;
-            P.BPS_B          = testCase.BPS_B;
-            P.M              = testCase.BPS_M;
             P.VV_NTaps       = testCase.VV_NTaps;
             P.BlockLen       = testCase.BlockLen;
             P.StepSize       = testCase.StepSize;
@@ -115,7 +108,6 @@ classdef full_cr < matlab.unittest.TestCase
                 fprintf('Building MEX objects...\n');
                 build_freq_recovery_fft_search_fxp_mex(P, cfg);
                 build_freq_recovery_differential_kay_fxp_mex(P, cfg);
-                build_carrier_recovery_bps_fxp_mex(P, cfg);
                 build_carrier_recovery_viterbiViterbi_fxp_mex(P, cfg);
                 build_carrier_recovery_pilots_only_fxp_mex(P, cfg);
                 fprintf('All MEX objects built.\n');
@@ -141,6 +133,22 @@ classdef full_cr < matlab.unittest.TestCase
                         testCase.N_pol, testCase.VV_NTaps);
                 end
             end
+        end
+
+    end
+
+    %% ================================================================
+    %  Test class teardown
+    %% ================================================================
+    methods (TestClassTeardown)
+
+        function printFecSummaryAtEnd(testCase)
+            if testCase.Plot
+                full_cr.plotCombinedResults(testCase);
+            end
+            full_cr.printFecSummaryTable(testCase);
+            full_cr.fecSummaryStore('reset');
+            full_cr.berSummaryStore('reset');
         end
 
     end
@@ -172,8 +180,8 @@ classdef full_cr < matlab.unittest.TestCase
             NLW  = length(P.LW_Hz_vec);
 
             % BER storage: (trial, SNR, DeltaF, LW, PR)
-            %   PR index:  1=BPS  2=ViterbiViterbi  3=PilotsOnly
-            BER_all = zeros(P.NTrials, NSNR, NFO, NLW, 3);
+            %   PR index:  1=ViterbiViterbi  2=PilotsOnly
+            BER_all = zeros(P.NTrials, NSNR, NFO, NLW, 2);
 
             for tr = 1:P.NTrials
                 fprintf('[%s] Trial %d / %d\n', fr_algo, tr, P.NTrials);
@@ -190,7 +198,7 @@ classdef full_cr < matlab.unittest.TestCase
                             SNR_dB   = P.SNR_dB_vec(si);
                             VVFilter = P.VVFilters{si, li};
 
-                            [fr_out, pilots, txRefBits, rx_preFR, freq_offset] = ...
+                            [fr_out, pilots, txRefBits, freq_offset] = ...
                                 full_cr.buildChannel(P, SNR_dB, DeltaF_Hz, LW, fr_algo);
 
                             fprintf('    SNR=%2ddB  freq_offset_est = %+.3f MHz\n', ...
@@ -200,56 +208,27 @@ classdef full_cr < matlab.unittest.TestCase
                             pilots_fi   = cast(pilots,   'like', T_cr.x);
                             vvfilter_fi = cast(VVFilter, 'like', T_cr.w);
 
-                            % Diagnostic constellation plots: first trial, first FO/LW, highest SNR
-                            doPlot = P.Plot && (tr == 1) && (fi == 1) && (li == 1) && (si == NSNR);
-                            % if doPlot
-                            %     full_cr.plotConstellation(rx_preFR, ...
-                            %         sprintf('Before FR | %s | SNR=%ddB', strrep(fr_algo,'_',' '), SNR_dB));
-                            %     full_cr.plotConstellation(fr_out, ...
-                            %         sprintf('After FR | %s | SNR=%ddB', strrep(fr_algo,'_',' '), SNR_dB));
-                            % end
-
-                            %-- BPS (fxp MEX) --
-                            [cr_bps, ~] = carrier_recovery.bps_fxp_mex( ...
-                                fr_out_fi, P.BPS_N, P.N_pol, P.BPS_M, P.BPS_B, ...
-                                P.BlockLen, double(P.StepSize), pilots_fi, P.PilotThreshold, ...
-                                double(P.CordicIts), T_cr);
-                            cr_bps = full_cr.resolvePhaseAmbiguity(double(cr_bps), txRefBits);
-                            BER_all(tr, si, fi, li, 1) = full_cr.computeBER(cr_bps, txRefBits);
-                            % if doPlot
-                            %     full_cr.plotConstellation(cr_bps, ...
-                            %         sprintf('After BPS fxp | %s | SNR=%ddB', strrep(fr_algo,'_',' '), SNR_dB));
-                            % end
-
                             %-- Viterbi-Viterbi (fxp MEX) --
                             [cr_vv, ~] = carrier_recovery.viterbiViterbi_fxp_mex( ...
                                 fr_out_fi, P.N_pol, P.VV_NTaps, vvfilter_fi, ...
                                 pilots_fi, P.BlockLen, double(P.StepSize), P.PilotThreshold, ...
                                 double(P.CordicIts), T_cr);
                             cr_vv = full_cr.resolvePhaseAmbiguity(double(cr_vv), txRefBits);
-                            BER_all(tr, si, fi, li, 2) = full_cr.computeBER(cr_vv, txRefBits);
-                            % if doPlot
-                            %     full_cr.plotConstellation(cr_vv, ...
-                            %         sprintf('After VV fxp | %s | SNR=%ddB', strrep(fr_algo,'_',' '), SNR_dB));
-                            % end
+                            BER_all(tr, si, fi, li, 1) = full_cr.computeBER(cr_vv, txRefBits);
 
                             %-- Pilots only (fxp MEX) --
                             [cr_po, ~] = carrier_recovery.pilots_only_fxp_mex( ...
                                 fr_out_fi, P.N_pol, P.BlockLen, pilots_fi, double(P.CordicIts), T_cr);
                             cr_po = full_cr.resolvePhaseAmbiguity(double(cr_po), txRefBits);
-                            BER_all(tr, si, fi, li, 3) = full_cr.computeBER(cr_po, txRefBits);
-                            % if doPlot
-                            %     full_cr.plotConstellation(cr_po, ...
-                            %         sprintf('After PilotsOnly | %s | SNR=%ddB', strrep(fr_algo,'_',' '), SNR_dB));
-                            % end
+                            BER_all(tr, si, fi, li, 2) = full_cr.computeBER(cr_po, txRefBits);
 
                         end % SNR
                     end % LW
                 end % DeltaF
             end % trial
 
-            % Average over trials → [NSNR x NFO x NLW x 3]
-            BER = reshape(mean(BER_all, 1), [NSNR, NFO, NLW, 3]);
+            % Average over trials → [NSNR x NFO x NLW x 2]
+            BER = reshape(mean(BER_all, 1), [NSNR, NFO, NLW, 2]);
 
             % BER = 0 cannot be plotted on a log scale.  Replace with the
             % minimum observable BER given NTrials * bitsPerTrial total bits.
@@ -258,11 +237,13 @@ classdef full_cr < matlab.unittest.TestCase
             berFloor = 1 / (P.NTrials * nBits);
             BER(BER == 0) = berFloor;
 
-            full_cr.printResults(P, BER, fr_algo);
-
+            fecSNR = full_cr.computeFecCrossingSNR(P, BER, 2e-2);
+            full_cr.fecSummaryStore('set', fr_algo, fecSNR);
             if P.Plot
-                full_cr.plotResults(P, BER, fr_algo, berFloor);
+                full_cr.berSummaryStore('set', fr_algo, BER, berFloor);
             end
+
+            full_cr.printResults(P, BER, fr_algo);
         end
 
     end
@@ -272,7 +253,203 @@ classdef full_cr < matlab.unittest.TestCase
     %% ================================================================
     methods (Static, Access = private)
 
-        function [fr_out, pilots, txRefBits, rx_preFR, freq_offset] = buildChannel( ...
+        function storeOut = fecSummaryStore(action, fr_algo, fecSNR)
+            persistent S
+            if isempty(S)
+                S = struct();
+            end
+
+            switch action
+                case 'reset'
+                    S = struct();
+                case 'set'
+                    S.(fr_algo) = fecSNR;
+                case 'get'
+                    % no-op
+                otherwise
+                    error('full_cr:invalidSummaryAction', 'Unknown action: %s', action);
+            end
+            storeOut = S;
+        end
+
+        function storeOut = berSummaryStore(action, fr_algo, BER, berFloor)
+            persistent S
+            if isempty(S)
+                S = struct();
+            end
+
+            switch action
+                case 'reset'
+                    S = struct();
+                case 'set'
+                    S.(fr_algo).BER = BER;
+                    S.(fr_algo).berFloor = berFloor;
+                case 'get'
+                    % no-op
+                otherwise
+                    error('full_cr:invalidBerSummaryAction', 'Unknown action: %s', action);
+            end
+            storeOut = S;
+        end
+
+        function fecSNR = computeFecCrossingSNR(P, BER, fecLimit)
+            % BER: [NSNR x NFO x NLW x 2]
+            NSNR = length(P.SNR_dB_vec);
+            NFO  = length(P.DeltaF_Hz_vec);
+            NLW  = length(P.LW_Hz_vec);
+            fecSNR = nan(NFO, NLW, 2);
+
+            x = P.SNR_dB_vec(:);
+            for fi = 1:NFO
+                for li = 1:NLW
+                    for pr = 1:2
+                        y = squeeze(BER(:, fi, li, pr));
+                        if length(y) ~= NSNR
+                            continue;
+                        end
+                        fecSNR(fi, li, pr) = full_cr.interpolateFecCrossing(x, y, fecLimit);
+                    end
+                end
+            end
+        end
+
+        function xCross = interpolateFecCrossing(x, y, yLimit)
+            % Returns first SNR crossing (in ascending SNR order) where BER
+            % reaches yLimit using linear interpolation between bracketing points.
+            xCross = NaN;
+            n = length(x);
+            if n < 2
+                return;
+            end
+
+            % Exact hit takes precedence.
+            idxExact = find(y == yLimit, 1, 'first');
+            if ~isempty(idxExact)
+                xCross = x(idxExact);
+                return;
+            end
+
+            for i = 1:(n - 1)
+                y1 = y(i);
+                y2 = y(i + 1);
+                if (y1 - yLimit) * (y2 - yLimit) < 0
+                    x1 = x(i);
+                    x2 = x(i + 1);
+                    xCross = x1 + (yLimit - y1) * (x2 - x1) / (y2 - y1);
+                    return;
+                end
+            end
+        end
+
+        function printFecSummaryTable(P)
+            S = full_cr.fecSummaryStore('get');
+            frFields = fieldnames(S);
+            if isempty(frFields)
+                fprintf('\nNo FEC summary data available.\n');
+                return;
+            end
+
+            prNames = {'Viterbi-Viterbi', 'PilotsOnly'};
+            fecLimit = 2e-2;
+
+            fprintf('\n============================================================\n');
+            fprintf('FEC LIMIT SUMMARY (BER = %.2e)\n', fecLimit);
+            fprintf('Interpolated SNR where BER crosses the FEC limit.\n');
+            fprintf('============================================================\n');
+            fprintf('FR Algorithm        PR Algorithm      DeltaF [MHz]  LW [kHz]  SNR@FEC [dB]\n');
+            fprintf('--------------------------------------------------------------------------\n');
+
+            for f = 1:length(frFields)
+                fr = frFields{f};
+                fecSNR = S.(fr);
+                for fi = 1:length(P.DeltaF_Hz_vec)
+                    for li = 1:length(P.LW_Hz_vec)
+                        for pr = 1:2
+                            snrVal = fecSNR(fi, li, pr);
+                            if isnan(snrVal)
+                                snrStr = 'N/A';
+                            else
+                                snrStr = sprintf('%8.3f', snrVal);
+                            end
+                            fprintf('%-18s  %-16s  %10.1f  %8.1f  %10s\n', ...
+                                strrep(fr, '_', ' '), prNames{pr}, ...
+                                P.DeltaF_Hz_vec(fi)/1e6, P.LW_Hz_vec(li)/1e3, snrStr);
+                        end
+                    end
+                end
+            end
+            fprintf('--------------------------------------------------------------------------\n\n');
+        end
+
+        function plotCombinedResults(P)
+            S = full_cr.berSummaryStore('get');
+            frFields = fieldnames(S);
+            if isempty(frFields)
+                return;
+            end
+
+            NFO = length(P.DeltaF_Hz_vec);
+            NLW = length(P.LW_Hz_vec);
+
+            PR_names  = {'Viterbi-Viterbi', 'Pilots Only'};
+            curveColors = [ ...
+                0.00, 0.60, 0.00; ... % green
+                1.00, 0.00, 0.00; ... % red
+                0.00, 0.00, 1.00; ... % blue
+                0.50, 0.00, 0.50  ... % purple
+            ];
+
+            fig_w = max(900, 420 * NLW);
+            fig_h = max(600, 360 * NFO);
+            figure('Name', 'Full CR  |  Combined FR + PR', ...
+                   'Position', [80, 80, fig_w, fig_h], ...
+                   'Color', 'w');
+
+            berFloor = Inf;
+            for f = 1:length(frFields)
+                berFloor = min(berFloor, S.(frFields{f}).berFloor);
+            end
+
+            for fi = 1:NFO
+                for li = 1:NLW
+                    ax = subplot(NFO, NLW, (fi - 1) * NLW + li);
+                    set(ax, 'YScale', 'log', 'FontSize', 11, 'Box', 'on', 'Color', 'w');
+                    hold(ax, 'on');
+
+                    for f = 1:length(frFields)
+                        fr = frFields{f};
+                        BER = S.(fr).BER;
+                        for pr = 1:2
+                            colorIdx = 1 + mod((f - 1) * length(PR_names) + (pr - 1), size(curveColors, 1));
+                            semilogy(ax, P.SNR_dB_vec, BER(:, fi, li, pr), ...
+                                'LineStyle', '-', 'Marker', 'o', 'MarkerSize', 4, 'LineWidth', 1.8, ...
+                                'Color', curveColors(colorIdx, :), ...
+                                'DisplayName', sprintf('%s | %s', strrep(fr, '_', ' '), PR_names{pr}));
+                        end
+                    end
+
+                    yline(ax, 2e-2, 'k--', 'LineWidth', 1.2, ...
+                        'DisplayName', 'FEC limit (2\times10^{-2})');
+
+                    yline(ax, berFloor, 'Color', [0.5 0.5 0.5], ...
+                        'LineStyle', '--', 'LineWidth', 1.0, ...
+                        'DisplayName', sprintf('Zero-error floor (%.2g)', berFloor));
+
+                    grid(ax, 'on');
+                    xlabel(ax, 'SNR [dB]', 'FontSize', 11);
+                    ylabel(ax, 'BER', 'FontSize', 11);
+                    title(ax, sprintf('\\DeltaF = %.0f MHz,  LW = %.0f kHz', ...
+                        P.DeltaF_Hz_vec(fi)/1e6, P.LW_Hz_vec(li)/1e3), ...
+                        'FontSize', 11);
+                    legend(ax, 'Location', 'northeast', 'FontSize', 8);
+                end
+            end
+
+            sgtitle('BER vs SNR  |  All FR and PR Results', ...
+                'FontSize', 14, 'FontWeight', 'bold');
+        end
+
+        function [fr_out, pilots, txRefBits, freq_offset] = buildChannel( ...
                 P, SNR_dB, DeltaF_Hz, LW, fr_algo)
             % Generate one CPON subframe, apply channel impairments and
             % frequency recovery, then build the per-CR-block pilot matrix.
@@ -290,7 +467,6 @@ classdef full_cr < matlab.unittest.TestCase
             rx = channel.add_phase_noise(rx, P.Rs, LW);
 
             % Frequency recovery (fixed-point MEX)
-            rx_preFR = rx;
             T_fr   = freq_recovery.fxp_types(P.FxpConfig_FR);
             rx_fi  = cast(rx,       'like', T_fr.x);
             tr_fi  = cast(training, 'like', T_fr.x);
@@ -361,8 +537,8 @@ classdef full_cr < matlab.unittest.TestCase
         end
 
         function printResults(P, BER, fr_algo)
-            % BER: [NSNR x NFO x NLW x 3]
-            pr_names = {'BPS', 'VV', 'PilotsOnly'};
+            % BER: [NSNR x NFO x NLW x 2]
+            pr_names = {'VV', 'PilotsOnly'};
             for fi = 1:length(P.DeltaF_Hz_vec)
                 for li = 1:length(P.LW_Hz_vec)
                     fprintf('\n[%s]  DeltaF = %.0f MHz  |  LW = %.0f kHz\n', ...
@@ -370,70 +546,13 @@ classdef full_cr < matlab.unittest.TestCase
                     fprintf('  SNR [dB]    : ');
                     fprintf('%7.1f  ', P.SNR_dB_vec);
                     fprintf('\n');
-                    for pr = 1:3
+                    for pr = 1:2
                         fprintf('  %-12s: ', pr_names{pr});
                         fprintf('%7.5f  ', BER(:, fi, li, pr)');
                         fprintf('\n');
                     end
                 end
             end
-        end
-
-        function plotResults(P, BER, fr_algo, berFloor)
-            % BER: [NSNR x NFO x NLW x 3]
-            NFO = length(P.DeltaF_Hz_vec);
-            NLW = length(P.LW_Hz_vec);
-
-            PR_names  = {'BPS', 'Viterbi-Viterbi', 'Pilots Only'};
-            PR_styles = {'-s', '--o', ':^'};
-            PR_colors = lines(3);
-
-            switch fr_algo
-                case 'fft_search',       fr_title = 'FFT Search';
-                case 'differential_kay', fr_title = 'Differential + Kay';
-                otherwise,               fr_title = strrep(fr_algo, '_', ' ');
-            end
-
-            fig_w = max(900,  420 * NLW);
-            fig_h = max(600,  360 * NFO);
-            figure('Name',     sprintf('Full CR  |  FR: %s', fr_title), ...
-                   'Position', [80, 80, fig_w, fig_h],                  ...
-                   'Color',    'w');
-
-            for fi = 1:NFO
-                for li = 1:NLW
-                    ax = subplot(NFO, NLW, (fi - 1) * NLW + li);
-                    set(ax, 'YScale', 'log', 'FontSize', 11, 'Box', 'on', 'Color', 'w');
-                    hold(ax, 'on');
-
-                    for pr = 2:3
-                        semilogy(ax, P.SNR_dB_vec, BER(:, fi, li, pr), ...
-                            PR_styles{pr}, 'LineWidth', 1.8,            ...
-                            'Color',       PR_colors(pr, :),            ...
-                            'DisplayName', PR_names{pr});
-                    end
-
-                    % FEC threshold
-                    yline(ax, 2e-2, 'k--', 'LineWidth', 1.2, ...
-                        'DisplayName', 'FEC limit (2\times10^{-2})');
-
-                    % Zero-BER floor (minimum observable BER)
-                    yline(ax, berFloor, 'Color', [0.5 0.5 0.5], ...
-                        'LineStyle', '--', 'LineWidth', 1.0, ...
-                        'DisplayName', sprintf('Zero-error floor (%.2g)', berFloor));
-
-                    grid(ax, 'on');
-                    xlabel(ax, 'SNR [dB]', 'FontSize', 11);
-                    ylabel(ax, 'BER',      'FontSize', 11);
-                    title(ax,  sprintf('\\DeltaF = %.0f MHz,  LW = %.0f kHz', ...
-                        P.DeltaF_Hz_vec(fi)/1e6, P.LW_Hz_vec(li)/1e3), ...
-                        'FontSize', 11);
-                    legend(ax, 'Location', 'northeast', 'FontSize', 9);
-                end
-            end
-
-            sgtitle(sprintf('BER vs SNR  |  FR: %s', ...
-                fr_title), 'FontSize', 14, 'FontWeight', 'bold');
         end
 
     end

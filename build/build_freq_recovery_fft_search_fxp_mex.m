@@ -15,6 +15,7 @@ function build_freq_recovery_fft_search_fxp_mex(P, cfg)
 %     P.FxpConfig_FR    - fixed-point config string: 'fixed16' | 'fixed32'
 %     P.CordicIts       - number of CORDIC iterations
 %     P.MaxFreq         - phase-scaling factor (double)
+%     P.FR_BlindD       - blind data length [symbols] (scalar, for type)
 %
 %   Note on FFT size
 %     fft.fft_fxp requires N to be a power of 2.  P.FR_Nfft must satisfy
@@ -51,7 +52,7 @@ function build_freq_recovery_fft_search_fxp_mex(P, cfg)
 
     % ----------------------------------------------------------------
     % Build argument list — must match freq_recovery.fft_search_fxp signature:
-    %   (x, training, Rs, Nfft, po2Twiddle, CordicIts, max_freq, T)
+    %   (x, training, Rs, Nfft, po2Twiddle, CordicIts, max_freq, T, data_aided, D)
     % ----------------------------------------------------------------
     args = { ...
         In_fr_type, ...                   % x           [Nsym x NPol]       fi complex
@@ -61,7 +62,9 @@ function build_freq_recovery_fft_search_fxp_mex(P, cfg)
         logical(P.FR_Po2Twiddle), ...     % po2Twiddle   scalar              logical
         cordic_its_type, ...              % CordicIts    scalar              double
         double(P.MaxFreq), ...            % max_freq     scalar              double
-        T_fr};                            % T            struct of fi prototypes
+        T_fr, ...                         % T            struct of fi prototypes
+        true, ...                         % data_aided   scalar              logical
+        double(P.FR_BlindD)};             % D            scalar              double
 
     codegen('-config', cfg, ...
             'freq_recovery.fft_search_fxp', ...

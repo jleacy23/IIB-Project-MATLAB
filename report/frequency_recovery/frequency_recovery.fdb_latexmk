@@ -1,13 +1,13 @@
 # Fdb version 4
-["bibtex frequency_recovery"] 1773771631.36635 "frequency_recovery.aux" "frequency_recovery.bbl" "frequency_recovery" 1773771631.83514 0
+["bibtex frequency_recovery"] 1773858325.38038 "frequency_recovery.aux" "frequency_recovery.bbl" "frequency_recovery" 1773859574.18647 0
   "./ref.bib" 1773739320 1595 7ef8b0a320794548fb30b06a6d7c92b8 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/bibtex/bst/base/ieeetr.bst" 1772596520 18361 1a00e58565e7f19bf2b3e1bfb82254ae ""
-  "frequency_recovery.aux" 1773771631 5783 4189fe1e4f65bab0e23a54074b28bc85 "pdflatex"
+  "frequency_recovery.aux" 1773859574 6664 c756ff3fd6165a162d95b685ae3a31dc "pdflatex"
   (generated)
   "frequency_recovery.bbl"
   "frequency_recovery.blg"
   (rewritten before read)
-["pdflatex"] 1773771631.4076 "c:/Users/joele/Downloads/iib_project/report/frequency_recovery/frequency_recovery.tex" "frequency_recovery.pdf" "frequency_recovery" 1773771631.8354 0
+["pdflatex"] 1773859573.76407 "c:/Users/joele/Downloads/iib_project/report/frequency_recovery/frequency_recovery.tex" "frequency_recovery.pdf" "frequency_recovery" 1773859574.18724 0
   "MCRB_diff_data.png" 1773680529 68607 461a22e0e90fbafe608ab15f4b96dcd8 ""
   "MCRB_diffkay_data.png" 1773683538 68506 336167fecc974ac81de511252a4c5871 ""
   "MCRB_fft_blind.png" 1773678719 115552 4048384856245eff79eb7b9ef8278d1c ""
@@ -66,11 +66,12 @@
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1772596550 94259 aec9939469efac8f0cf917369f632359 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/web2c/pdftex/pdflatex.fmt" 1772596566 2236130 036198fdb3bbb46401ac4d671e71ba73 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf.cnf" 1772596498 903 164c5b127cd0d6dc91abad2f62421ea2 ""
-  "c:/Users/joele/Downloads/iib_project/report/frequency_recovery/frequency_recovery.tex" 1773771630 16644 5891d958e303057a4206bafbafdf3dec ""
-  "cr_16_16.png" 1773771425 89776 2b1b1e30f0170579354bba2844741add ""
-  "frequency_recovery.aux" 1773771631 5783 4189fe1e4f65bab0e23a54074b28bc85 "pdflatex"
-  "frequency_recovery.bbl" 1773771631 308 cf1a54f04eef78062759e7832d1099dd "bibtex frequency_recovery"
-  "frequency_recovery.tex" 1773771630 16644 5891d958e303057a4206bafbafdf3dec ""
+  "c:/Users/joele/Downloads/iib_project/report/frequency_recovery/frequency_recovery.tex" 1773859573 18358 57f33f8bc9791188aab559d9d09be479 ""
+  "cr_16_16.png" 1773840722 86736 0537326fcb5e48c179fc2555853a77d1 ""
+  "cr_blind_vs_data.png" 1773840628 88515 b59965caeafe6251aa1a14e3db140683 ""
+  "frequency_recovery.aux" 1773859574 6664 c756ff3fd6165a162d95b685ae3a31dc "pdflatex"
+  "frequency_recovery.bbl" 1773858325 308 cf1a54f04eef78062759e7832d1099dd "bibtex frequency_recovery"
+  "frequency_recovery.tex" 1773859573 18358 57f33f8bc9791188aab559d9d09be479 ""
   (generated)
   "frequency_recovery.aux"
   "frequency_recovery.log"

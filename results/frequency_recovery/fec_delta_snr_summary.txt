@@ -1,0 +1,10 @@
+Delta-SNR at FEC summary (reference: DA FFT|VV = 0 dB)
+FEC limit = 2e-2
+
+DeltaF = 3000 MHz, LW = 1000 kHz
+Row         FFT|VV        FFT|PO        DK|VV         DK|PO       
+DA          +0.000        +0.333        -0.077        +0.157      
+BL-D64      +0.452        +0.488        +8.013        +7.948      
+BL-D256     -0.396        -0.288        +7.670        +7.389      
+BL-D512     -0.404        -0.316        +7.270        +7.164      
+

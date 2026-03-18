@@ -33,6 +33,8 @@ classdef test_FreqRecovery < matlab.unittest.TestCase
         CordicIts   = 16
         FR_Nfft     = 128           % FFT size (power of 2 >= TrainingLen)
         FR_Po2Twiddle = false
+        FR_BlindD   = 64
+        MaxFreq     = 1
 
         % ---- Pass/fail ----------------------------------------------
         BER_THRESHOLD = 0.05
@@ -62,8 +64,10 @@ classdef test_FreqRecovery < matlab.unittest.TestCase
             P.Rs            = testCase.Rs;
             P.FR_Nfft       = testCase.FR_Nfft;
             P.FR_Po2Twiddle = testCase.FR_Po2Twiddle;
+            P.FR_BlindD      = testCase.FR_BlindD;
             P.FxpConfig_FR  = testCase.FxpConfig;
             P.CordicIts     = testCase.CordicIts;
+            P.MaxFreq       = testCase.MaxFreq;
 
             build_freq_recovery_fft_search_fxp_mex(P, cfg);
             build_freq_recovery_differential_kay_fxp_mex(P, cfg);
@@ -170,7 +174,7 @@ classdef test_FreqRecovery < matlab.unittest.TestCase
             [frSym_fi, deltaF_est] = freq_recovery.fft_search_fxp_mex( ...
                 rx_fi, training_fi, testCase.Rs, ...
                 double(testCase.FR_Nfft), logical(testCase.FR_Po2Twiddle), ...
-                double(testCase.CordicIts), T);
+                double(testCase.CordicIts), double(testCase.MaxFreq), T, true, 0);
 
             frSym = double(frSym_fi);
         end

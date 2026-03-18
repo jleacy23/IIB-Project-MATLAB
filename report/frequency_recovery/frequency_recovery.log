@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.4)  17 MAR 2026 18:20
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.4)  18 MAR 2026 18:46
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -214,53 +214,64 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 [1
 
 {c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
-<MCRB_fft_data.png, id=17, 534.3162pt x 372.9132pt>
+<MCRB_fft_data.png, id=16, 534.3162pt x 372.9132pt>
 File: MCRB_fft_data.png Graphic file (type png)
 <use MCRB_fft_data.png>
-Package pdftex.def Info: MCRB_fft_data.png  used on input line 51.
+Package pdftex.def Info: MCRB_fft_data.png  used on input line 58.
 (pdftex.def)             Requested size: 364.19667pt x 254.18077pt.
-<MCRB_fft_blind.png, id=18, 539.616pt x 372.9132pt>
+<MCRB_fft_blind.png, id=17, 539.616pt x 372.9132pt>
 File: MCRB_fft_blind.png Graphic file (type png)
 <use MCRB_fft_blind.png>
-Package pdftex.def Info: MCRB_fft_blind.png  used on input line 58.
+Package pdftex.def Info: MCRB_fft_blind.png  used on input line 65.
 (pdftex.def)             Requested size: 364.19667pt x 251.69415pt.
  [2 <./MCRB_fft_data.png (PNG copy)>]
 <MCRB_diff_data.png, id=22, 534.3162pt x 372.9132pt>
 File: MCRB_diff_data.png Graphic file (type png)
 <use MCRB_diff_data.png>
-Package pdftex.def Info: MCRB_diff_data.png  used on input line 76.
+Package pdftex.def Info: MCRB_diff_data.png  used on input line 83.
 (pdftex.def)             Requested size: 364.19667pt x 254.18077pt.
  [3 <./MCRB_fft_blind.png (PNG copy)>]
 <MCRB_diffkay_data.png, id=26, 534.3162pt x 372.9132pt>
 File: MCRB_diffkay_data.png Graphic file (type png)
 <use MCRB_diffkay_data.png>
-Package pdftex.def Info: MCRB_diffkay_data.png  used on input line 83.
+Package pdftex.def Info: MCRB_diffkay_data.png  used on input line 90.
 (pdftex.def)             Requested size: 364.19667pt x 254.18077pt.
- [4 <./MCRB_diff_data.png (PNG copy)> <./MCRB_diffkay_data.png (PNG copy)>] [5] [6]
-<cr_16_16.png, id=36, 572.8602pt x 421.0932pt>
+ [4 <./MCRB_diff_data.png (PNG copy)>] [5 <./MCRB_diffkay_data.png (PNG copy)>]
+Overfull \hbox (4.62057pt too wide) in paragraph at lines 119--135
+\OT1/cmr/m/n/12 The pro-posed dif-fer-en-tial phase and Kay es-ti-ma-tor is less com-plex, only re-quir-ing CORDIC,
+ []
+
+[6] [7]
+<cr_blind_vs_data.png, id=40, 572.8602pt x 421.0932pt>
+File: cr_blind_vs_data.png Graphic file (type png)
+<use cr_blind_vs_data.png>
+Package pdftex.def Info: cr_blind_vs_data.png  used on input line 206.
+(pdftex.def)             Requested size: 364.19667pt x 267.71246pt.
+ [8]
+<cr_16_16.png, id=44, 572.8602pt x 421.0932pt>
 File: cr_16_16.png Graphic file (type png)
 <use cr_16_16.png>
-Package pdftex.def Info: cr_16_16.png  used on input line 197.
+Package pdftex.def Info: cr_16_16.png  used on input line 214.
 (pdftex.def)             Requested size: 364.19667pt x 267.71246pt.
- [7] (./frequency_recovery.bbl) [8 <./cr_16_16.png (PNG copy)>] (./frequency_recovery.aux)
+ (./frequency_recovery.bbl [9 <./cr_blind_vs_data.png (PNG copy)> <./cr_16_16.png (PNG copy)>]) [10] (./frequency_recovery.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
  ***********
  ) 
 Here is how much of TeX's memory you used:
- 5745 strings out of 469515
- 109801 string characters out of 5467663
+ 5758 strings out of 469515
+ 110104 string characters out of 5467663
  553459 words of memory out of 5000000
- 34380 multiletter control sequences out of 15000+600000
+ 34393 multiletter control sequences out of 15000+600000
  633236 words of font info for 58 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 67i,11n,77p,1339b,321s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 67i,12n,77p,1339b,321s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb>
-Output written on frequency_recovery.pdf (8 pages, 570378 bytes).
+Output written on frequency_recovery.pdf (10 pages, 659540 bytes).
 PDF statistics:
- 96 PDF objects out of 1000 (max. 8388607)
- 56 compressed objects within 1 object stream
+ 103 PDF objects out of 1000 (max. 8388607)
+ 60 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
- 26 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 31 words of extra memory for PDF output out of 10000 (max. 10000000)
 

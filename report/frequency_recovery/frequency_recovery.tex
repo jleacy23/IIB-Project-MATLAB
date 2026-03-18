@@ -33,8 +33,15 @@ where \(\theta\) is phase noise, \(f_d\) is the CFO, and \(n\) is additive noise
 \end{equation}
 which is more robust to noise and less computationally expensive. Some algorithms only require \(\arg(z[i])\) which is efficiently found using CORDIC as
 \begin{equation}
-    \arg(z[i]) = \arg(x[i]) - \arg(c[i]).
+    \arg(z[i]) = \{4\arg(x[i])\}|_{-\pi}^\pi
+    \label{eq:phase_blind}
 \end{equation}
+for blind operation or
+\begin{equation}
+    \arg(z[i]) = \{\arg(x[i]) - \arg(c[i])\}|_{-\pi}^{\pi}
+    \label{eq:phase_data}
+\end{equation}
+for data-aided operation where the wrap operation can be done with no additional cost by exploiting fixed point overflow.
 \subsection{Rife and Boorstyn (FFT Search)}
 The value of the CFO will appear as the strongest peak in the frequency spectrum of \(z[i], z[i+1], \dots, z[i+L]\) where \(L\) is the observation length. The Rife and Boorstyn algorithm first performs an FFT on the observed sequence and finds the index \(k\) corresponding to the strongest peak. This coarse estimation is refined with a parabolic interpolation on the complex FFT values \(X_{k-1}, X_k, X_{k+1}\) to give
 \begin{equation}
@@ -61,7 +68,7 @@ Data-aided operation is constrained by the length of the training sequence but t
 \end{figure}
 
 \subsection{Differential Phase + Kay Estimator}
-The Rife and Boorstyn algorithm exhibits good performance even at low SNRs but is computationally expensive. The FFT requires \(\frac{N_{FFT}}{2} \log_2(N_{FFT})\) complex multiplications and \(N_{FFT}\log_2(N_{FFT})\) complex additions. The fine search from \cref{eq:fft_refined} also requires a complex division. A much cheaper approach would involve computing the phase difference
+The Rife and Boorstyn algorithm exhibits good performance even at low SNRs but is computationally expensive. The FFT requires \(\frac{N_{FFT}}{2} \log_2(N_{FFT})\) complex multiplications and \(N_{FFT}\log_2(N_{FFT})\) complex additions. The fine search from \cref{eq:fft_refined} also requires a complex division. A cheaper approach would involve computing the phase difference
 \begin{equation}
     \arg (z[i]) - \arg (z[i-1]) = 2 \pi f_d T_s + \theta[i] - \theta[i-1] + \eta[i]
     \label{eq:phase_diff}
@@ -77,7 +84,7 @@ where \(\arg(z[k]z^*[k-1])\) computes the phase difference from \cref{eq:phase_d
     \caption{Normalised MSE of frequency estimation with data-aided differential phase for \(L = 11\) training symbols.}
     \label{fig:diffphase_data}
 \end{figure}
-The performance of the combined differential phase and Kay estimator for data-aided operation is shown in \cref{fig:diffkay_data}. The MCRB is achieved above an SNR of \(\approx 7 \ dB\). This is higher than for Rife and Boorstyn but at a significantly reduced computational cost.
+The performance of the combined differential phase and Kay estimator for data-aided operation is shown in \cref{fig:diffkay_data}. The MCRB is achieved above an SNR of \(\approx 7 \ dB\). This is higher than for Rife and Boorstyn but at a reduced computational cost.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{MCRB_diffkay_data.png}
@@ -90,17 +97,17 @@ Here the computational complexity of both frequency recovery algorithms are comp
 \subsubsection{Rife and Boorstyn}
 The Rife and Boorstyn algorithm requires an FFT followed by \(N_{FFT}\) comparisons of the magnitudes in the coarse search. Many of the FFT entries are 0 due to padding, which reduces the total number of operations needed. The interpolation requires the real part of a complex division
 \begin{equation}
-Re \left[\frac{a + bj}{c + dj}\right] = \frac{ac + bd}{c^2 + d^2}.
+\Re \left[\frac{a + bj}{c + dj}\right] = \frac{ac + bd}{c^2 + d^2}.
 \end{equation}
-The total complexity is summarised in \cref{tab:fft_cost}.
+The total complexity is summarised in \cref{tab:fft_cost} with the complexity for blind operation marked with (*).
 \begin{table}[H]
     \centering
     \begin{tabular}{lcccc}
         \toprule
         Operation & RM & RA \\
         \midrule
-        Forming \(z[i], \dots, z[i+L]\) & \(4L\) & \(3L\)\\
-        FFT & \(2N_{FFT} \log_2(N_{FFT}/L)\) & \(3N_{FFT} \log_2(N_{FFT}/L)\)\\
+        Forming \(z[i], \dots, z[i+L]\) & \(4L\), \(12L^*\) & \(3L\), \(9L^*\)\\\
+        FFT & \(2N_{FFT} \log_2(\frac{N_{FFT}}{L})\) & \(3N_{FFT} \log_2(N_{FFT}/L)\)\\
         Search & \(2N_{FFT}\) & \(2N_{FFT}\)\\
         Interpolation & \(5\) & \(4\) \\ 
         \bottomrule
@@ -109,7 +116,7 @@ The total complexity is summarised in \cref{tab:fft_cost}.
     \label{tab:fft_cost}
 \end{table}
 \subsubsection{Differential Phase + Kay}
-The proposed differential phase and Kay estimator is much less complex, only requiring CORDIC, real additions, and real multiplications. The fixed multiplications by the weights of the Kay estimator could also be optimised into a low-energy shift-add circuit. The first pass CFO correction involves forming the phase corrections of each training symbol as \(\phi[i] = \hat{f_d}i\), then applying them with CORDIC.
+The proposed differential phase and Kay estimator is less complex, only requiring CORDIC, real additions, and real multiplications.  The fixed multiplications by the weights of the Kay estimator can be optimised into a low-energy shift-add circuit but this is ignored for simplicity. The first pass CFO correction involves forming the phase corrections of each training symbol as \(\phi[i] = \hat{f_d}i\), then applying them with CORDIC. 
 \begin{table}[H]
     \centering
     \begin{tabular}{lcccc}
@@ -154,7 +161,7 @@ A phase unwrapper is then applied before the phase error is corrected. This is r
         10 & 90 & 112.5 & 112.5 \\
         \bottomrule
     \end{tabular}
-    \caption{Optimal threshold (\(\degree\)) for pilot-based cycle slip correction in the Viterbi \& Viterbi algorithm for different combinations of SNR and laser linewidth}
+    \caption{Optimal threshold (\(\degree\)) for pilot-based cycle slip correction in the Viterbi \& Viterbi algorithm for different combinations of SNR and laser linewidth, \(R_s\) = 30.5 GBd}
     \label{tab:cycle_slip_thresholds}
 \end{table}
 \subsection{Pilot-Only Correction}
@@ -192,10 +199,20 @@ Only phases are needed here so the entire estimation can be performed with CORDI
 \end{table}
 
 \section{Combined Performance}
+\subsection{Blind vs Data-Aided}
+To use a data-aided approach for frequency recovery, the limited number of training symbols must be sufficient to produce similar or better performance than a blind approach where any number of symbols can be used. The BER for data-aided and blind (observation length \(L = 64\))  operation for both frequency recovery algorithms with Viterbi \& Viterbi is shown in \cref{fig:cr_data_blind}. The SNR needed for blind operation to achieve a BER below the FEC limit is higher than for data-aided operation in both cases. The differential phase and Kay estimator is particularly poor under blind operation, where the amplification of noise degrades the estimate of the first pass and can prevent it from bringing the CFO within range of the Kay estimator. 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{cr_blind_vs_data.png}
+    \caption{BER of data-aided vs blind frequency recovery with Viterbi \& Viterbi.}
+    \label{fig:cr_data_blind}
+\end{figure}
+\subsection{Viterbi \& Viterbi vs Pilot-Only}
+The BER of each combination of frequency recovery and phase recovery algorithms with data-aided operation is shown in \cref{fig:cr_16_16}.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{cr_16_16.png}
-    \caption{BER of carrier recovery with Rife and Boorstyn}
+    \caption{BER of carrier recovery combinations with \(f_d = 3\) GHz and laser linewidth \(\Delta\nu = 1 \) MHz, \(R_s = 30.5 \) GBd, \(N_{FFT} = 512\).}
     \label{fig:cr_16_16}
 \end{figure}
 

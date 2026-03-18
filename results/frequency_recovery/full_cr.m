@@ -2,14 +2,14 @@ classdef full_cr < matlab.unittest.TestCase
 %FULL_CR  End-to-end carrier-recovery pipeline benchmark.
 %
 %   Tests every combination of:
-%     Frequency Recovery : fft_search, differential_kay
+%     Frequency Recovery : fft_search, fft_search_blind, differential_kay_data_aided, differential_kay_blind
 %     Phase Recovery     : Viterbi-Viterbi, pilots_only
 %   across a grid of SNRs, frequency offsets and laser linewidths.
 %
-%   One figure is produced per frequency-recovery algorithm.  Each figure
-%   contains NFO x NLW subplots (frequency offsets as rows, linewidths as
-%   columns); within each subplot BER vs SNR is plotted with one line per
-%   phase-recovery algorithm.
+%   Teardown outputs:
+%     1) text summary table (delta-SNR at FEC, referenced to DA FFT|VV);
+%     2) BER-vs-SNR plots, one per FR|PR combination;
+%        each plot overlays DA (solid) and blind D values (dashed).
 %
 %   Uses the true CPON symbol rate (30.5 GBd), frequency offsets in Hz,
 %   and linewidths in Hz.
@@ -37,7 +37,8 @@ classdef full_cr < matlab.unittest.TestCase
         FxpConfig_FR  = 'fixed32'       % 'fixed16' | 'fixed32'
         FR_Nfft       = 512             % FFT size for fft_search_fxp (power of 2)
         FR_Po2Twiddle = false           % round FFT twiddles to powers of 2
-        MaxFreq = 1
+        FR_BlindD_vec = [64, 256, 512] % blind data lengths [symbols] (FFT + DiffKay)
+        MaxFreq = 0.1
 
         % Phase recovery — shared settings
         BlockLen       = 32             % CPON block length [symbols]
@@ -55,7 +56,7 @@ classdef full_cr < matlab.unittest.TestCase
         CordicIts = 16                  % CORDIC iterations (shared FR + CR)
 
         % Enable/disable MEX rebuild
-        Rebuild = true
+        Rebuild = false
 
     end
 
@@ -90,6 +91,7 @@ classdef full_cr < matlab.unittest.TestCase
             P.TrainingLen    = testCase.TrainingLen;
             P.FR_Nfft        = testCase.FR_Nfft;
             P.FR_Po2Twiddle  = testCase.FR_Po2Twiddle;
+            P.FR_BlindD      = testCase.FR_BlindD_vec(1);
             P.FxpConfig_FR   = testCase.FxpConfig_FR;
             P.FxpConfig_VV   = testCase.FxpConfig;
             P.FxpConfig_PO   = testCase.FxpConfig;
@@ -143,10 +145,11 @@ classdef full_cr < matlab.unittest.TestCase
     methods (TestClassTeardown)
 
         function printFecSummaryAtEnd(testCase)
+            [deltaSNR, rowLabels, colLabels] = full_cr.buildDeltaSnrTable(testCase);
+            full_cr.writeDeltaSnrSummaryFile(testCase, deltaSNR, rowLabels, colLabels);
             if testCase.Plot
-                full_cr.plotCombinedResults(testCase);
+                full_cr.plotBerColumnsDaVsBlind(testCase, colLabels);
             end
-            full_cr.printFecSummaryTable(testCase);
             full_cr.fecSummaryStore('reset');
             full_cr.berSummaryStore('reset');
         end
@@ -159,11 +162,23 @@ classdef full_cr < matlab.unittest.TestCase
     methods (Test)
 
         function test_fft_search(testCase)
-            testCase.runPipeline('fft_search');
+            testCase.runPipeline('fft_search', 0);
         end
 
-        function test_differential_kay(testCase)
-            testCase.runPipeline('differential_kay');
+        function test_fft_search_blind(testCase)
+            for d = testCase.FR_BlindD_vec
+                testCase.runPipeline('fft_search_blind', d);
+            end
+        end
+
+        function test_differential_kay_blind(testCase)
+            for d = testCase.FR_BlindD_vec
+                testCase.runPipeline('differential_kay_blind', d);
+            end
+        end
+
+        function test_differential_kay_data_aided(testCase)
+            testCase.runPipeline('differential_kay_data_aided', 0);
         end
 
     end
@@ -173,11 +188,15 @@ classdef full_cr < matlab.unittest.TestCase
     %% ================================================================
     methods (Access = private)
 
-        function runPipeline(testCase, fr_algo)
+        function runPipeline(testCase, fr_algo, blindD)
             P    = testCase;
             NSNR = length(P.SNR_dB_vec);
             NFO  = length(P.DeltaF_Hz_vec);
             NLW  = length(P.LW_Hz_vec);
+
+            if nargin < 3
+                blindD = 0;
+            end
 
             % BER storage: (trial, SNR, DeltaF, LW, PR)
             %   PR index:  1=ViterbiViterbi  2=PilotsOnly
@@ -199,7 +218,7 @@ classdef full_cr < matlab.unittest.TestCase
                             VVFilter = P.VVFilters{si, li};
 
                             [fr_out, pilots, txRefBits, freq_offset] = ...
-                                full_cr.buildChannel(P, SNR_dB, DeltaF_Hz, LW, fr_algo);
+                                full_cr.buildChannel(P, SNR_dB, DeltaF_Hz, LW, fr_algo, blindD);
 
                             fprintf('    SNR=%2ddB  freq_offset_est = %+.3f MHz\n', ...
                                 SNR_dB, freq_offset/1e6);
@@ -238,10 +257,8 @@ classdef full_cr < matlab.unittest.TestCase
             BER(BER == 0) = berFloor;
 
             fecSNR = full_cr.computeFecCrossingSNR(P, BER, 2e-2);
-            full_cr.fecSummaryStore('set', fr_algo, fecSNR);
-            if P.Plot
-                full_cr.berSummaryStore('set', fr_algo, BER, berFloor);
-            end
+            full_cr.fecSummaryStore('set', fr_algo, blindD, fecSNR);
+            full_cr.berSummaryStore('set', fr_algo, blindD, BER, berFloor);
 
             full_cr.printResults(P, BER, fr_algo);
         end
@@ -253,17 +270,28 @@ classdef full_cr < matlab.unittest.TestCase
     %% ================================================================
     methods (Static, Access = private)
 
-        function storeOut = fecSummaryStore(action, fr_algo, fecSNR)
+        function storeOut = fecSummaryStore(action, fr_algo, blindD, fecSNR)
             persistent S
             if isempty(S)
                 S = struct();
+            end
+
+            if nargin < 2
+                fr_algo = '';
+            end
+            if nargin < 3
+                blindD = 0;
+            end
+            if nargin < 4
+                fecSNR = [];
             end
 
             switch action
                 case 'reset'
                     S = struct();
                 case 'set'
-                    S.(fr_algo) = fecSNR;
+                    key = full_cr.makeScenarioKey(fr_algo, blindD);
+                    S.(key) = fecSNR;
                 case 'get'
                     % no-op
                 otherwise
@@ -272,18 +300,39 @@ classdef full_cr < matlab.unittest.TestCase
             storeOut = S;
         end
 
-        function storeOut = berSummaryStore(action, fr_algo, BER, berFloor)
+        function key = makeScenarioKey(fr_algo, blindD)
+            key = sprintf('%s_D%d', fr_algo, round(blindD));
+            key = strrep(key, '+', 'p');
+            key = strrep(key, '-', 'm');
+            key = matlab.lang.makeValidName(key);
+        end
+
+        function storeOut = berSummaryStore(action, fr_algo, blindD, BER, berFloor)
             persistent S
             if isempty(S)
                 S = struct();
+            end
+
+            if nargin < 2
+                fr_algo = '';
+            end
+            if nargin < 3
+                blindD = 0;
+            end
+            if nargin < 4
+                BER = [];
+            end
+            if nargin < 5
+                berFloor = NaN;
             end
 
             switch action
                 case 'reset'
                     S = struct();
                 case 'set'
-                    S.(fr_algo).BER = BER;
-                    S.(fr_algo).berFloor = berFloor;
+                    key = full_cr.makeScenarioKey(fr_algo, blindD);
+                    S.(key).BER = BER;
+                    S.(key).berFloor = berFloor;
                 case 'get'
                     % no-op
                 otherwise
@@ -341,116 +390,246 @@ classdef full_cr < matlab.unittest.TestCase
             end
         end
 
-        function printFecSummaryTable(P)
+        function [deltaSNR, rowLabels, colLabels] = buildDeltaSnrTable(P)
             S = full_cr.fecSummaryStore('get');
-            frFields = fieldnames(S);
-            if isempty(frFields)
-                fprintf('\nNo FEC summary data available.\n');
-                return;
+            NFO = length(P.DeltaF_Hz_vec);
+            NLW = length(P.LW_Hz_vec);
+
+            colLabels = {'FFT|VV', 'FFT|PO', 'DK|VV', 'DK|PO'};
+            rowLabels = cell(1, 1 + length(P.FR_BlindD_vec));
+            rowLabels{1} = 'DA';
+            for r = 2:length(rowLabels)
+                rowLabels{r} = sprintf('BL-D%d', P.FR_BlindD_vec(r - 1));
             end
 
-            prNames = {'Viterbi-Viterbi', 'PilotsOnly'};
-            fecLimit = 2e-2;
+            nRows = length(rowLabels);
+            nCols = length(colLabels);
+            absSNR = nan(nRows, nCols, NFO, NLW);
 
-            fprintf('\n============================================================\n');
-            fprintf('FEC LIMIT SUMMARY (BER = %.2e)\n', fecLimit);
-            fprintf('Interpolated SNR where BER crosses the FEC limit.\n');
-            fprintf('============================================================\n');
-            fprintf('FR Algorithm        PR Algorithm      DeltaF [MHz]  LW [kHz]  SNR@FEC [dB]\n');
-            fprintf('--------------------------------------------------------------------------\n');
+            key_fft_da = full_cr.makeScenarioKey('fft_search', 0);
+            key_dk_da  = full_cr.makeScenarioKey('differential_kay_data_aided', 0);
+            if isfield(S, key_fft_da)
+                absSNR(1, 1, :, :) = S.(key_fft_da)(:, :, 1);
+                absSNR(1, 2, :, :) = S.(key_fft_da)(:, :, 2);
+            end
+            if isfield(S, key_dk_da)
+                absSNR(1, 3, :, :) = S.(key_dk_da)(:, :, 1);
+                absSNR(1, 4, :, :) = S.(key_dk_da)(:, :, 2);
+            end
 
-            for f = 1:length(frFields)
-                fr = frFields{f};
-                fecSNR = S.(fr);
-                for fi = 1:length(P.DeltaF_Hz_vec)
-                    for li = 1:length(P.LW_Hz_vec)
-                        for pr = 1:2
-                            snrVal = fecSNR(fi, li, pr);
-                            if isnan(snrVal)
-                                snrStr = 'N/A';
-                            else
-                                snrStr = sprintf('%8.3f', snrVal);
+            for di = 1:length(P.FR_BlindD_vec)
+                D = P.FR_BlindD_vec(di);
+                r = di + 1;
+                key_fft_bl = full_cr.makeScenarioKey('fft_search_blind', D);
+                key_dk_bl  = full_cr.makeScenarioKey('differential_kay_blind', D);
+                if isfield(S, key_fft_bl)
+                    absSNR(r, 1, :, :) = S.(key_fft_bl)(:, :, 1);
+                    absSNR(r, 2, :, :) = S.(key_fft_bl)(:, :, 2);
+                end
+                if isfield(S, key_dk_bl)
+                    absSNR(r, 3, :, :) = S.(key_dk_bl)(:, :, 1);
+                    absSNR(r, 4, :, :) = S.(key_dk_bl)(:, :, 2);
+                end
+            end
+
+            ref = squeeze(absSNR(1, 1, :, :));
+            deltaSNR = nan(size(absSNR));
+            for r = 1:nRows
+                for c = 1:nCols
+                    for fi = 1:NFO
+                        for li = 1:NLW
+                            if ~isnan(absSNR(r, c, fi, li)) && ~isnan(ref(fi, li))
+                                deltaSNR(r, c, fi, li) = absSNR(r, c, fi, li) - ref(fi, li);
                             end
-                            fprintf('%-18s  %-16s  %10.1f  %8.1f  %10s\n', ...
-                                strrep(fr, '_', ' '), prNames{pr}, ...
-                                P.DeltaF_Hz_vec(fi)/1e6, P.LW_Hz_vec(li)/1e3, snrStr);
                         end
                     end
                 end
             end
-            fprintf('--------------------------------------------------------------------------\n\n');
         end
 
-        function plotCombinedResults(P)
+        function writeDeltaSnrSummaryFile(P, deltaSNR, rowLabels, colLabels)
+            NFO = length(P.DeltaF_Hz_vec);
+            NLW = length(P.LW_Hz_vec);
+            outPath = fullfile(fileparts(mfilename('fullpath')), 'fec_delta_snr_summary.txt');
+            fid = fopen(outPath, 'w');
+            if fid < 0
+                error('full_cr:summaryWriteFailed', 'Failed to open summary file: %s', outPath);
+            end
+
+            fprintf(fid, 'Delta-SNR at FEC summary (reference: DA FFT|VV = 0 dB)\n');
+            fprintf(fid, 'FEC limit = 2e-2\n\n');
+
+            for fi = 1:NFO
+                for li = 1:NLW
+                    fprintf(fid, 'DeltaF = %.0f MHz, LW = %.0f kHz\n', ...
+                        P.DeltaF_Hz_vec(fi)/1e6, P.LW_Hz_vec(li)/1e3);
+                    fprintf(fid, '%-10s', 'Row');
+                    for c = 1:length(colLabels)
+                        fprintf(fid, '  %-12s', colLabels{c});
+                    end
+                    fprintf(fid, '\n');
+
+                    for r = 1:length(rowLabels)
+                        fprintf(fid, '%-10s', rowLabels{r});
+                        for c = 1:length(colLabels)
+                            val = deltaSNR(r, c, fi, li);
+                            if isnan(val)
+                                fprintf(fid, '  %-12s', 'N/A');
+                            else
+                                fprintf(fid, '  %+-12.3f', val);
+                            end
+                        end
+                        fprintf(fid, '\n');
+                    end
+                    fprintf(fid, '\n');
+                end
+            end
+            fclose(fid);
+            fprintf('Wrote summary table to: %s\n', outPath);
+        end
+
+        function plotBerColumnsDaVsBlind(P, colLabels)
             S = full_cr.berSummaryStore('get');
-            frFields = fieldnames(S);
-            if isempty(frFields)
+            key_fft_da = full_cr.makeScenarioKey('fft_search', 0);
+            key_dk_da  = full_cr.makeScenarioKey('differential_kay_data_aided', 0);
+            if ~isfield(S, key_fft_da) || ~isfield(S, key_dk_da)
                 return;
+            end
+
+            berFftDa = S.(key_fft_da).BER;
+            berDkDa  = S.(key_dk_da).BER;
+            berFloor = min(S.(key_fft_da).berFloor, S.(key_dk_da).berFloor);
+
+            nBlind = length(P.FR_BlindD_vec);
+            berFftBlind = cell(1, nBlind);
+            berDkBlind  = cell(1, nBlind);
+            for di = 1:nBlind
+                D = P.FR_BlindD_vec(di);
+                key_fft_bl = full_cr.makeScenarioKey('fft_search_blind', D);
+                key_dk_bl  = full_cr.makeScenarioKey('differential_kay_blind', D);
+                if isfield(S, key_fft_bl)
+                    berFftBlind{di} = S.(key_fft_bl).BER;
+                    berFloor = min(berFloor, S.(key_fft_bl).berFloor);
+                end
+                if isfield(S, key_dk_bl)
+                    berDkBlind{di} = S.(key_dk_bl).BER;
+                    berFloor = min(berFloor, S.(key_dk_bl).berFloor);
+                end
             end
 
             NFO = length(P.DeltaF_Hz_vec);
             NLW = length(P.LW_Hz_vec);
 
-            PR_names  = {'Viterbi-Viterbi', 'Pilots Only'};
-            curveColors = [ ...
-                0.00, 0.60, 0.00; ... % green
-                1.00, 0.00, 0.00; ... % red
-                0.00, 0.00, 1.00; ... % blue
-                0.50, 0.00, 0.50  ... % purple
-            ];
+            comboNames = {'FFT|VV', 'FFT|PO', 'DK|VV', 'DK|PO'};
+            lineColors = lines(1 + nBlind);      % DA + blind-D curves
+            blindMarkers = {'o', 's', 'd', '^', 'v', '>', '<', 'p', 'h', 'x', '+'};
 
-            fig_w = max(900, 420 * NLW);
-            fig_h = max(600, 360 * NFO);
-            figure('Name', 'Full CR  |  Combined FR + PR', ...
-                   'Position', [80, 80, fig_w, fig_h], ...
-                   'Color', 'w');
+            for ci = 1:length(comboNames)
+                fig_w = max(900, 420 * NLW);
+                fig_h = max(600, 360 * NFO);
+                figure('Name', sprintf('Full CR  |  BER vs SNR (%s)', comboNames{ci}), ...
+                    'Position', [90, 90, fig_w, fig_h], ...
+                    'Color', 'w');
 
-            berFloor = Inf;
-            for f = 1:length(frFields)
-                berFloor = min(berFloor, S.(frFields{f}).berFloor);
+                for fi = 1:NFO
+                    for li = 1:NLW
+                        ax = subplot(NFO, NLW, (fi - 1) * NLW + li);
+                        set(ax, 'YScale', 'log', 'FontSize', 11, 'Box', 'on', 'Color', 'w');
+                        hold(ax, 'on');
+
+                        [berDa, berBlindSet] = full_cr.getBerForColumn(ci, berFftDa, berDkDa, berFftBlind, berDkBlind);
+
+                        semilogy(ax, P.SNR_dB_vec, berDa(:, fi, li), ...
+                            'LineStyle', '-', 'Marker', 'o', 'MarkerSize', 4, 'LineWidth', 1.8, ...
+                            'Color', lineColors(1, :), 'DisplayName', 'DA');
+
+                        for di = 1:nBlind
+                            if isempty(berBlindSet{di})
+                                continue;
+                            end
+                            markerIdx = mod(di - 1, length(blindMarkers)) + 1;
+                            semilogy(ax, P.SNR_dB_vec, berBlindSet{di}(:, fi, li), ...
+                                'LineStyle', '--', 'Marker', blindMarkers{markerIdx}, ...
+                                'MarkerSize', 3.5, 'LineWidth', 1.6, ...
+                                'Color', lineColors(di + 1, :), ...
+                                'DisplayName', sprintf('BL-D%d', P.FR_BlindD_vec(di)));
+                        end
+
+                        yline(ax, 2e-2, 'k--', 'LineWidth', 1.2, ...
+                            'DisplayName', 'FEC limit (2\times10^{-2})');
+                        yline(ax, berFloor, 'Color', [0.5 0.5 0.5], ...
+                            'LineStyle', '--', 'LineWidth', 1.0, ...
+                            'DisplayName', sprintf('Zero-error floor (%.2g)', berFloor));
+
+                        grid(ax, 'on');
+                        xlabel(ax, 'SNR [dB]', 'FontSize', 11);
+                        ylabel(ax, 'BER', 'FontSize', 11);
+                        title(ax, sprintf('\\DeltaF = %.0f MHz, LW = %.0f kHz', ...
+                            P.DeltaF_Hz_vec(fi)/1e6, P.LW_Hz_vec(li)/1e3), ...
+                            'FontSize', 11);
+                        legend(ax, 'Location', 'southwest', 'FontSize', 8);
+                    end
+                end
+
+                if nargin >= 2 && ~isempty(colLabels) && ci <= length(colLabels)
+                    plotTitle = colLabels{ci};
+                else
+                    plotTitle = comboNames{ci};
+                end
+                sgtitle(sprintf('BER vs SNR  |  %s  (DA solid, blind dashed)', plotTitle), ...
+                    'FontSize', 14, 'FontWeight', 'bold');
             end
+        end
 
-            for fi = 1:NFO
-                for li = 1:NLW
-                    ax = subplot(NFO, NLW, (fi - 1) * NLW + li);
-                    set(ax, 'YScale', 'log', 'FontSize', 11, 'Box', 'on', 'Color', 'w');
-                    hold(ax, 'on');
-
-                    for f = 1:length(frFields)
-                        fr = frFields{f};
-                        BER = S.(fr).BER;
-                        for pr = 1:2
-                            colorIdx = 1 + mod((f - 1) * length(PR_names) + (pr - 1), size(curveColors, 1));
-                            semilogy(ax, P.SNR_dB_vec, BER(:, fi, li, pr), ...
-                                'LineStyle', '-', 'Marker', 'o', 'MarkerSize', 4, 'LineWidth', 1.8, ...
-                                'Color', curveColors(colorIdx, :), ...
-                                'DisplayName', sprintf('%s | %s', strrep(fr, '_', ' '), PR_names{pr}));
+        function [berDa, berBlindSet] = getBerForColumn(colIdx, berFftDa, berDkDa, berFftBlind, berDkBlind)
+            switch colIdx
+                case 1
+                    berDa = berFftDa(:, :, :, 1);
+                    berBlindSet = cell(size(berFftBlind));
+                    for i = 1:length(berFftBlind)
+                        if ~isempty(berFftBlind{i})
+                            berBlindSet{i} = berFftBlind{i}(:, :, :, 1);
+                        else
+                            berBlindSet{i} = [];
                         end
                     end
-
-                    yline(ax, 2e-2, 'k--', 'LineWidth', 1.2, ...
-                        'DisplayName', 'FEC limit (2\times10^{-2})');
-
-                    yline(ax, berFloor, 'Color', [0.5 0.5 0.5], ...
-                        'LineStyle', '--', 'LineWidth', 1.0, ...
-                        'DisplayName', sprintf('Zero-error floor (%.2g)', berFloor));
-
-                    grid(ax, 'on');
-                    xlabel(ax, 'SNR [dB]', 'FontSize', 11);
-                    ylabel(ax, 'BER', 'FontSize', 11);
-                    title(ax, sprintf('\\DeltaF = %.0f MHz,  LW = %.0f kHz', ...
-                        P.DeltaF_Hz_vec(fi)/1e6, P.LW_Hz_vec(li)/1e3), ...
-                        'FontSize', 11);
-                    legend(ax, 'Location', 'northeast', 'FontSize', 8);
-                end
+                case 2
+                    berDa = berFftDa(:, :, :, 2);
+                    berBlindSet = cell(size(berFftBlind));
+                    for i = 1:length(berFftBlind)
+                        if ~isempty(berFftBlind{i})
+                            berBlindSet{i} = berFftBlind{i}(:, :, :, 2);
+                        else
+                            berBlindSet{i} = [];
+                        end
+                    end
+                case 3
+                    berDa = berDkDa(:, :, :, 1);
+                    berBlindSet = cell(size(berDkBlind));
+                    for i = 1:length(berDkBlind)
+                        if ~isempty(berDkBlind{i})
+                            berBlindSet{i} = berDkBlind{i}(:, :, :, 1);
+                        else
+                            berBlindSet{i} = [];
+                        end
+                    end
+                case 4
+                    berDa = berDkDa(:, :, :, 2);
+                    berBlindSet = cell(size(berDkBlind));
+                    for i = 1:length(berDkBlind)
+                        if ~isempty(berDkBlind{i})
+                            berBlindSet{i} = berDkBlind{i}(:, :, :, 2);
+                        else
+                            berBlindSet{i} = [];
+                        end
+                    end
+                otherwise
+                    error('full_cr:invalidColumn', 'Unknown column index: %d', colIdx);
             end
-
-            sgtitle('BER vs SNR  |  All FR and PR Results', ...
-                'FontSize', 14, 'FontWeight', 'bold');
         end
 
         function [fr_out, pilots, txRefBits, freq_offset] = buildChannel( ...
-                P, SNR_dB, DeltaF_Hz, LW, fr_algo)
+            P, SNR_dB, DeltaF_Hz, LW, fr_algo, blindD)
             % Generate one CPON subframe, apply channel impairments and
             % frequency recovery, then build the per-CR-block pilot matrix.
             CPON_BLOCK_LEN = 32;
@@ -473,10 +652,16 @@ classdef full_cr < matlab.unittest.TestCase
             switch fr_algo
                 case 'fft_search'
                     [fr_out, freq_offset] = freq_recovery.fft_search_fxp_mex( ...
-                        rx_fi, tr_fi, P.Rs, P.FR_Nfft, P.FR_Po2Twiddle, P.CordicIts, P.MaxFreq, T_fr);
-                case 'differential_kay'
+                        rx_fi, tr_fi, P.Rs, P.FR_Nfft, P.FR_Po2Twiddle, P.CordicIts, P.MaxFreq, T_fr, true, 0);
+                case 'fft_search_blind'
+                    [fr_out, freq_offset] = freq_recovery.fft_search_fxp_mex( ...
+                        rx_fi, tr_fi, P.Rs, P.FR_Nfft, P.FR_Po2Twiddle, P.CordicIts, P.MaxFreq, T_fr, false, blindD);
+                case 'differential_kay_data_aided'
                     [fr_out, freq_offset] = freq_recovery.differential_kay_fxp_mex( ...
                         rx_fi, tr_fi, P.Rs, P.CordicIts, T_fr, true, 0, P.MaxFreq);
+                case {'differential_kay_blind', 'differential_kay'}
+                    [fr_out, freq_offset] = freq_recovery.differential_kay_fxp_mex( ...
+                        rx_fi, tr_fi, P.Rs, P.CordicIts, T_fr, false, blindD, P.MaxFreq);
                 otherwise
                     error('full_cr:unknownFR', 'Unknown FR algorithm: %s', fr_algo);
             end

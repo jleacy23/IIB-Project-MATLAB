@@ -7,9 +7,7 @@ classdef full_cr < matlab.unittest.TestCase
 %   across a grid of SNRs, frequency offsets and laser linewidths.
 %
 %   Teardown outputs:
-%     1) text summary table (delta-SNR at FEC, referenced to DA FFT|VV);
-%     2) BER-vs-SNR plots, one per FR|PR combination;
-%        each plot overlays DA (solid) and blind D values (dashed).
+%     1) text summary table (absolute SNR at FEC);
 %
 %   Uses the true CPON symbol rate (30.5 GBd), frequency offsets in Hz,
 %   and linewidths in Hz.
@@ -29,7 +27,7 @@ classdef full_cr < matlab.unittest.TestCase
         NTrials     = 100               % independent channel realisations per point
 
         % Sweep grids
-        SNR_dB_vec    = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]   % [dB]
+        SNR_dB_vec    = 0:0.5:20   % [dB]
         DeltaF_Hz_vec = [3e9]               % frequency offset [Hz]
         LW_Hz_vec     = [1000e3]            % laser linewidth  [Hz]
 
@@ -52,11 +50,11 @@ classdef full_cr < matlab.unittest.TestCase
         Plot = true
 
         % Fixed-point configuration (CR)
-        FxpConfig = 'fixed32'           % 'fixed16' | 'fixed32'
+        FxpConfig = 'fixed16'           % 'fixed16' | 'fixed32'
         CordicIts = 16                  % CORDIC iterations (shared FR + CR)
 
         % Enable/disable MEX rebuild
-        Rebuild = false
+        Rebuild = true
 
     end
 
@@ -145,11 +143,8 @@ classdef full_cr < matlab.unittest.TestCase
     methods (TestClassTeardown)
 
         function printFecSummaryAtEnd(testCase)
-            [deltaSNR, rowLabels, colLabels] = full_cr.buildDeltaSnrTable(testCase);
-            full_cr.writeDeltaSnrSummaryFile(testCase, deltaSNR, rowLabels, colLabels);
-            if testCase.Plot
-                full_cr.plotBerColumnsDaVsBlind(testCase, colLabels);
-            end
+            [absSNR, rowLabels, colLabels] = full_cr.buildAbsoluteSnrTable(testCase);
+            full_cr.writeAbsoluteSnrSummaryFile(testCase, absSNR, rowLabels, colLabels);
             full_cr.fecSummaryStore('reset');
             full_cr.berSummaryStore('reset');
         end
@@ -217,11 +212,11 @@ classdef full_cr < matlab.unittest.TestCase
                             SNR_dB   = P.SNR_dB_vec(si);
                             VVFilter = P.VVFilters{si, li};
 
-                            [fr_out, pilots, txRefBits, freq_offset] = ...
+                            [fr_out, pilots, txRefBits, ~] = ...
                                 full_cr.buildChannel(P, SNR_dB, DeltaF_Hz, LW, fr_algo, blindD);
 
-                            fprintf('    SNR=%2ddB  freq_offset_est = %+.3f MHz\n', ...
-                                SNR_dB, freq_offset/1e6);
+                            % fprintf('    SNR=%2ddB  freq_offset_est = %+.3f MHz\n', ...
+                            %     SNR_dB, freq_offset/1e6);
 
                             fr_out_fi   = cast(fr_out,   'like', T_cr.x);
                             pilots_fi   = cast(pilots,   'like', T_cr.x);
@@ -390,7 +385,7 @@ classdef full_cr < matlab.unittest.TestCase
             end
         end
 
-        function [deltaSNR, rowLabels, colLabels] = buildDeltaSnrTable(P)
+        function [absSNR, rowLabels, colLabels] = buildAbsoluteSnrTable(P)
             S = full_cr.fecSummaryStore('get');
             NFO = length(P.DeltaF_Hz_vec);
             NLW = length(P.LW_Hz_vec);
@@ -432,31 +427,18 @@ classdef full_cr < matlab.unittest.TestCase
                 end
             end
 
-            ref = squeeze(absSNR(1, 1, :, :));
-            deltaSNR = nan(size(absSNR));
-            for r = 1:nRows
-                for c = 1:nCols
-                    for fi = 1:NFO
-                        for li = 1:NLW
-                            if ~isnan(absSNR(r, c, fi, li)) && ~isnan(ref(fi, li))
-                                deltaSNR(r, c, fi, li) = absSNR(r, c, fi, li) - ref(fi, li);
-                            end
-                        end
-                    end
-                end
-            end
         end
 
-        function writeDeltaSnrSummaryFile(P, deltaSNR, rowLabels, colLabels)
+        function writeAbsoluteSnrSummaryFile(P, absSNR, rowLabels, colLabels)
             NFO = length(P.DeltaF_Hz_vec);
             NLW = length(P.LW_Hz_vec);
-            outPath = fullfile(fileparts(mfilename('fullpath')), 'fec_delta_snr_summary.txt');
+            outPath = fullfile(fileparts(mfilename('fullpath')), 'fec_absolute_snr_summary.txt');
             fid = fopen(outPath, 'w');
             if fid < 0
                 error('full_cr:summaryWriteFailed', 'Failed to open summary file: %s', outPath);
             end
 
-            fprintf(fid, 'Delta-SNR at FEC summary (reference: DA FFT|VV = 0 dB)\n');
+            fprintf(fid, 'Absolute SNR at FEC summary\n');
             fprintf(fid, 'FEC limit = 2e-2\n\n');
 
             for fi = 1:NFO
@@ -472,11 +454,11 @@ classdef full_cr < matlab.unittest.TestCase
                     for r = 1:length(rowLabels)
                         fprintf(fid, '%-10s', rowLabels{r});
                         for c = 1:length(colLabels)
-                            val = deltaSNR(r, c, fi, li);
+                            val = absSNR(r, c, fi, li);
                             if isnan(val)
                                 fprintf(fid, '  %-12s', 'N/A');
                             else
-                                fprintf(fid, '  %+-12.3f', val);
+                                fprintf(fid, '  %-12.3f', val);
                             end
                         end
                         fprintf(fid, '\n');
@@ -486,6 +468,118 @@ classdef full_cr < matlab.unittest.TestCase
             end
             fclose(fid);
             fprintf('Wrote summary table to: %s\n', outPath);
+        end
+
+        function printDataAidedBerSummary(P, colLabels)
+            S = full_cr.berSummaryStore('get');
+            key_fft_da = full_cr.makeScenarioKey('fft_search', 0);
+            key_dk_da  = full_cr.makeScenarioKey('differential_kay_data_aided', 0);
+            if ~isfield(S, key_fft_da) || ~isfield(S, key_dk_da)
+                fprintf('Data-aided BER summary skipped: missing DA BER results.\n');
+                return;
+            end
+
+            ber_fft = S.(key_fft_da).BER;
+            ber_dk  = S.(key_dk_da).BER;
+
+            if nargin < 2 || isempty(colLabels)
+                colLabels = {'FFT|VV', 'FFT|PO', 'DK|VV', 'DK|PO'};
+            end
+
+            fprintf('\n==============================================================\n');
+            fprintf('Data-aided BER vs SNR summary\n');
+            fprintf('Columns: %s | %s | %s | %s\n', ...
+                colLabels{1}, colLabels{2}, colLabels{3}, colLabels{4});
+            fprintf('==============================================================\n');
+
+            for fi = 1:length(P.DeltaF_Hz_vec)
+                for li = 1:length(P.LW_Hz_vec)
+                    fprintf('\nDeltaF = %.0f MHz, LW = %.0f kHz\n', ...
+                        P.DeltaF_Hz_vec(fi)/1e6, P.LW_Hz_vec(li)/1e3);
+                    fprintf('%8s  %12s  %12s  %12s  %12s\n', ...
+                        'SNR[dB]', colLabels{1}, colLabels{2}, colLabels{3}, colLabels{4});
+
+                    for si = 1:length(P.SNR_dB_vec)
+                        fprintf('%8.1f  %12.5e  %12.5e  %12.5e  %12.5e\n', ...
+                            P.SNR_dB_vec(si), ...
+                            ber_fft(si, fi, li, 1), ...
+                            ber_fft(si, fi, li, 2), ...
+                            ber_dk(si, fi, li, 1), ...
+                            ber_dk(si, fi, li, 2));
+                    end
+                end
+            end
+        end
+
+        function plotDataAidedBerCurves(P, colLabels)
+            S = full_cr.berSummaryStore('get');
+            key_fft_da = full_cr.makeScenarioKey('fft_search', 0);
+            key_dk_da  = full_cr.makeScenarioKey('differential_kay_data_aided', 0);
+            if ~isfield(S, key_fft_da) || ~isfield(S, key_dk_da)
+                return;
+            end
+
+            if nargin < 2 || isempty(colLabels)
+                colLabels = {'FFT|VV', 'FFT|PO', 'DK|VV', 'DK|PO'};
+            end
+
+            ber_fft = S.(key_fft_da).BER;
+            ber_dk  = S.(key_dk_da).BER;
+            berFloor = min(S.(key_fft_da).berFloor, S.(key_dk_da).berFloor);
+
+            NFO = length(P.DeltaF_Hz_vec);
+            NLW = length(P.LW_Hz_vec);
+            curveColors = lines(4);
+            curveMarkers = {'o', 's', 'd', '^'};
+
+            fig_w = max(900, 420 * NLW);
+            fig_h = max(600, 360 * NFO);
+            figure('Name', 'Full CR  |  BER vs SNR (Data-Aided Combinations)', ...
+                'Position', [80, 80, fig_w, fig_h], 'Color', 'w');
+
+            for fi = 1:NFO
+                for li = 1:NLW
+                    ax = subplot(NFO, NLW, (fi - 1) * NLW + li);
+                    set(ax, 'YScale', 'log', 'FontSize', 11, 'Box', 'on', 'Color', 'w');
+                    hold(ax, 'on');
+
+                    yData = [ ...
+                        ber_fft(:, fi, li, 1); ...
+                        ber_fft(:, fi, li, 2); ...
+                        ber_dk(:, fi, li, 1); ...
+                        ber_dk(:, fi, li, 2)  ...
+                    ];
+
+                    semilogy(ax, P.SNR_dB_vec, ber_fft(:, fi, li, 1), ...
+                        'LineStyle', '-', 'Marker', curveMarkers{1}, 'MarkerSize', 4, 'LineWidth', 1.8, ...
+                        'Color', curveColors(1, :), 'DisplayName', colLabels{1});
+                    semilogy(ax, P.SNR_dB_vec, ber_fft(:, fi, li, 2), ...
+                        'LineStyle', '-', 'Marker', curveMarkers{2}, 'MarkerSize', 4, 'LineWidth', 1.8, ...
+                        'Color', curveColors(2, :), 'DisplayName', colLabels{2});
+                    semilogy(ax, P.SNR_dB_vec, ber_dk(:, fi, li, 1), ...
+                        'LineStyle', '-', 'Marker', curveMarkers{3}, 'MarkerSize', 4, 'LineWidth', 1.8, ...
+                        'Color', curveColors(3, :), 'DisplayName', colLabels{3});
+                    semilogy(ax, P.SNR_dB_vec, ber_dk(:, fi, li, 2), ...
+                        'LineStyle', '-', 'Marker', curveMarkers{4}, 'MarkerSize', 4, 'LineWidth', 1.8, ...
+                        'Color', curveColors(4, :), 'DisplayName', colLabels{4});
+
+                    yline(ax, 2e-2, 'k--', 'LineWidth', 1.2, 'DisplayName', 'FEC limit (2\times10^{-2})');
+                    yline(ax, berFloor, 'Color', [0.5 0.5 0.5], 'LineStyle', '--', 'LineWidth', 1.0, ...
+                        'DisplayName', sprintf('Zero-error floor (%.2g)', berFloor));
+
+                    full_cr.setBerYAxisToData(ax, yData, berFloor);
+
+                    grid(ax, 'on');
+                    xlabel(ax, 'SNR [dB]', 'FontSize', 11);
+                    ylabel(ax, 'BER', 'FontSize', 11);
+                    title(ax, sprintf('\\DeltaF = %.0f MHz, LW = %.0f kHz', ...
+                        P.DeltaF_Hz_vec(fi)/1e6, P.LW_Hz_vec(li)/1e3), 'FontSize', 11);
+                    legend(ax, 'Location', 'southwest', 'FontSize', 8);
+                end
+            end
+
+            sgtitle('BER vs SNR  |  Data-Aided FR+PR Combinations', ...
+                'FontSize', 14, 'FontWeight', 'bold');
         end
 
         function plotBerColumnsDaVsBlind(P, colLabels)
@@ -538,6 +632,7 @@ classdef full_cr < matlab.unittest.TestCase
                         hold(ax, 'on');
 
                         [berDa, berBlindSet] = full_cr.getBerForColumn(ci, berFftDa, berDkDa, berFftBlind, berDkBlind);
+                        yData = berDa(:, fi, li);
 
                         semilogy(ax, P.SNR_dB_vec, berDa(:, fi, li), ...
                             'LineStyle', '-', 'Marker', 'o', 'MarkerSize', 4, 'LineWidth', 1.8, ...
@@ -553,6 +648,7 @@ classdef full_cr < matlab.unittest.TestCase
                                 'MarkerSize', 3.5, 'LineWidth', 1.6, ...
                                 'Color', lineColors(di + 1, :), ...
                                 'DisplayName', sprintf('BL-D%d', P.FR_BlindD_vec(di)));
+                            yData = [yData; berBlindSet{di}(:, fi, li)];
                         end
 
                         yline(ax, 2e-2, 'k--', 'LineWidth', 1.2, ...
@@ -560,6 +656,8 @@ classdef full_cr < matlab.unittest.TestCase
                         yline(ax, berFloor, 'Color', [0.5 0.5 0.5], ...
                             'LineStyle', '--', 'LineWidth', 1.0, ...
                             'DisplayName', sprintf('Zero-error floor (%.2g)', berFloor));
+
+                        full_cr.setBerYAxisToData(ax, yData, berFloor);
 
                         grid(ax, 'on');
                         xlabel(ax, 'SNR [dB]', 'FontSize', 11);
@@ -626,6 +724,36 @@ classdef full_cr < matlab.unittest.TestCase
                 otherwise
                     error('full_cr:invalidColumn', 'Unknown column index: %d', colIdx);
             end
+        end
+
+        function setBerYAxisToData(ax, yData, berFloor)
+            if nargin < 3
+                berFloor = NaN;
+            end
+
+            y = yData(isfinite(yData) & yData > 0);
+            if isempty(y)
+                return;
+            end
+
+            % Ignore floor-clipped points when selecting limits so the axis
+            % follows the visible BER trend instead of collapsing to berFloor.
+            if isfinite(berFloor) && berFloor > 0
+                yNoFloor = y(y > 1.05 * berFloor);
+                if ~isempty(yNoFloor)
+                    y = yNoFloor;
+                end
+            end
+
+            yMin = min(y) / 1.5;
+            yMax = max(y) * 1.5;
+            yMin = max(yMin, 1e-8);
+            yMax = min(yMax, 1);
+            if yMax <= yMin
+                yMax = yMin * 10;
+            end
+
+            ylim(ax, [yMin, yMax]);
         end
 
         function [fr_out, pilots, txRefBits, freq_offset] = buildChannel( ...

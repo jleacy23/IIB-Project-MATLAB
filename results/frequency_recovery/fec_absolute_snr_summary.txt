@@ -1,0 +1,10 @@
+Absolute SNR at FEC summary
+FEC limit = 2e-2
+
+DeltaF = 3000 MHz, LW = 1000 kHz
+Row         FFT|VV        FFT|PO        DK|VV         DK|PO       
+DA          17.330        8.371         17.312        8.265       
+BL-D64      17.281        8.341         17.317        15.607      
+BL-D256     17.268        7.606         17.296        15.245      
+BL-D512     17.280        7.618         17.307        14.984      
+

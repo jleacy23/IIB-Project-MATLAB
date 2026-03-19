@@ -41,25 +41,25 @@ for blind operation or
     \arg(z[i]) = \{\arg(x[i]) - \arg(c[i])\}|_{-\pi}^{\pi}
     \label{eq:phase_data}
 \end{equation}
-for data-aided operation where the wrap operation can be done with no additional cost by exploiting fixed point overflow.
+for data-aided operation where the wrap operation can be done with no additional cost by aligning the wrap range to the overflow range of the fixed point value used to store the phase.
 \subsection{Rife and Boorstyn (FFT Search)}
 The value of the CFO will appear as the strongest peak in the frequency spectrum of \(z[i], z[i+1], \dots, z[i+L]\) where \(L\) is the observation length. The Rife and Boorstyn algorithm first performs an FFT on the observed sequence and finds the index \(k\) corresponding to the strongest peak. This coarse estimation is refined with a parabolic interpolation on the complex FFT values \(X_{k-1}, X_k, X_{k+1}\) to give
 \begin{equation}
-    \delta = -Re\left[\frac{X_{k+1} - X_{k-1}}{2x_k - X_{k-1} - X_{k+1}}\right].
+    \delta = -\Re\left[\frac{X_{k+1} - X_{k-1}}{2x_k - X_{k-1} - X_{k+1}}\right].
     \label{eq:fft_refined}
 \end{equation}
 The updated index \(k' = k + \delta\), which is then scaled by the sampling rate to find the true CFO. The CPON specification allows for 11 training symbols at the start of each subframe. The resolution in \(k\) is determined by the FFT size \(N_{FFT}\) as \(\epsilon(k)= 1 / 2N_{FFT}\). For data-aided operation, only the 11 training symbols are available. This would give a resolution of \(\epsilon(k) \approx 0.05\). In terms of the estimated frequency \(\hat{f_d}\) and symbol rate \(R_s\), \(\epsilon(\hat{f_d}) \approx 0.05 R_s\). This would likely be too large for the downstream phase recovery to correct, so a larger FFT can be used with zeros padded at the end of the observed sequence. The normalised mean squared-error (MSE) in the estimated CFO is shown in \cref{fig:fft_mcrb_data} for data-aided operation with 11 training symbols. A CFO estimate is computed for both polarizations and averaged to reduce the MSE. The modified Cramer-Rao bound (MCRB) gives a lower bound on the achievable MSE and is given by
 \begin{equation}
     MCRB = \frac{3}{2 \pi^2 L^3 \times SNR}.
 \end{equation}
-The Rife and Boorstyn achieves this bound for SNRs over \(\approx 4 \ dB\). At lower SNRs, the noise has a significant contribution to the FFT values and can lead to an incorrect index being chosen.
+The Rife and Boorstyn achieves this bound for SNRs over \(\approx 4\) dB (the threshold SNR). At lower SNRs, the noise has a significant contribution to the FFT values and can lead to an incorrect index being chosen.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{MCRB_fft_data.png}
     \caption{Normalised MSE of the Rife and Boorstyn algorithm with FFT size \(N_{FFT} = 512\) compared to the MCRB for \(L=11\) training symbols.}
     \label{fig:fft_mcrb_data}
 \end{figure}
-Data-aided operation is constrained by the length of the training sequence but the accuracy of the Rife and Boorstyn algorithm improves with longer observation lengths, as shown in \cref{fig:fft_mcrb_blind} for non data-aided operation. The SNR threshold at which this algorithm begins to deviate from the MCRB is much higher with data aided operation due to the amplification of noise as seen in \cref{eq:blind_noise}. Combined with the increased computational cost of removing the data phase in non data-aided operation, this makes the use of training symbols preferrable so long as the training sequence is not too short.
+Data-aided operation is constrained by the length of the training sequence but the accuracy of the Rife and Boorstyn algorithm improves with longer observation lengths, as shown in \cref{fig:fft_mcrb_blind} for non data-aided operation. The SNR threshold at which this algorithm begins to deviate from the MCRB is initially higher with data aided operation due to the amplification of noise but decreases for longer observation lengths.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{MCRB_fft_blind.png}
@@ -84,14 +84,20 @@ where \(\arg(z[k]z^*[k-1])\) computes the phase difference from \cref{eq:phase_d
     \caption{Normalised MSE of frequency estimation with data-aided differential phase for \(L = 11\) training symbols.}
     \label{fig:diffphase_data}
 \end{figure}
-The performance of the combined differential phase and Kay estimator for data-aided operation is shown in \cref{fig:diffkay_data}. The MCRB is achieved above an SNR of \(\approx 7 \ dB\). This is higher than for Rife and Boorstyn but at a reduced computational cost.
+The performance of the combined differential phase and Kay estimator for data-aided operation is shown in \cref{fig:diffkay_data}. The MCRB is achieved above an SNR of \(\approx 7 \) dB. This is higher than for Rife and Boorstyn but at a reduced computational cost. Unlike the Rife and Boorstyn algorithm, the threshold at which the MSE of this estimator deviates from the MCRB does not depend on obervation length, as shown in \cref{fig:diffkay_blind}.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{MCRB_diffkay_data.png}
     \caption{Normalised MSE of frequency estimation with data-aided differential phase and Kay estimator for \(L = 11\) training symbols.}
     \label{fig:diffkay_data}
 \end{figure}
-
+ 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{MCRB_diffkay_blind.png}
+    \caption{Normalised MSE of the differential phase and Kay estimator with blind operation for different observation lengths.}
+    \label{fig:diffkay_blind}
+\end{figure}
 \subsection{Computational Complexity}
 Here the computational complexity of both frequency recovery algorithms are compared in terms of real multiplications and real additions. CORDIC is used to find phases and is assumed to cost the same as a real multiplication. Real division will also be assumed to cost the same as multiplication as it is only performed once (this would be a suitable approximation if look-up tables are used to find reciprocals at the cost of accuracy). All analysis is for data-aided operation, avoiding the fourth power operation in \cref{eq:blind_noise} and is only for a single polarization. If averaging is done over both polarizations then all operations are doubled.
 \subsubsection{Rife and Boorstyn}
@@ -107,7 +113,7 @@ The total complexity is summarised in \cref{tab:fft_cost} with the complexity fo
         Operation & RM & RA \\
         \midrule
         Forming \(z[i], \dots, z[i+L]\) & \(4L\), \(12L^*\) & \(3L\), \(9L^*\)\\\
-        FFT & \(2N_{FFT} \log_2(\frac{N_{FFT}}{L})\) & \(3N_{FFT} \log_2(N_{FFT}/L)\)\\
+        FFT & \(2L \log_2(\frac{N_{FFT}}{L}) + 2N_{FFT}\log_2(L)\) & \(3L \log_2(\frac{N_{FFT}}{L}) + 3N_{FFT}\log_2(L)\)\\
         Search & \(2N_{FFT}\) & \(2N_{FFT}\)\\
         Interpolation & \(5\) & \(4\) \\ 
         \bottomrule
@@ -199,23 +205,66 @@ Only phases are needed here so the entire estimation can be performed with CORDI
 \end{table}
 
 \section{Combined Performance}
-\subsection{Blind vs Data-Aided}
-To use a data-aided approach for frequency recovery, the limited number of training symbols must be sufficient to produce similar or better performance than a blind approach where any number of symbols can be used. The BER for data-aided and blind (observation length \(L = 64\))  operation for both frequency recovery algorithms with Viterbi \& Viterbi is shown in \cref{fig:cr_data_blind}. The SNR needed for blind operation to achieve a BER below the FEC limit is higher than for data-aided operation in both cases. The differential phase and Kay estimator is particularly poor under blind operation, where the amplification of noise degrades the estimate of the first pass and can prevent it from bringing the CFO within range of the Kay estimator. 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{cr_blind_vs_data.png}
-    \caption{BER of data-aided vs blind frequency recovery with Viterbi \& Viterbi.}
-    \label{fig:cr_data_blind}
-\end{figure}
-\subsection{Viterbi \& Viterbi vs Pilot-Only}
-The BER of each combination of frequency recovery and phase recovery algorithms with data-aided operation is shown in \cref{fig:cr_16_16}.
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{cr_16_16.png}
-    \caption{BER of carrier recovery combinations with \(f_d = 3\) GHz and laser linewidth \(\Delta\nu = 1 \) MHz, \(R_s = 30.5 \) GBd, \(N_{FFT} = 512\).}
-    \label{fig:cr_16_16}
-\end{figure}
+The CPON specification requires the bit-error rate (BER) to be below \(2 \times 10^{-2}\).
+The required SNR tp achieve this for each frequency-recovery and phase-recovery combination are shown in \cref{tab:combined_performance_snr}. This was computed by averaging the BER over 100 trials for a range of SNRs, then finding the crossing point of the FEC limit by interpolation. All calculations were done with 16 bits of precision.
 
-\bibliographystyle{ieeetr}
-\bibliography{ref}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lcccc}
+        \toprule
+        Scenario & R\&B|VV & R\&B|PO & DK|VV & DK|PO \\
+        \midrule
+        DA      & 7.848 & 8.245 & 7.827  & 8.107  \\
+        BL - 64  & 8.229 & 8.282 & 15.741 & 15.559 \\
+        BL - 256 & 7.371 & 7.468 & 15.341 & 15.199 \\
+        BL - 512 & 7.381 & 7.472 & 14.995 & 14.966 \\
+        \bottomrule
+    \end{tabular}
+    \caption{SNR (dB) at FEC limit for each frequency-recovery and phase-recovery combination for data-aided (DA) operation and a range of blind (BL) observation lengths. \(N_{FFT} = 512\).}
+    \label{tab:combined_performance_snr}
+\end{table}
+\subsection{Blind vs Data-Aided Operation}
+The lower threshold SNR of data-aided operation for both algorithms results in better performance than blind operation with 64 observations. However, the reduction in threshold SNR for the Rife and Boorstyn algorithm means that longer observation lengths (256 and 512) outperform the data-aided case. For the differential phase and Kay estimator, the threshold SNR does not decrease and the required SNR to reach the FEC limit remains high. *plot required SNR vs blind observation length?*
+\subsection{Algorithm Choice}
+For data-aided operation, the choice of phase recovery algorithm affects performance more significantly than the frequency recovery algorithm, with the DK estimator performing marginally better than R\&B. The proposed pilot-only correction required on average 0.34 dB more of SNR than VV to achieve the FEC limit.
+\subsection{Bit Width}
+\begin{table}[H]
+    \centering
+    \begin{subtable}[t]{\textwidth}
+        \centering
+        \begin{tabular}{lcccc}
+            \toprule
+            Scenario & R\&B|VV & R\&B|PO & DK|VV & DK|PO \\
+            \midrule
+            DA       & 7.451 & 8.618 & 7.890  & 8.223  \\
+            BL - 64  & 7.934 & 7.948 & 15.823 & 15.688 \\
+            BL - 256 & 7.382 & 7.468 & 15.264 & 15.092 \\
+            BL - 512 & 7.327 & 7.399 & 15.265 & 15.160 \\
+            \bottomrule
+        \end{tabular}
+        \caption{n = 16, m = 8.}
+        \label{tab:combined_performance_snr_16_8}
+    \end{subtable}
+
+    \vspace{0.8em}
+
+    \begin{subtable}[t]{\textwidth}
+        \centering
+        \begin{tabular}{lcccc}
+            \toprule
+            Scenario & R\&B|VV & R\&B|PO & DK|VV & DK|PO \\
+            \midrule
+            DA       & 17.330 & 8.371 & 17.312 & 8.265  \\
+            BL - 64  & 17.281 & 8.341 & 17.317 & 15.607 \\
+            BL - 256 & 17.268 & 7.606 & 17.296 & 15.245 \\
+            BL - 512 & 17.280 & 7.618 & 17.307 & 14.984 \\
+            \bottomrule
+        \end{tabular}
+        \caption{n = 16, m = 4.}
+        \label{tab:combined_performance_snr_16_4}
+    \end{subtable}
+
+    \caption{Comparison of frequency recovery bit width (n) and phase recovery bit width (m) on the SNR required to reach the FEC limit.}
+    \label{tab:combined_performance_snr_bitwidth}
+\end{table}
 \end{document}

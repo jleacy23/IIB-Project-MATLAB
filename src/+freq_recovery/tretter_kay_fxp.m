@@ -163,5 +163,5 @@ function [y, frequency_offset] = tretter_kay_fxp(x, training, Rs, CordicIts, T, 
         end
     end
 
-    frequency_offset = frequency_offset_Hz
+    frequency_offset = frequency_offset_Hz;
 end

@@ -32,7 +32,7 @@ classdef full_cr < matlab.unittest.TestCase
         LW_Hz_vec     = [1000e3]            % laser linewidth  [Hz]
 
         % Frequency recovery — fixed-point settings
-        FxpConfig_FR  = 'fixed32'       % 'fixed16' | 'fixed32'
+        FxpConfig_FR  = 'fixed16'       % 'fixed16' | 'fixed32'
         FR_Nfft       = 512             % FFT size for fft_search_fxp (power of 2)
         FR_Po2Twiddle = false           % round FFT twiddles to powers of 2
         FR_BlindD_vec = [64, 256, 512] % blind data lengths [symbols] (FFT + DiffKay)
@@ -50,7 +50,7 @@ classdef full_cr < matlab.unittest.TestCase
         Plot = true
 
         % Fixed-point configuration (CR)
-        FxpConfig = 'fixed16'           % 'fixed16' | 'fixed32'
+        FxpConfig = 'fixed32'           % 'fixed16' | 'fixed32'
         CordicIts = 16                  % CORDIC iterations (shared FR + CR)
 
         % Enable/disable MEX rebuild

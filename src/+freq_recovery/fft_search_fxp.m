@@ -66,7 +66,7 @@ function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddl
     %% ----------------------------------------------------------------
     %  FFT types (use fixed32 for butterfly precision inside FFT)
     %% ----------------------------------------------------------------
-    T_fft = fft.fft_fxp_types('fixed32');
+    T_fft = fft.fft_fxp_types('fixed16');
 
     %% ----------------------------------------------------------------
     %  Pre-compute training phases (training-aided mode only)

@@ -68,10 +68,10 @@ function [y, frequency_offset] = differential_kay_fxp(x, training, Rs, CordicIts
     %% ----------------------------------------------------------------
     if data_aided
         [~, f_fine] = freq_recovery.tretter_kay_fxp( ...
-            x_coarse, training, Rs, CordicIts, T, true, 0, max_freq);
+            x_coarse, training, Rs, CordicIts, T, true, 0, max_freq/3);
     else
         [~, f_fine] = freq_recovery.tretter_kay_fxp( ...
-            x_coarse, training, Rs, CordicIts, T, false, D, max_freq);
+            x_coarse, training, Rs, CordicIts, T, false, D, max_freq/3);
     end
 
     %% ----------------------------------------------------------------

@@ -7,10 +7,11 @@ function T = fft_fxp_types(dt) %#codegen
 %   type used inside fft_fxp.
 %
 %   Supported configurations:
-%     'double'   - all types are double (floating-point baseline)
-%     'single'   - all types are single
-%     'fixed16'  - 16-bit fixed-point, uniform WL/FL
-%     'fixed32'  - 32-bit fixed-point, uniform WL/FL
+%     'double'              - all types are double (floating-point baseline)
+%     'single'              - all types are single
+%     'fixed16'             - 16-bit fixed-point, uniform WL/FL
+%     'fixed32'             - 32-bit fixed-point, uniform WL/FL
+%     struct('WL',wl,'FL',fl) - custom: uniform word length wl, fraction length fl
 %
 %   Fields returned
 %     T.x    - input signal
@@ -21,6 +22,24 @@ function T = fft_fxp_types(dt) %#codegen
 %   both products and sums so that no bit-growth occurs.  This matches a
 %   uniform fixed-point datapath (FPGA / ASIC) where the accumulator word
 %   length is held constant across all butterfly stages.
+
+    if isstruct(dt)
+        wl = dt.WL;
+        fl = dt.FL;
+        F = fimath( ...
+            'RoundingMethod',       'Floor', ...
+            'OverflowAction',       'Wrap',  ...
+            'ProductMode',          'SpecifyPrecision', ...
+            'ProductWordLength',     wl, ...
+            'ProductFractionLength', fl, ...
+            'SumMode',              'SpecifyPrecision', ...
+            'SumWordLength',         wl, ...
+            'SumFractionLength',     fl);
+        T.x   = fi([], 1, wl, fl, F);
+        T.tw  = fi([], 1, wl, fl, F);
+        T.acc = fi([], 1, wl, fl, F);
+        return;
+    end
 
     switch dt
         % ==============================================================

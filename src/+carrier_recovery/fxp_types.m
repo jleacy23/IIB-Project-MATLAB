@@ -7,10 +7,11 @@ function T = fxp_types(dt) %#codegen
 %   type used inside bps_fxp and viterbiViterbi_fxp.
 %
 %   Supported configurations
-%     'double'   - all types are double (floating-point baseline / reference)
-%     'single'   - all types are single
-%     'fixed16'  - 16-bit signal & phase, 32-bit accumulator
-%     'fixed32'  - 32-bit signal & phase, 64-bit accumulator
+%     'double'              - all types are double (floating-point baseline / reference)
+%     'single'              - all types are single
+%     'fixed16'             - 16-bit signal & phase, 32-bit accumulator
+%     'fixed32'             - 32-bit signal & phase, 64-bit accumulator
+%     struct('WL',wl,'FL',fl) - custom: uniform word length wl, fraction length fl
 %
 %   Fields
 %     T.x      - input / output signal (complex QAM samples, rotation factors)
@@ -38,6 +39,25 @@ function T = fxp_types(dt) %#codegen
 %     All fi arithmetic uses SpecifyPrecision so every product and sum is
 %     truncated to a known WL/FL with no implicit bit growth — required for
 %     deterministic codegen behaviour.
+
+    if isstruct(dt)
+        wl = dt.WL;
+        fl = dt.FL;
+        F = fimath( ...
+            'RoundingMethod',        'Floor', ...
+            'OverflowAction',        'Wrap',  ...
+            'ProductMode',           'SpecifyPrecision', ...
+            'ProductWordLength',      wl,     ...
+            'ProductFractionLength',  fl,     ...
+            'SumMode',               'SpecifyPrecision', ...
+            'SumWordLength',          wl,     ...
+            'SumFractionLength',      fl);
+        T.x     = fi([], 1, wl, fl, F);
+        T.w     = fi([], 1, wl, fl, F);
+        T.theta = fi([], 1, wl, fl, F);
+        T.acc   = fi([], 1, wl, fl, F);
+        return;
+    end
 
     switch dt
         %% ==============================================================

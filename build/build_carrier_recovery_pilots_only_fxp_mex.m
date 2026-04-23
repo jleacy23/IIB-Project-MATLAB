@@ -10,7 +10,7 @@ function build_carrier_recovery_pilots_only_fxp_mex(P, cfg)
 %   Required fields in P
 %     P.N_pol        - number of polarisations
 %     P.BlockLen     - block length in symbols
-%     P.FxpConfig_PO - fixed-point config string: 'fixed16' | 'fixed32'
+%     P.FxpConfig_PO - fixed-point config: 'fixed16' | 'fixed32' | struct('WL',wl,'FL',fl)
 %     P.CordicIts    - number of iterations for CORDIC operations
 
     srcDir = fullfile(fileparts(mfilename('fullpath')), '..', 'src');

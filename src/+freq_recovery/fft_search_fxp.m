@@ -64,9 +64,12 @@ function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddl
     Nsym       = size(x, 1);
     Nfft_c     = Nfft;
     %% ----------------------------------------------------------------
-    %  FFT types (use fixed32 for butterfly precision inside FFT)
+    %  FFT types — derived from T so the same WL/FL propagates into
+    %  the butterfly without a separate hardcoded configuration.
     %% ----------------------------------------------------------------
-    T_fft = fft.fft_fxp_types('fixed16');
+    T_fft.x   = T.x;
+    T_fft.tw  = T.x;
+    T_fft.acc = T.acc;
 
     %% ----------------------------------------------------------------
     %  Pre-compute training phases (training-aided mode only)
@@ -178,6 +181,7 @@ function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddl
     %  double and apply exp(+j*theta) in floating point.
     %  delta_theta already carries the negative sign for derotation.
     %% ----------------------------------------------------------------
+    fprintf('Estimated Frequency Offset = %f for FL = %f \n', frequency_offset_Hz, T.x.FractionLength);
     delta_theta = cast(-2.0 * pi * frequency_offset_Hz / (Rs * 1e9 * max_freq), 'like', T.theta);
     y = complex(zeros(Nsym, N_pol, 'like', T.x));
     x_float = double(x_fi);

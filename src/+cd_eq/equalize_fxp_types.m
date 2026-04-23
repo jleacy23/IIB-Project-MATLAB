@@ -7,10 +7,11 @@ function T = equalize_fxp_types(dt) %#codegen
 %   type used inside equalize_fxp.
 %
 %   Supported configurations:
-%     'double'   - all types are double (floating-point baseline)
-%     'single'   - all types are single
-%     'fixed16'  - 16-bit fixed-point, uniform WL/FL
-%     'fixed32'  - 32-bit fixed-point, uniform WL/FL
+%     'double'              - all types are double (floating-point baseline)
+%     'single'              - all types are single
+%     'fixed16'             - 16-bit fixed-point, uniform WL/FL
+%     'fixed32'             - 32-bit fixed-point, uniform WL/FL
+%     struct('WL',wl,'FL',fl) - custom: uniform word length wl, fraction length fl
 %
 %   Fields returned
 %     T.x    - input / output signal
@@ -21,6 +22,25 @@ function T = equalize_fxp_types(dt) %#codegen
 %   The fimath attached to every fi prototype uses SpecifyPrecision for
 %   both products and sums so that no bit-growth occurs — matching a
 %   uniform fixed-point datapath (FPGA / ASIC).
+
+    if isstruct(dt)
+        wl = dt.WL;
+        fl = dt.FL;
+        F = fimath( ...
+            'RoundingMethod',       'Floor', ...
+            'OverflowAction',       'Wrap',  ...
+            'ProductMode',          'SpecifyPrecision', ...
+            'ProductWordLength',     wl, ...
+            'ProductFractionLength', fl, ...
+            'SumMode',              'SpecifyPrecision', ...
+            'SumWordLength',         wl, ...
+            'SumFractionLength',     fl);
+        T.x   = fi([], 1, wl, fl, F);
+        T.tw  = fi([], 1, wl, fl, F);
+        T.hcd = fi([], 1, wl, fl, F);
+        T.acc = fi([], 1, wl, fl, F);
+        return;
+    end
 
     switch dt
         % ==============================================================

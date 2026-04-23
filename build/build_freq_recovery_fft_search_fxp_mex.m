@@ -12,7 +12,7 @@ function build_freq_recovery_fft_search_fxp_mex(P, cfg)
 %     P.TrainingLen     - number of training symbols at subframe start
 %     P.FR_Nfft         - FFT size (integer power of 2, >= TrainingLen)
 %     P.FR_Po2Twiddle   - logical: use power-of-2 twiddle factors in fft_fxp
-%     P.FxpConfig_FR    - fixed-point config string: 'fixed16' | 'fixed32'
+%     P.FxpConfig_FR    - fixed-point config: 'fixed16' | 'fixed32' | struct('WL',wl,'FL',fl)
 %     P.CordicIts       - number of CORDIC iterations
 %     P.MaxFreq         - phase-scaling factor (double)
 %     P.FR_BlindD       - blind data length [symbols] (scalar, for type)

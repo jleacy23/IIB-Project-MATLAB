@@ -6,6 +6,9 @@ function build_adaptive_eq_equalize_fxp_mex(P, cfg)
 %   Inputs
 %     P   - parameter struct from pipeline_params()
 %     cfg - coder.MexCodeConfig object
+%
+%   Required fields in P
+%     P.FxpConfig_AEQ - fixed-point config: 'fixed16' | 'fixed32' | struct('WL',wl,'FL',fl)
 
     srcDir = fullfile(fileparts(mfilename('fullpath')), '..', 'src');
     fxp = P.FxpConfig_AEQ;

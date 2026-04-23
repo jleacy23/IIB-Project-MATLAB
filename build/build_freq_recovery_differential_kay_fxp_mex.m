@@ -14,7 +14,7 @@ function build_freq_recovery_differential_kay_fxp_mex(P, cfg)
 %     P.N_pol        - number of polarisations
 %     P.TrainingLen  - number of training symbols at subframe start
 %     P.Rs           - symbol rate [GBd]
-%     P.FxpConfig_FR - fixed-point config string: 'fixed16' | 'fixed32'
+%     P.FxpConfig_FR - fixed-point config: 'fixed16' | 'fixed32' | struct('WL',wl,'FL',fl)
 %     P.CordicIts    - number of CORDIC iterations
 %     P.MaxFreq      - phase-scaling factor (double)
 

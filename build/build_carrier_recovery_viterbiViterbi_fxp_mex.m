@@ -13,7 +13,7 @@ function build_carrier_recovery_viterbiViterbi_fxp_mex(P, cfg)
 %     P.PilotLen     - number of pilot symbols per block
 %     P.BlockLen     - block length in symbols
 %     P.StepSize     - phase update interval in symbols (1..BlockLen)
-%     P.FxpConfig_VV - fixed-point config string: 'fixed16' | 'fixed32'
+%     P.FxpConfig_VV - fixed-point config: 'fixed16' | 'fixed32' | struct('WL',wl,'FL',fl)
 %     P.PilotThreshold - threshold for pilot-based cycle-slip correction in radians
 %     P.CordicIts      - number of iterations for CORDIC operations
 

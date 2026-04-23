@@ -7,10 +7,11 @@ function T = equalize_fxp_types(dt) %#codegen
 %   every fixed-point type used inside equalize_fxp.
 %
 %   Supported configurations:
-%     'double'   - all types are double (floating-point baseline)
-%     'single'   - all types are single (useful for mismatch checking)
-%     'fixed16'  - 16-bit fixed-point, suitable for FPGA / ASIC
-%     'fixed32'  - 32-bit fixed-point, higher precision
+%     'double'              - all types are double (floating-point baseline)
+%     'single'              - all types are single (useful for mismatch checking)
+%     'fixed16'             - 16-bit fixed-point, suitable for FPGA / ASIC
+%     'fixed32'             - 32-bit fixed-point, higher precision
+%     struct('WL',wl,'FL',fl) - custom: uniform word length wl, fraction length fl
 %
 %   You can add your own cases or adjust word / fraction lengths to
 %   explore design trade-offs without modifying the algorithm.
@@ -29,6 +30,29 @@ function T = equalize_fxp_types(dt) %#codegen
     % for both products and sums.  Every arithmetic result is truncated to
     % the same word-length and fraction-length — no bit-growth, no
     % rescaling, matching a real fixed-point datapath.
+
+    if isstruct(dt)
+        wl = dt.WL;
+        fl = dt.FL;
+        F = fimath( ...
+            'RoundingMethod',       'Floor', ...
+            'OverflowAction',       'Wrap',  ...
+            'ProductMode',          'SpecifyPrecision', ...
+            'ProductWordLength',     wl, ...
+            'ProductFractionLength', fl, ...
+            'SumMode',              'SpecifyPrecision', ...
+            'SumWordLength',         wl, ...
+            'SumFractionLength',     fl);
+        T.x     = fi([], 1, wl, fl, F);
+        T.w     = fi([], 1, wl, fl, F);
+        T.y     = fi([], 1, wl, fl, F);
+        T.acc   = fi([], 1, wl, fl, F);
+        T.err   = fi([], 1, wl, fl, F);
+        T.mu    = fi([], 1, wl, fl, F);
+        T.R_CMA = fi([], 1, wl, fl, F);
+        T.R_RDE = fi([], 1, wl, fl, F);
+        return;
+    end
 
     switch dt
         % ==============================================================

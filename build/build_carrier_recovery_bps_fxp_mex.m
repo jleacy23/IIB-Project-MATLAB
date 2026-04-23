@@ -15,7 +15,7 @@ function build_carrier_recovery_bps_fxp_mex(P, cfg)
 %     P.BlockLen      - block length in symbols
 %     P.StepSize      - phase update interval in symbols (1..BlockLen)
 %     P.M             - QAM order
-%     P.FxpConfig_BPS - fixed-point config string: 'fixed16' | 'fixed32'
+%     P.FxpConfig_BPS - fixed-point config: 'fixed16' | 'fixed32' | struct('WL',wl,'FL',fl)
 %     P.PilotThreshold - threshold for pilot-based cycle-slip correction in radians
 %     P.COrdicIts      - number of iterations for CORDIC operations
 %

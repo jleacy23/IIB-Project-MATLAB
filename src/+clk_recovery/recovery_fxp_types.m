@@ -7,16 +7,36 @@ function T = recovery_fxp_types(dt) %#codegen
 %   type used inside recovery_fxp.
 %
 %   Supported configurations:
-%     'double'   - all types are double (floating-point baseline)
-%     'single'   - all types are single
-%     'fixed16'  - 16-bit fixed-point
-%     'fixed32'  - 32-bit fixed-point
+%     'double'              - all types are double (floating-point baseline)
+%     'single'              - all types are single
+%     'fixed16'             - 16-bit fixed-point
+%     'fixed32'             - 32-bit fixed-point
+%     struct('WL',wl,'FL',fl) - custom: uniform word length wl, fraction length fl
 %
 %   Fields returned
 %     T.x     - input / output signal samples
 %     T.acc   - accumulator (interpolator arithmetic, TED, loop filter)
 %     T.mu    - fractional interval (mun) and NCO state (Etamn, Wk)
 %     T.coeff - interpolator polynomial coefficients (1/6, 1/2, 1/3, …)
+
+    if isstruct(dt)
+        wl = dt.WL;
+        fl = dt.FL;
+        F = fimath( ...
+            'RoundingMethod',       'Floor', ...
+            'OverflowAction',       'Wrap',  ...
+            'ProductMode',          'SpecifyPrecision', ...
+            'ProductWordLength',     wl, ...
+            'ProductFractionLength', fl, ...
+            'SumMode',              'SpecifyPrecision', ...
+            'SumWordLength',         wl, ...
+            'SumFractionLength',     fl);
+        T.x     = fi([], 1, wl, fl, F);
+        T.acc   = fi([], 1, wl, fl, F);
+        T.mu    = fi([], 1, wl, fl, F);
+        T.coeff = fi([], 1, wl, fl, F);
+        return;
+    end
 
     switch dt
         % ==============================================================

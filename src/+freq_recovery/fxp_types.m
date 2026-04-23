@@ -7,15 +7,34 @@ function T = fxp_types(dt) %#codegen
 %   type used inside tretter_kay_fxp, fitz_fxp, and fft_search_fxp.
 %
 %   Supported configurations
-%     'double'   - all types are double  (floating-point baseline)
-%     'single'   - all types are single
-%     'fixed16'  - 16-bit word length, 8-bit fraction
-%     'fixed32'  - 32-bit word length, 16-bit fraction
+%     'double'              - all types are double  (floating-point baseline)
+%     'single'              - all types are single
+%     'fixed16'             - 16-bit word length, 8-bit fraction
+%     'fixed32'             - 32-bit word length, 16-bit fraction
+%     struct('WL',wl,'FL',fl) - custom: uniform word length wl, fraction length fl
 %
 %   Fields returned
 %     T.x      - input / output signal prototype
 %     T.theta  - phase angle prototype  (must accommodate ±pi)
 %     T.acc    - accumulator for weighted sums and autocorrelation
+
+    if isstruct(dt)
+        wl = dt.WL;
+        fl = dt.FL;
+        F = fimath( ...
+            'RoundingMethod',       'Floor', ...
+            'OverflowAction',       'Wrap',  ...
+            'ProductMode',          'SpecifyPrecision', ...
+            'ProductWordLength',     wl, ...
+            'ProductFractionLength', fl, ...
+            'SumMode',              'SpecifyPrecision', ...
+            'SumWordLength',         wl, ...
+            'SumFractionLength',     fl);
+        T.x     = fi([], 1, wl, fl, F);
+        T.theta = fi([], 1, wl, fl, F);
+        T.acc   = fi([], 1, wl, fl, F);
+        return;
+    end
 
     switch dt
 

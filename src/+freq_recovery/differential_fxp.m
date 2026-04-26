@@ -1,4 +1,4 @@
-function [y, frequency_offset] = differential_fxp(x, training, Rs, CordicIts, T, data_aided, D, max_freq) %#codegen
+function [y, frequency_offset] = differential_fxp(x, training, Rs, ~, T, data_aided, D, max_freq) %#codegen
 %DIFFERENTIAL_FXP  Fixed-point simple differential-phase frequency estimator.
 %
 %   [y, frequency_offset] = differential_fxp(x, training, Rs, CordicIts)
@@ -48,7 +48,6 @@ function [y, frequency_offset] = differential_fxp(x, training, Rs, CordicIts, T,
     %% ----------------------------------------------------------------
     ZERO_TH  = cast(0, 'like', T.theta);
     ZERO_ACC = cast(0, 'like', T.acc);
-    CORDIC_ITS = coder.const(CordicIts);
     PI_TH    = cast(pi,   'like', T.theta);
     TWOPI_TH = cast(2*pi, 'like', T.theta);
 
@@ -79,8 +78,8 @@ function [y, frequency_offset] = differential_fxp(x, training, Rs, CordicIts, T,
         if data_aided
             %% Training-aided: phi_z(k) = angle(x(k)) - angle(training(k))
             for k = 1:L
-                phi_x = cast(cordicangle(x_fi(k, p), CORDIC_ITS), 'like', T.theta);
-                phi_t = cast(cordicangle(training_fi(k, p), CORDIC_ITS), 'like', T.theta);
+                phi_x = cast(atan2(double(imag(x_fi(k, p))), double(real(x_fi(k, p)))), 'like', T.theta);
+                phi_t = cast(atan2(double(imag(training_fi(k, p))), double(real(training_fi(k, p)))), 'like', T.theta);
                 phi_z(k, p) = phi_x - phi_t;
                 if phi_z(k, p) > PI_TH
                     phi_z(k, p) = phi_z(k, p) - TWOPI_TH;
@@ -91,7 +90,7 @@ function [y, frequency_offset] = differential_fxp(x, training, Rs, CordicIts, T,
         else
             %% Blind: phi_z(k) = 4 * angle(x_data(k))
             for k = 1:D
-                phi_x = cast(cordicangle(x_fi(L + k, p), CORDIC_ITS), 'like', T.theta);
+                phi_x = cast(atan2(double(imag(x_fi(L+k, p))), double(real(x_fi(L+k, p)))), 'like', T.theta);
                 phi_z(k, p) = cast(mod(4.0 * double(phi_x), 2*pi) - pi, 'like', T.theta);
             end
         end

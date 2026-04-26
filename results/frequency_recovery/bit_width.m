@@ -34,18 +34,18 @@ classdef bit_width < matlab.unittest.TestCase
         TrainingLen = 11
 
         % Monte-Carlo
-        NTrials     = 100           % trials per (SNR, FL) point
+        NTrials     = 10           % trials per (SNR, FL) point
 
         % SNR sweep
         SNR_dB_vec  = 0 : 1 : 30   % [dB]
 
-        % Bit width sweep — word length is fixed; fractional length varies
-        WL          = 32
-        FL_vec      = [4, 6, 8, 10, 12, 14, 16]  % fractional bit widths
+        % Bit width sweep — integer bits fixed at 16; WL = IntBits + FL
+        IntBits     = 16            % integer bits (including sign); WL = IntBits + FL
+        FL_vec      = [2, 4, 6, 8, 10, 12, 14, 16]  % fractional bit widths
         FL_fixed    = 16            % held constant for the non-swept subsystem
 
         % Channel conditions
-        DeltaF_Hz   = 1.5e9           % frequency offset [Hz]
+        DeltaF_Hz   = 2e9           % frequency offset [Hz]
         LW_Hz       = 1000e3        % laser linewidth  [Hz]
 
         % FFT search parameters — Nfft constant for all runs
@@ -116,7 +116,7 @@ classdef bit_width < matlab.unittest.TestCase
             NFL  = length(P.FL_vec);
             Prms = bit_width.extractParams(testCase);
 
-            fxp_cr_fixed = struct('WL', P.WL, 'FL', P.FL_fixed);
+            fxp_cr_fixed = struct('WL', P.IntBits + P.FL_fixed, 'FL', P.FL_fixed);
             T_cr = carrier_recovery.fxp_types(fxp_cr_fixed);
 
             % ---- Phase 1: Serial MEX builds into per-FL temp dirs -------
@@ -127,7 +127,7 @@ classdef bit_width < matlab.unittest.TestCase
             for bi = 1:NFL
                 fl = P.FL_vec(bi);
                 fprintf('[FR FL = %2d] building FR MEX  (%d / %d)\n', fl, bi, NFL);
-                frDirs{bi} = bit_width.buildFRMex(P, struct('WL', P.WL, 'FL', fl));
+                frDirs{bi} = bit_width.buildFRMex(P, struct('WL', P.IntBits + fl, 'FL', fl));
             end
 
             % ---- Phase 2: Parallel SNR sweeps ---------------------------
@@ -136,7 +136,7 @@ classdef bit_width < matlab.unittest.TestCase
             fecSNR_fft_blind = nan(NFL, 2);
 
             FL_vec_b   = P.FL_vec;
-            WL_b       = P.WL;
+            IntBits_b  = P.IntBits;
             SNR_dB_b   = P.SNR_dB_vec;
             FEC_BER_b  = P.FEC_BER;
             BlindD_b   = P.BlindD;
@@ -148,7 +148,7 @@ classdef bit_width < matlab.unittest.TestCase
                 addpath(crDir);
 
                 fl     = FL_vec_b(pi);
-                T_fr_w = freq_recovery.fxp_types(struct('WL', WL_b, 'FL', fl));
+                T_fr_w = freq_recovery.fxp_types(struct('WL', IntBits_b + fl, 'FL', fl));
 
                 ber = bit_width.runSnrSweepStatic(Prms, 'fft_search', 0, T_fr_w, T_cr);
                 fecSNR_fft_DA(pi, :) = [ ...
@@ -178,7 +178,7 @@ classdef bit_width < matlab.unittest.TestCase
             NFL  = length(P.FL_vec);
             Prms = bit_width.extractParams(testCase);
 
-            fxp_fr_fixed = struct('WL', P.WL, 'FL', P.FL_fixed);
+            fxp_fr_fixed = struct('WL', P.IntBits + P.FL_fixed, 'FL', P.FL_fixed);
             T_fr = freq_recovery.fxp_types(fxp_fr_fixed);
 
             % ---- Phase 1: Serial MEX builds into per-FL temp dirs -------
@@ -189,7 +189,7 @@ classdef bit_width < matlab.unittest.TestCase
             for bi = 1:NFL
                 fl = P.FL_vec(bi);
                 fprintf('[CR FL = %2d] building CR MEX  (%d / %d)\n', fl, bi, NFL);
-                crDirs{bi} = bit_width.buildCRMex(P, struct('WL', P.WL, 'FL', fl));
+                crDirs{bi} = bit_width.buildCRMex(P, struct('WL', P.IntBits + fl, 'FL', fl));
             end
 
             % ---- Phase 2: Parallel SNR sweeps ---------------------------
@@ -198,7 +198,7 @@ classdef bit_width < matlab.unittest.TestCase
             fecSNR_fft_blind = nan(NFL, 2);
 
             FL_vec_b   = P.FL_vec;
-            WL_b       = P.WL;
+            IntBits_b  = P.IntBits;
             SNR_dB_b   = P.SNR_dB_vec;
             FEC_BER_b  = P.FEC_BER;
             BlindD_b   = P.BlindD;
@@ -208,7 +208,7 @@ classdef bit_width < matlab.unittest.TestCase
                 addpath(frDir);
 
                 fl     = FL_vec_b(pi);
-                T_cr_w = carrier_recovery.fxp_types(struct('WL', WL_b, 'FL', fl));
+                T_cr_w = carrier_recovery.fxp_types(struct('WL', IntBits_b + fl, 'FL', fl));
 
                 ber = bit_width.runSnrSweepStatic(Prms, 'fft_search', 0, T_fr, T_cr_w);
                 fecSNR_fft_DA(pi, :) = [ ...
@@ -488,8 +488,8 @@ classdef bit_width < matlab.unittest.TestCase
                     'XTick', fl_vec, 'XLim', [fl_vec(1) - 1, fl_vec(end) + 1]);
                 xlabel(ax, 'FR fractional bit width  [bits]', 'FontSize', 12);
                 ylabel(ax, sprintf('SNR at BER = %.0e  [dB]', P.FEC_BER), 'FontSize', 12);
-                title(ax, sprintf('%s  |  CR FL = %d fixed\nWL = %d,  \\DeltaF = %.0f MHz,  LW = %.0f kHz', ...
-                    crTitles{c}, P.FL_fixed, P.WL, P.DeltaF_Hz/1e6, P.LW_Hz/1e3), 'FontSize', 11);
+                title(ax, sprintf('%s  |  CR FL = %d fixed\nIntBits = %d,  \\DeltaF = %.0f MHz,  LW = %.0f kHz', ...
+                    crTitles{c}, P.FL_fixed, P.IntBits, P.DeltaF_Hz/1e6, P.LW_Hz/1e3), 'FontSize', 11);
                 legend(ax, 'Location', 'northeast', 'FontSize', 10);
             end
         end
@@ -526,8 +526,8 @@ classdef bit_width < matlab.unittest.TestCase
                     'XTick', fl_vec, 'XLim', [fl_vec(1) - 1, fl_vec(end) + 1]);
                 xlabel(ax, 'CR fractional bit width  [bits]', 'FontSize', 12);
                 ylabel(ax, sprintf('SNR at BER = %.0e  [dB]', P.FEC_BER), 'FontSize', 12);
-                title(ax, sprintf('%s  |  FR FL = %d fixed\nWL = %d,  \\DeltaF = %.0f MHz,  LW = %.0f kHz', ...
-                    frTitles{fr}, P.FL_fixed, P.WL, P.DeltaF_Hz/1e6, P.LW_Hz/1e3), 'FontSize', 11);
+                title(ax, sprintf('%s  |  FR FL = %d fixed\nIntBits = %d,  \\DeltaF = %.0f MHz,  LW = %.0f kHz', ...
+                    frTitles{fr}, P.FL_fixed, P.IntBits, P.DeltaF_Hz/1e6, P.LW_Hz/1e3), 'FontSize', 11);
                 legend(ax, 'Location', 'northeast', 'FontSize', 10);
             end
         end

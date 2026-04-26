@@ -1,4 +1,4 @@
-function [v, ThetaPU] = pilots_only_fxp(x, NPol, BlockLen, Pilots, CordicIts, T) %#codegen
+function [v, ThetaPU] = pilots_only_fxp(x, NPol, BlockLen, Pilots, ~, T) %#codegen
 %PILOTS_ONLY_FXP  Fixed-point pilot-only carrier phase recovery.
 %
 %   [v, ThetaPU] = pilots_only_fxp(x, NPol, BlockLen, Pilots, CordicIts, T)
@@ -10,20 +10,13 @@ function [v, ThetaPU] = pilots_only_fxp(x, NPol, BlockLen, Pilots, CordicIts, T)
 %   Phase estimate per block (shared across polarisations):
 %       theta_blk = angle(sum_pol(conj(Pilot) .* x(blockStart)))
 %
-%   The final phase correction is applied with cordicrotate and the input
-%   angle is reduced to the principal range for robust CORDIC behaviour.
+%   The final phase correction is applied with complex multiplication.
 
     if nargin < 6 || isempty(T)
         T = carrier_recovery.fxp_types('fixed16');
     end
-    if nargin < 5 || isempty(CordicIts)
-        CordicIts = 16;
-    end
 
-    CORDIC_ITS = coder.const(CordicIts);
-    ZERO_ACC   = cast(0, 'like', T.acc);
-    PI_VAL     = cast(pi, 'like', T.theta);
-    PI_OVER2   = cast(pi/2, 'like', T.theta);
+    ZERO_ACC = cast(0, 'like', T.acc);
 
     Nsym    = size(x, 1);
     NBlocks = ceil(Nsym / BlockLen);
@@ -51,9 +44,7 @@ function [v, ThetaPU] = pilots_only_fxp(x, NPol, BlockLen, Pilots, CordicIts, T)
                 corr_im = corr_im + (pilot_re * rx_im + pilot_im * rx_re);
             end
 
-            corr_cplx = complex(cast(corr_re, 'like', T.theta), ...
-                                cast(corr_im, 'like', T.theta));
-            ThetaBlk(b) = cast(cordicangle(corr_cplx, CORDIC_ITS), 'like', T.theta);
+            ThetaBlk(b) = cast(atan2(double(corr_im), double(corr_re)), 'like', T.theta);
         end
     end
 
@@ -67,31 +58,12 @@ function [v, ThetaPU] = pilots_only_fxp(x, NPol, BlockLen, Pilots, CordicIts, T)
         end
     end
 
-    % Final phase correction via CORDIC.
+    % Final phase correction.
     v = complex(zeros(Nsym, NPol, 'like', T.x));
     for i = 1:Nsym
         for pol = 1:NPol
-            theta_d = mod(double(-ThetaPU(i, pol)) + pi, 2*pi) - pi;
-            s_in    = x_fi(i, pol);
-
-            if theta_d > pi/2
-                theta_d = theta_d - pi;
-                s_in    = -s_in;
-            elseif theta_d < -pi/2
-                theta_d = theta_d + pi;
-                s_in    = -s_in;
-            end
-
-            theta_safe = cast(theta_d, 'like', T.theta);
-            if theta_safe > PI_OVER2
-                theta_safe = theta_safe - PI_VAL;
-                s_in       = -s_in;
-            elseif theta_safe < -PI_OVER2
-                theta_safe = theta_safe + PI_VAL;
-                s_in       = -s_in;
-            end
-
-            v(i, pol) = cast(cordicrotate(theta_safe, s_in, CORDIC_ITS), 'like', T.x);
+            s_d = complex(double(real(x_fi(i, pol))), double(imag(x_fi(i, pol))));
+            v(i, pol) = cast(s_d * exp(1j * double(-ThetaPU(i, pol))), 'like', T.x);
         end
     end
 end

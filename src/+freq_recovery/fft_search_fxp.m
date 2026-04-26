@@ -1,4 +1,4 @@
-function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddle, CordicIts, max_freq, T, data_aided, D) %#codegen
+function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddle, ~, max_freq, T, data_aided, D) %#codegen
 %FFT_SEARCH_FXP  Fixed-point FFT-based frequency offset estimator.
 %
 %   [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddle, CordicIts, T)
@@ -10,14 +10,14 @@ function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddl
 %
 %   A unit-amplitude complex sequence is then formed:
 %
-%     z_unit(k) = cordicrotate( phi_z(k), 1+0j )
+%     z_unit(k) = complex(cos(phi_z(k)), sin(phi_z(k)))
 %
 %   and zero-padded to Nfft (must be a power of 2 >= L).  The fixed-point
 %   FFT (fft.fft_fxp) is applied.  The peak bin is found by loop-based
 %   magnitude comparison, and a fine frequency correction is computed
 %   using the Jacobsen interpolator on the three neighbours.  The
 %   frequency estimate is averaged across polarisations and the
-%   correction applied sample-by-sample with cordicrotate.
+%   correction applied sample-by-sample with complex multiplication.
 %
 %   Inputs
 %     x          - input subframe  [Nsym x NPol]  (fi or castable to T.x)
@@ -52,10 +52,7 @@ function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddl
     %% ----------------------------------------------------------------
     %  Fixed-point constants
     %% ----------------------------------------------------------------
-    ZERO_TH    = cast(0,   'like', T.theta);
-    UNIT_RE    = cast(1,   'like', T.acc);
-    ZERO_ACC   = cast(0,   'like', T.acc);
-    CORDIC_ITS = coder.const(CordicIts);
+    ZERO_TH = cast(0, 'like', T.theta);
 
     %% ----------------------------------------------------------------
     %  Dimensions
@@ -79,8 +76,8 @@ function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddl
     if data_aided
         for p = 1:N_pol
             for k = 1:L
-                phi_tr(k, p) = cast(cordicangle(training_fi(k, p), CORDIC_ITS), ...
-                                     'like', T.theta);
+                phi_tr(k, p) = cast(atan2(double(imag(training_fi(k, p))), ...
+                                          double(real(training_fi(k, p)))), 'like', T.theta);
             end
         end
     end
@@ -103,20 +100,22 @@ function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddl
         if data_aided
             %% Training-aided: phi_z(k) = angle(x(k)) - angle(training(k))
             for k = 1:L
-                phi_x_k  = cast(cordicangle(x_fi(k, p), CORDIC_ITS), 'like', T.theta);
+                phi_x_k  = cast(atan2(double(imag(x_fi(k, p))), double(real(x_fi(k, p)))), ...
+                                 'like', T.theta);
                 phi_z_k  = phi_x_k - phi_tr(k, p);
 
-                unit_in  = complex(UNIT_RE, ZERO_ACC);
-                z_pad(k) = cast(cordicrotate(phi_z_k, unit_in, CORDIC_ITS), 'like', T.acc);
+                z_pad(k) = complex(cast(cos(double(phi_z_k)), 'like', T.acc), ...
+                                   cast(sin(double(phi_z_k)), 'like', T.acc));
             end
         else
             %% Blind: phi_z(k) = 4*angle(x_data(k)),  x_data = x(L+1..L+D)
             for k = 1:D
-                phi_x_k  = cast(cordicangle(x_fi(L+k, p), CORDIC_ITS), 'like', T.theta);
+                phi_x_k  = cast(atan2(double(imag(x_fi(L+k, p))), double(real(x_fi(L+k, p)))), ...
+                                 'like', T.theta);
                 phi_z_k  = cast(mod(4.0 * double(phi_x_k), 2*pi) - pi, 'like', T.theta);
 
-                unit_in  = complex(UNIT_RE, ZERO_ACC);
-                z_pad(k) = cast(cordicrotate(phi_z_k, unit_in, CORDIC_ITS), 'like', T.acc);
+                z_pad(k) = complex(cast(cos(double(phi_z_k)), 'like', T.acc), ...
+                                   cast(sin(double(phi_z_k)), 'like', T.acc));
             end
         end
         % Bins No+1 .. Nfft are already zero (zero-padding)
@@ -181,7 +180,6 @@ function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddl
     %  double and apply exp(+j*theta) in floating point.
     %  delta_theta already carries the negative sign for derotation.
     %% ----------------------------------------------------------------
-    fprintf('Estimated Frequency Offset = %f for FL = %f \n', frequency_offset_Hz, T.x.FractionLength);
     delta_theta = cast(-2.0 * pi * frequency_offset_Hz / (Rs * 1e9 * max_freq), 'like', T.theta);
     y = complex(zeros(Nsym, N_pol, 'like', T.x));
     x_float = double(x_fi);

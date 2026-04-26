@@ -1,0 +1,17 @@
+[0] Config.pm:328> INFO - This is Biber 2.21
+[0] Config.pm:331> INFO - Logfile is 'frequency_recovery.blg'
+[137] biber-MSWIN64:342> INFO - === 
+[188] Biber.pm:421> INFO - Reading 'frequency_recovery.bcf'
+[326] Biber.pm:1002> INFO - Found 2 citekeys in bib section 0
+[345] Biber.pm:4487> INFO - Processing section 0
+[361] Biber.pm:4678> INFO - Looking for bibtex file 'ref.bib' for section 0
+[424] bibtex.pm:1713> INFO - LaTeX decoding ...
+[434] bibtex.pm:1519> INFO - Found BibTeX data source 'ref.bib'
+[506] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'variable = shifted' with 'variable = non-ignorable'
+[506] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'normalization = NFD' with 'normalization = prenormalized'
+[506] Biber.pm:4307> INFO - Sorting list 'nty/global//global/global/global' of type 'entry' with template 'nty' and locale 'en-US'
+[506] Biber.pm:4313> INFO - No sort tailoring available for locale 'en-US'
+[509] bbl.pm:676> INFO - Writing 'frequency_recovery.bbl' with encoding 'UTF-8'
+[511] bbl.pm:779> INFO - Output to frequency_recovery.bbl
+[511] Biber.pm:132> WARN - BibTeX subsystem: C:\Users\joele\AppData\Local\Temp\biber_tmp_KFHg\e800e2552f53b910154f366d4c3730d7_24976.utf8, line 24, warning: 9 characters of junk seen at toplevel
+[511] Biber.pm:134> INFO - WARNINGS: 1

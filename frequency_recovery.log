@@ -1,10 +1,9 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.4)  25 APR 2026 18:26
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.4)  25 APR 2026 18:10
 entering extended mode
  restricted \write18 enabled.
- file:line:error style messages enabled.
  %&-line parsing enabled.
-**c:/Users/joele/Downloads/iib_project/report/frequency_recovery/frequency_recovery.tex
-(c:/Users/joele/Downloads/iib_project/report/frequency_recovery/frequency_recovery.tex
+**report/frequency_recovery/frequency_recovery.tex
+(./report/frequency_recovery/frequency_recovery.tex
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
 (c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/base/article.cls
@@ -450,8 +449,9 @@ Package biblatex Info: Automatic encoding selection.
 \openout3 = `frequency_recovery.bcf'.
 
 Package biblatex Info: Trying to load bibliographic data...
-Package biblatex Info: ... file 'frequency_recovery.bbl' found.
- (./frequency_recovery.bbl)
+Package biblatex Info: ... file 'frequency_recovery.bbl' not found.
+
+No file frequency_recovery.bbl.
 Package biblatex Info: Reference section=0 on input line 15.
 Package biblatex Info: Reference segment=0 on input line 15.
 LaTeX Font Info:    External font `cmex10' loaded for size
@@ -459,85 +459,45 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <7> on input line 17.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <12> on input line 24.
+(Font)              <12> on input line 23.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <8> on input line 24.
+(Font)              <8> on input line 23.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <6> on input line 24.
- [1
+(Font)              <6> on input line 23.
+[1
 
 {c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
-<MCRB_fft_data.png, id=16, 534.3162pt x 372.9132pt>
-File: MCRB_fft_data.png Graphic file (type png)
-<use MCRB_fft_data.png>
-Package pdftex.def Info: MCRB_fft_data.png  used on input line 58.
-(pdftex.def)             Requested size: 364.19667pt x 254.18077pt.
-<MCRB_fft_blind.png, id=17, 539.616pt x 372.9132pt>
-File: MCRB_fft_blind.png Graphic file (type png)
-<use MCRB_fft_blind.png>
-Package pdftex.def Info: MCRB_fft_blind.png  used on input line 65.
-(pdftex.def)             Requested size: 364.19667pt x 251.69415pt.
- [2 <./MCRB_fft_data.png (PNG copy)>]
-Overfull \hbox (17.37683pt too wide) in paragraph at lines 71--72
-\OT1/cmr/m/n/12 ex-pen-sive. The FFT re-quires $[] [][](\OML/cmm/m/it/12 N[]\OT1/cmr/m/n/12 )$ com-plex mul-ti-pli-ca-tions and $\OML/cmm/m/it/12 N[] [][]\OT1/cmr/m/n/12 (\OML/cmm/m/it/12 N[]\OT1/cmr/m/n/12 )$
- []
 
-<MCRB_diff_data.png, id=22, 534.3162pt x 372.9132pt>
-File: MCRB_diff_data.png Graphic file (type png)
-<use MCRB_diff_data.png>
-Package pdftex.def Info: MCRB_diff_data.png  used on input line 83.
-(pdftex.def)             Requested size: 364.19667pt x 254.18077pt.
-[3 <./MCRB_fft_blind.png (PNG copy)>]
-<MCRB_diffkay_data.png, id=26, 534.3162pt x 372.9132pt>
-File: MCRB_diffkay_data.png Graphic file (type png)
-<use MCRB_diffkay_data.png>
-Package pdftex.def Info: MCRB_diffkay_data.png  used on input line 90.
-(pdftex.def)             Requested size: 364.19667pt x 254.18077pt.
- [4 <./MCRB_diff_data.png (PNG copy)>]
-<MCRB_diffkay_blind.png, id=30, 539.616pt x 372.9132pt>
-File: MCRB_diffkay_blind.png Graphic file (type png)
-<use MCRB_diffkay_blind.png>
-Package pdftex.def Info: MCRB_diffkay_blind.png  used on input line 97.
-(pdftex.def)             Requested size: 364.19667pt x 251.69415pt.
- [5 <./MCRB_diffkay_data.png (PNG copy)> <./MCRB_diffkay_blind.png (PNG copy)>]
-Overfull \hbox (28.60747pt too wide) in paragraph at lines 111--121
- [][] 
- []
+LaTeX Warning: Reference `fig:fft_mcrb_data' on page 1 undefined on input line 50.
 
-[6] [7]
-<fft_blind_data.png, id=42, 498.663pt x 359.4228pt>
-File: fft_blind_data.png Graphic file (type png)
-<use fft_blind_data.png>
-Package pdftex.def Info: fft_blind_data.png  used on input line 203.
-(pdftex.def)             Requested size: 364.19667pt x 262.5026pt.
- [8]
-<diffkay_blind_data.png, id=46, 489.5088pt x 359.4228pt>
-File: diffkay_blind_data.png Graphic file (type png)
-<use diffkay_blind_data.png>
-Package pdftex.def Info: diffkay_blind_data.png  used on input line 210.
-(pdftex.def)             Requested size: 364.19667pt x 267.41109pt.
- [9 <./fft_blind_data.png (PNG copy)>] [10 <./diffkay_blind_data.png (PNG copy)>] (./frequency_recovery.aux)
- ***********
-LaTeX2e <2025-11-01>
-L3 programming layer <2026-01-19>
- ***********
-Package logreq Info: Writing requests to 'frequency_recovery.run.xml'.
-\openout1 = `frequency_recovery.run.xml'.
 
- ) 
+LaTeX Warning: File `MCRB_fft_data.png' not found on input line 57.
+
+
+! Package pdftex.def Error: File `MCRB_fft_data.png' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.57 ...cs[width=0.8\textwidth]{MCRB_fft_data.png}
+                                                  
+? 
+! Emergency stop.
+ ...                                              
+                                                  
+l.57 ...cs[width=0.8\textwidth]{MCRB_fft_data.png}
+                                                  
+Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+ 
 Here is how much of TeX's memory you used:
- 13264 strings out of 469515
- 262524 string characters out of 5467663
- 1085703 words of memory out of 5000000
- 41832 multiletter control sequences out of 15000+600000
- 633706 words of font info for 60 fonts, out of 8000000 for 9000
+ 12965 strings out of 469515
+ 256261 string characters out of 5467663
+ 1078499 words of memory out of 5000000
+ 41541 multiletter control sequences out of 15000+600000
+ 632889 words of font info for 57 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 67i,12n,77p,1185b,1267s stack positions out of 10000i,1000n,20000p,200000b,200000s
-<c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmcsc10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb>
-Output written on frequency_recovery.pdf (10 pages, 718454 bytes).
-PDF statistics:
- 119 PDF objects out of 1000 (max. 8388607)
- 69 compressed objects within 1 object stream
- 0 named destinations out of 1000 (max. 500000)
- 36 words of extra memory for PDF output out of 10000 (max. 10000000)
-
+ 67i,6n,77p,1101b,803s stack positions out of 10000i,1000n,20000p,200000b,200000s
+!  ==> Fatal error occurred, no output PDF file produced!

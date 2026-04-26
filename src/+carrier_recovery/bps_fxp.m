@@ -1,5 +1,5 @@
 function [v, ThetaPU] = bps_fxp(z, N, NPol, M, B, BlockLen, StepSize, ...
-                                     Pilots, PilotThreshold, CordicIts, T) %#codegen
+                                     Pilots, PilotThreshold, ~, T) %#codegen
 %bps_FXP  Fixed-point Blind Phase Search (BPS) carrier phase recovery
 %             with step-based phase update and optional pilot-aided
 %             cycle-slip correction.
@@ -34,7 +34,7 @@ function [v, ThetaPU] = bps_fxp(z, N, NPol, M, B, BlockLen, StepSize, ...
 %
 %   Fixed-point implementation notes
 %     - convmtx is replaced by explicit tap-delay window indexing.
-%     - Test-phase rotations use cordicrotate, matching hardware CORDIC datapaths.
+%     - Test-phase rotations use complex multiplication.
 %     - The BPS metric accumulator (m_buf) is a plain double vector: it sums
 %       squared distances which grow with L and SNR, making fi overflow likely.
 %       Decisions (modem.slicer) are inherently double; keeping the metric in
@@ -45,13 +45,11 @@ function [v, ThetaPU] = bps_fxp(z, N, NPol, M, B, BlockLen, StepSize, ...
 %     - ThetaPrev is updated only at step positions; the unwrapper anchor
 %       therefore always reflects the last computed (not held) phase.
 %
-%   CORDIC type behaviour -- explicit casts are mandatory
-%     cordicangle and cordicrotate IGNORE the fimath of their fi inputs.
-%     Their outputs carry MATLAB's default FullPrecision fimath, not the
-%     SpecifyPrecision fimath in T.  Additionally, cordicangle returns a
-%     fraction length of (input FL - 2), which does not match T.theta.
-%     Every CORDIC output is explicitly cast back to the intended fi type
-%     immediately after the call, before any further arithmetic.
+%   Fixed-point cast notes
+%     atan2 is computed in double from the fi inputs; the result is cast
+%     immediately to T.theta before any further arithmetic.
+%     Phase correction multiplications are performed in double and the
+%     result cast to T.x to enforce SpecifyPrecision quantisation.
 
     %% ----------------------------------------------------------------
     %  Default types table
@@ -64,9 +62,7 @@ function [v, ThetaPU] = bps_fxp(z, N, NPol, M, B, BlockLen, StepSize, ...
     %  Fixed-point constants
     %% ----------------------------------------------------------------
     PI_OVER2 = cast(pi/2, 'like', T.theta);
-    PI_VAL   = cast(pi,   'like', T.theta);
     ZERO_ACC = cast(0,    'like', T.acc);
-    CORDIC_ITS = coder.const(CordicIts);
 
     %% ----------------------------------------------------------------
     %  Dimensions
@@ -121,12 +117,7 @@ function [v, ThetaPU] = bps_fxp(z, N, NPol, M, B, BlockLen, StepSize, ...
                 corr_re = pilot_re * rx_re - pilot_im * rx_im;
                 corr_im = pilot_re * rx_im + pilot_im * rx_re;
 
-                % cordicangle ignores fimath and returns FL = (input FL - 2).
-                % Cast immediately to T.theta to restore the correct
-                % numerictype and SpecifyPrecision fimath.
-                corr_fi = complex(cast(corr_re, 'like', T.theta), ...
-                                  cast(corr_im, 'like', T.theta));
-                PhiRef(blk, pol) = cast(cordicangle(corr_fi, CORDIC_ITS), 'like', T.theta);
+                PhiRef(blk, pol) = cast(atan2(double(corr_im), double(corr_re)), 'like', T.theta);
             end
         end
     end
@@ -176,14 +167,9 @@ function [v, ThetaPU] = bps_fxp(z, N, NPol, M, B, BlockLen, StepSize, ...
                         s = complex(cast(0, 'like', T.x), cast(0, 'like', T.x));
                     end
 
+                    s_d = complex(double(real(s)), double(imag(s)));
                     for b = 1:B
-                        % cordicrotate ignores fimath; cast output to T.x.
-                        % Angle negated and cast to T.theta before CORDIC call.
-                        neg_theta = cast(-ThetaTest_fi(b), 'like', T.theta);
-                        s_rot_fi  = cast(cordicrotate(neg_theta, s, CORDIC_ITS), 'like', T.x);
-
-                        s_rot_d  = complex(double(real(s_rot_fi)), ...
-                                           double(imag(s_rot_fi)));
+                        s_rot_d  = s_d * exp(-1j * double(ThetaTest_fi(b)));
                         s_dec    = modem.slicer(s_rot_d);
 
                         err_re   = real(s_rot_d) - real(s_dec);
@@ -240,34 +226,11 @@ function [v, ThetaPU] = bps_fxp(z, N, NPol, M, B, BlockLen, StepSize, ...
 
     %% ================================================================
     %  Phase correction: v(i,pol) = z(i,pol) * exp(-j * ThetaPU(i,pol))
-    %  cordicrotate output cast to T.x to enforce SpecifyPrecision fimath.
     %% ================================================================
     for i = 1:Nsym
         for pol = 1:NPol
-            % CORDIC rotation is most reliable in the principal range.
-            % Reduce angle to [-pi, pi], then map to [-pi/2, pi/2]
-            % using a sign flip of the input symbol for quadrant handling.
-            theta_d = mod(double(-ThetaPU(i, pol)) + pi, 2*pi) - pi;
-            s_in    = z_fi(i, pol);
-
-            if theta_d > pi/2
-                theta_d = theta_d - pi;
-                s_in    = -s_in;
-            elseif theta_d < -pi/2
-                theta_d = theta_d + pi;
-                s_in    = -s_in;
-            end
-
-            theta_safe = cast(theta_d, 'like', T.theta);
-            if theta_safe > PI_OVER2
-                theta_safe = theta_safe - PI_VAL;
-                s_in       = -s_in;
-            elseif theta_safe < -PI_OVER2
-                theta_safe = theta_safe + PI_VAL;
-                s_in       = -s_in;
-            end
-
-            v(i, pol) = cast(cordicrotate(theta_safe, s_in, CORDIC_ITS), 'like', T.x);
+            s_d = complex(double(real(z_fi(i, pol))), double(imag(z_fi(i, pol))));
+            v(i, pol) = cast(s_d * exp(1j * double(-ThetaPU(i, pol))), 'like', T.x);
         end
     end
 end

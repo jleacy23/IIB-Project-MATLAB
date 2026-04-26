@@ -7,6 +7,9 @@
 \usepackage{parskip}
 \usepackage{cleveref}
 \usepackage{gensymb}
+\usepackage{biblatex}
+
+\addbibresource{ref.bib}
 
 
 \title{Estimating Energy Consumption}
@@ -17,5 +20,47 @@
 \maketitle
 
 \section{Receiver Energy}
-The energy per symbol used by the receiver can be estimated from the number of real multiplications \(N_M\) and real additions \(N_A\). 
+The energy consumption of the receiver can be estimated from the number of real multiplications \(N_M\) and real additions \(N_A\) it peforms to process each symbol. The true cost of these operations depends on the hardware implementation. Here the reference values shown in \cref{tab:energy} are used to allow for comparison between different DSP algorithms. An accurate estimate of their actual energy consumption would require analysis of their ASIC implementation for a modern process node.
+
+\begin{table}[H]
+    \centering
+    \caption{Energy cost of arithmetic operations for different bit widths \cite{horowitz2014computing}.}
+    \label{tab:energy}
+    \begin{tabular}{ccc}
+        \toprule
+        \(n\) (bits) & Add (pJ) & Multiply (pJ) \\
+        \midrule
+        8  & 0.03 & 0.2 \\
+        32 & 0.1  & 3.1 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Dependence on Word Length}
+A straightforward adder implementation requires \(n\) bit-wise additions when operating on words of length \(n\). Hence fitting a linear relationship through the origin to \cref{tab:energy} gives an estimate for the energy of an \(n\)-bit addition \(E_A(n) = 3.16n \mathrm{\ fJ}\). Multiplication requires the accumulation of \(n\) partial products of length \(n\), so scales with \(n^2\). Now fitting a quadratic through the origin to \cref{tab:energy} gives the estimated energy of an \(n\)-bit multiplication \(E_M(n) = 3.03n^2 \mathrm{\ fJ}\).
+
+\subsection{Oversampling}
+Timing recovery and fractionally-spaced equalisation require the sampling rate \(f\) to be higher than the symbol rate \(R_s\). For DSP blocks that operate on the oversampled signal, the number of multiplications and additions can first be calculated per sample then scaled by the oversampling rate \(\frac{f}{R_s}\).
+\subsection{Total Energy and Power}
+The energy per symbol for the entire receiver is given by
+\begin{equation}
+    E_s = \sum_{k=1}^K N_A(k)E_A(n_k) + N_M(k)E_M(n_k),
+\end{equation}
+where the receiver is decomposed into \(K\) blocks that use different word lengths \(n_k\) according to their required precision. For \(N\) symbols per polarisation, the total energy
+\begin{equation}
+    E_\mathrm{rx} = 2NE_s
+\end{equation}
+and the total power
+\begin{equation}
+    P_\mathrm{rx} = 2R_sE_s.
+\end{equation}
+
+\section{Transmitter Energy}
+\subsection{Minimum Required SNR}
+It is not sufficient to only compare the energy consumption of receiver implementations if they differ in performance. The CPON standard specifies a maxium bit-error rate (BER) of \(10^{-2}\) that can be allowed for the forward error-correction (FEC) scheme to work. Each receiver implementation will have a minimum required SNR to achieve the FEC limit. This FEC SNR determines, along with the noise present in the optical network, the minimum power at the transmitter.
+\subsection{Noise}
+The relationship between received SNR and transmitted power depends on the sources of noise in the network. Optical access networks can often be 
+
+
+\printbibliography
 \end{document}

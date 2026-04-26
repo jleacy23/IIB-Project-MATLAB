@@ -33,7 +33,7 @@ function T = fxp_types(dt) %#codegen
 %   Accumulator width (fixed32)
 %     One pilot product per block; no summation across symbols needed.
 %     A 64-bit accumulator with FL=24 prevents overflow and preserves
-%     precision through the cordicangle call.
+%     precision through the atan2 call.
 %
 %   SpecifyPrecision fimath
 %     All fi arithmetic uses SpecifyPrecision so every product and sum is

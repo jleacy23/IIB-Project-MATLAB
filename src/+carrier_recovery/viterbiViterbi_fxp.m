@@ -1,6 +1,6 @@
 function [v, ThetaPU] = viterbiViterbi_fxp(x, NPol, NTaps, VVFilter, ...
                                                 Pilots, BlockLen, StepSize, ...
-                                                PilotThreshold, CordicIts, T) %#codegen
+                                                PilotThreshold, ~, T) %#codegen
 %vitERBIVITERBI_FXP  Fixed-point Viterbi-Viterbi carrier phase recovery
 %                        with block-based phase update and optional pilot-aided
 %                        cycle-slip correction.
@@ -40,8 +40,7 @@ function [v, ThetaPU] = viterbiViterbi_fxp(x, NPol, NTaps, VVFilter, ...
 %     - No convmtx: tap-delay indexing throughout.
 %     - One VV ML phase estimate is computed per block from all symbols in
 %       that block, then unwrapped and optionally pilot-corrected.
-%     - cordicangle and cordicrotate outputs are explicitly cast to the
-%       intended fi type immediately after each call (CORDIC ignores fimath).
+%     - atan2 outputs are cast to T.theta immediately after each call.
 %     - ThetaPrev is updated once per block; the unwrapper anchor therefore
 %       always reflects the last computed block phase.
 %     - UsePilots is a runtime branch; codegen compiles both paths.
@@ -57,11 +56,9 @@ function [v, ThetaPU] = viterbiViterbi_fxp(x, NPol, NTaps, VVFilter, ...
     %  Fixed-point constants
     %% ----------------------------------------------------------------
     PI_OVER2 = cast(pi/2, 'like', T.theta);
-    PI_VAL   = cast(pi,   'like', T.theta);
     PI_OVER4 = cast(pi/4, 'like', T.theta);
     ZERO_TH  = cast(0, 'like', T.theta);
     QUARTER  = cast(0.25, 'like', T.theta);
-    CORDIC_ITS = coder.const(CordicIts);
 
     %% ----------------------------------------------------------------
     %  Dimensions
@@ -107,12 +104,7 @@ function [v, ThetaPU] = viterbiViterbi_fxp(x, NPol, NTaps, VVFilter, ...
                 corr_re = pilot_re * rx_re - pilot_im * rx_im;
                 corr_im = pilot_re * rx_im + pilot_im * rx_re;
 
-                % cordicangle ignores fimath and returns FL = (input FL - 2).
-                % Cast immediately to T.theta to restore the correct
-                % numerictype and SpecifyPrecision fimath.
-                corr_fi          = complex(cast(corr_re, 'like', T.theta), ...
-                                           cast(corr_im, 'like', T.theta));
-                PhiRef(blk, pol) = cast(cordicangle(corr_fi, CORDIC_ITS), 'like', T.theta);
+                PhiRef(blk, pol) = cast(atan2(double(corr_im), double(corr_re)), 'like', T.theta);
             end
         end
     end
@@ -171,9 +163,7 @@ function [v, ThetaPU] = viterbiViterbi_fxp(x, NPol, NTaps, VVFilter, ...
                 end
             end
 
-            sum4_fi  = complex(sum4_re_blk, sum4_im_blk);
-            % cordicangle output FL = (input FL - 2); cast immediately.
-            theta_ml = cast(cordicangle(sum4_fi, CORDIC_ITS), 'like', T.theta) ...
+            theta_ml = cast(atan2(double(sum4_im_blk), double(sum4_re_blk)), 'like', T.theta) ...
                        * QUARTER - PI_OVER4;
 
             %% ------------------------------------------------
@@ -201,33 +191,10 @@ function [v, ThetaPU] = viterbiViterbi_fxp(x, NPol, NTaps, VVFilter, ...
 
         %% ------------------------------------------------------------
         %  Phase correction: v(i) = x(i) * exp(-j * ThetaPU(i))
-        %  cordicrotate output cast to T.x to enforce SpecifyPrecision.
         %% ------------------------------------------------------------
         for i = 1:N
-            % CORDIC rotation is most reliable in the principal range.
-            % Reduce angle to [-pi, pi], then map to [-pi/2, pi/2]
-            % using a sign flip of the input symbol for quadrant handling.
-            theta_d = mod(double(-ThetaPU(i, pol)) + pi, 2*pi) - pi;
-            s_in    = x_fi(i, pol);
-
-            if theta_d > pi/2
-                theta_d = theta_d - pi;
-                s_in    = -s_in;
-            elseif theta_d < -pi/2
-                theta_d = theta_d + pi;
-                s_in    = -s_in;
-            end
-
-            theta_safe = cast(theta_d, 'like', T.theta);
-            if theta_safe > PI_OVER2
-                theta_safe = theta_safe - PI_VAL;
-                s_in       = -s_in;
-            elseif theta_safe < -PI_OVER2
-                theta_safe = theta_safe + PI_VAL;
-                s_in       = -s_in;
-            end
-
-            v(i, pol) = cast(cordicrotate(theta_safe, s_in, CORDIC_ITS), 'like', T.x);
+            s_d = complex(double(real(x_fi(i, pol))), double(imag(x_fi(i, pol))));
+            v(i, pol) = cast(s_d * exp(1j * double(-ThetaPU(i, pol))), 'like', T.x);
         end
 
     end  % for pol

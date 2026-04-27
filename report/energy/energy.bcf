@@ -2375,6 +2375,7 @@
   <bcf:section number="0">
     <bcf:citekey order="1" intorder="1">horowitz2014computing</bcf:citekey>
     <bcf:citekey order="2" intorder="1">horowitz2014computing</bcf:citekey>
+    <bcf:citekey order="3" intorder="1">poggiolini2012gn</bcf:citekey>
   </bcf:section>
   <!-- SORTING TEMPLATES -->
   <bcf:sortingtemplate name="nty">

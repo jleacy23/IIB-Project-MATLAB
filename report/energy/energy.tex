@@ -8,6 +8,8 @@
 \usepackage{cleveref}
 \usepackage{gensymb}
 \usepackage{biblatex}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning}
 
 \addbibresource{ref.bib}
 
@@ -20,7 +22,7 @@
 \maketitle
 
 \section{Receiver Energy}
-The energy consumption of the receiver can be estimated from the number of real multiplications \(N_M\) and real additions \(N_A\) it peforms to process each symbol. The true cost of these operations depends on the hardware implementation. Here the reference values shown in \cref{tab:energy} are used to allow for comparison between different DSP algorithms. An accurate estimate of their actual energy consumption would require analysis of their ASIC implementation for a modern process node.
+The energy consumption of the receiver can be estimated from the number of real multiplications \(N_M\) and real additions \(N_A\) it performs to process each symbol. The true cost of these operations depends on the hardware implementation. Here the reference values shown in \cref{tab:energy} are used to allow for comparison between different DSP algorithms. An accurate estimate of their actual energy consumption would require analysis of their ASIC implementation for a modern process node.
 
 \begin{table}[H]
     \centering
@@ -37,30 +39,115 @@ The energy consumption of the receiver can be estimated from the number of real 
 \end{table}
 
 \subsection{Dependence on Word Length}
-A straightforward adder implementation requires \(n\) bit-wise additions when operating on words of length \(n\). Hence fitting a linear relationship through the origin to \cref{tab:energy} gives an estimate for the energy of an \(n\)-bit addition \(E_A(n) = 3.16n \mathrm{\ fJ}\). Multiplication requires the accumulation of \(n\) partial products of length \(n\), so scales with \(n^2\). Now fitting a quadratic through the origin to \cref{tab:energy} gives the estimated energy of an \(n\)-bit multiplication \(E_M(n) = 3.03n^2 \mathrm{\ fJ}\).
+A straightforward adder implementation requires \(n\) bit-wise additions when operating on words of length \(n\). Hence fitting a linear relationship through the origin to \cref{tab:energy} gives an estimate for the energy of an \(n\)-bit addition \(E_A(n) = 3.16n \mathrm{\ fJ}\). Multiplication requires the accumulation of \(n\) partial products of length \(n\), so scales with \(n^2\). Fitting a quadratic through the origin to \cref{tab:energy} gives the estimated energy of an \(n\)-bit multiplication \(E_M(n) = 3.03n^2 \mathrm{\ fJ}\).
 
 \subsection{Oversampling}
 Timing recovery and fractionally-spaced equalisation require the sampling rate \(f\) to be higher than the symbol rate \(R_s\). For DSP blocks that operate on the oversampled signal, the number of multiplications and additions can first be calculated per sample then scaled by the oversampling rate \(\frac{f}{R_s}\).
+
 \subsection{Total Energy and Power}
 The energy per symbol for the entire receiver is given by
 \begin{equation}
-    E_s = \sum_{k=1}^K N_A(k)E_A(n_k) + N_M(k)E_M(n_k),
+    E_s = \sum_{k=1}^{L} N_A(k)E_A(n_k) + N_M(k)E_M(n_k),
 \end{equation}
-where the receiver is decomposed into \(K\) blocks that use different word lengths \(n_k\) according to their required precision. For \(N\) symbols per polarisation, the total energy
+where the receiver is decomposed into \(L\) blocks that use different word lengths \(n_k\) according to their required precision. For \(N_s\) symbols per polarisation, the total energy is
 \begin{equation}
-    E_\mathrm{rx} = 2NE_s
+    E_\mathrm{rx} = 2N_sE_s
+    \label{eq:symbol_energy}
 \end{equation}
 and the total power
 \begin{equation}
     P_\mathrm{rx} = 2R_sE_s.
 \end{equation}
+Converting to bits allows fair comparison across modulation schemes,
+\begin{equation}
+    E_\mathrm{rx} = \frac{2N_bE_s}{\log_2(M)},
+    \label{eq:rx_energy}
+\end{equation}
+where \(N_b\) is the number of bits per polarisation and \(M\) is the modulation order.
 
 \section{Transmitter Energy}
 \subsection{Minimum Required SNR}
-It is not sufficient to only compare the energy consumption of receiver implementations if they differ in performance. The CPON standard specifies a maxium bit-error rate (BER) of \(10^{-2}\) that can be allowed for the forward error-correction (FEC) scheme to work. Each receiver implementation will have a minimum required SNR to achieve the FEC limit. This FEC SNR determines, along with the noise present in the optical network, the minimum power at the transmitter.
-\subsection{Noise}
-The relationship between received SNR and transmitted power depends on the sources of noise in the network. Optical access networks can often be 
+It is not sufficient to only compare the energy consumption of receiver implementations if they differ in performance. The CPON standard specifies a maximum pre-FEC bit-error rate (BER) of \(10^{-2}\) that must not be exceeded for the forward error-correction (FEC) scheme to function correctly. Each receiver implementation will therefore have a minimum required SNR to meet this FEC threshold. This SNR, together with the noise characteristics of the optical network, determines the minimum power at the transmitter.
 
+\subsection{Noise}
+\subsubsection{Shot Noise}
+The relationship between SNR and transmitter power \(P_\mathrm{tx}\) depends on the dominant source of noise in the network. Optical access networks typically operate over short lengths and at low power. In this case amplifiers may not be needed and non-linear noise can be neglected. The dominant noise source is then shot noise, which gives
+\begin{equation}
+    \mathrm{SNR} = \frac{P_\mathrm{tx}}{2h\nu B},
+\end{equation}
+where \(B\) is the signal bandwidth. For receiver implementations with different FEC SNRs, the corresponding difference in transmitter power is
+\begin{equation}
+    \Delta P_\mathrm{tx} = P_\mathrm{tx,1} - P_\mathrm{tx,2} = 2h\nu B (\mathrm{SNR}_1 - \mathrm{SNR}_2)
+\end{equation}
+and the difference in energy to transmit \(N_b\) bits is
+\begin{equation}
+    \Delta E_\mathrm{tx} = E_\mathrm{tx,1} - E_\mathrm{tx,2} = \frac{N_b}{R_s}\left(\frac{P_\mathrm{tx,1}}{\log_2(M_1)} - \frac{P_\mathrm{tx,2}}{\log_2(M_2)}\right).
+    \label{eq:tx_energy}
+\end{equation}
+
+\subsubsection{Amplifier and Non-Linear Noise}
+In some cases the access network will operate over longer lengths and require EDFAs. Here the effects of amplifier and non-linear noise cannot be neglected.
+
+For a single span, each EDFA with gain \(G\) and noise figure \(\mathrm{NF}\) (dB) contributes an ASE noise power
+\begin{equation}
+    P_\mathrm{ASE} = N_\mathrm{ASE}B = 10^{NF/10}h\nu (G-1)B.
+\end{equation}
+The Gaussian Noise (GN) model \cite{poggiolini2012gn} gives the single-span NLI power as
+\begin{equation}
+    P_\mathrm{NL} = C_\mathrm{NLI} P_\mathrm{tx}^3,
+\end{equation}
+where \(C_\mathrm{NLI}\) depends on the fibre and span parameters.
+
+For a link of \(n\) identical spans, both the ASE and NLI contributions from each span accumulate at the receiver, giving a total noise power of \(n(P_\mathrm{ASE} + P_\mathrm{NL})\) and a link SNR of
+\begin{equation}
+    \mathrm{SNR} = \frac{P_\mathrm{tx}}{n\left(N_\mathrm{ASE}B + C_\mathrm{NLI} P_\mathrm{tx}^3\right)}.
+    \label{eq:snr_nl}
+\end{equation}
+The required transmit powers can be solved for numerically from \cref{eq:snr_nl}, with the difference in transmitter energy following from \cref{eq:tx_energy}.
+
+\subsection{Laser Efficiency}
+The energy difference in \cref{eq:tx_energy} is the optical output energy of the transmitter laser. The true difference in energy consumed by the transmitter must account for the wall-plug efficiency \(\eta\) of the laser, giving
+\begin{equation}
+    \Delta E^{'}_\mathrm{tx} = \frac{1}{\eta} \Delta E_\mathrm{tx}.
+    \label{eq:tx_energy_true}
+\end{equation}
+
+\section{System Energy}
+Consider the downstream link of a PON with a single OLT transmitting to \(K\) ONUs, as illustrated in \cref{fig:pon}.
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+        box/.style={draw, rectangle, minimum width=2cm, minimum height=0.75cm, align=center},
+        node distance=0pt
+    ]
+        \node[box] (olt) {OLT (Tx)};
+        \node[draw, circle, minimum size=0.85cm, right=2.5cm of olt] (split) {\small 1:$K$};
+        \draw[-{Stealth}] (olt) -- node[above]{\small fibre} (split);
+
+        \node[box, right=2.5cm of split, yshift= 1.6cm] (onu1) {ONU 1 (Rx)};
+        \node[box, right=2.5cm of split, yshift= 0.0cm] (onu2) {ONU 2 (Rx)};
+        \node[right=2.5cm of split, yshift=-0.9cm] (dots) {$\vdots$};
+        \node[box, right=2.5cm of split, yshift=-1.6cm] (onuk) {ONU $K$ (Rx)};
+
+        \draw[-{Stealth}] (split) -- (onu1.west);
+        \draw[-{Stealth}] (split) -- (onu2.west);
+        \draw[-{Stealth}] (split) -- (onuk.west);
+    \end{tikzpicture}
+    \caption{Downstream PON link: one OLT transmitting to \(K\) ONUs.}
+    \label{fig:pon}
+\end{figure}
+
+The total energy consumed to deliver \(N_b\) bits to every ONU is the sum of the transmitter energy (adjusted for laser efficiency) and the receiver energy across all \(K\) ONUs,
+\begin{equation}
+    E_\mathrm{sys} = \frac{1}{\eta}E_\mathrm{tx} + K E_\mathrm{rx}.
+\end{equation}
+When comparing two receiver implementations, the change in system energy is
+\begin{equation}
+    \Delta E_\mathrm{sys} = \frac{1}{\eta}\Delta E_\mathrm{tx} + K\,\Delta E_\mathrm{rx},
+    \label{eq:sys_energy}
+\end{equation}
+where \(\Delta E_\mathrm{tx}\) is given by \cref{eq:tx_energy} and depends on the noise model, and \(\Delta E_\mathrm{rx}\) is the change in receiver energy per ONU from \cref{eq:rx_energy}.
 
 \printbibliography
 \end{document}

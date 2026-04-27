@@ -48,6 +48,57 @@
       \verb 10.1109/ISSCC.2014.6757323
       \endverb
     \endentry
+    \entry{poggiolini2012gn}{article}{}{}
+      \name{author}{5}{}{%
+        {{hash=1acbf11c39309f0d73c9e5d61498dae1}{%
+           family={Poggiolini},
+           familyi={P\bibinitperiod},
+           given={Pierluigi},
+           giveni={P\bibinitperiod}}}%
+        {{hash=c00b0aaea6d68eadef87884e73a26ff4}{%
+           family={Carena},
+           familyi={C\bibinitperiod},
+           given={Andrea},
+           giveni={A\bibinitperiod}}}%
+        {{hash=44a0a9e61d8aa6680ee74480d81d74c6}{%
+           family={Curri},
+           familyi={C\bibinitperiod},
+           given={Vittorio},
+           giveni={V\bibinitperiod}}}%
+        {{hash=3997957683d96e8edf1bc44d3b8e6b12}{%
+           family={Bosco},
+           familyi={B\bibinitperiod},
+           given={Gabriella},
+           giveni={G\bibinitperiod}}}%
+        {{hash=1c34c2209165d68ce64ad6a2661a6b6d}{%
+           family={Forghieri},
+           familyi={F\bibinitperiod},
+           given={Fabrizio},
+           giveni={F\bibinitperiod}}}%
+      }
+      \strng{namehash}{1a09e972d55e8452466573c57d52819e}
+      \strng{fullhash}{4ae0e9a7a7b508c0bf42250e7ef21b2f}
+      \strng{fullhashraw}{4ae0e9a7a7b508c0bf42250e7ef21b2f}
+      \strng{bibnamehash}{1a09e972d55e8452466573c57d52819e}
+      \strng{authorbibnamehash}{1a09e972d55e8452466573c57d52819e}
+      \strng{authornamehash}{1a09e972d55e8452466573c57d52819e}
+      \strng{authorfullhash}{4ae0e9a7a7b508c0bf42250e7ef21b2f}
+      \strng{authorfullhashraw}{4ae0e9a7a7b508c0bf42250e7ef21b2f}
+      \field{sortinit}{P}
+      \field{sortinithash}{ff3bcf24f47321b42cb156c2cc8a8422}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{IEEE Photonics Technology Letters}
+      \field{number}{11}
+      \field{title}{Analytical Modeling of Nonlinear Propagation in Uncompensated Optical Transmission Links}
+      \field{volume}{23}
+      \field{year}{2011}
+      \field{pages}{742\bibrangedash 744}
+      \range{pages}{3}
+      \verb{doi}
+      \verb 10.1109/LPT.2011.2131125
+      \endverb
+    \endentry
   \enddatalist
 \endrefsection
 \endinput

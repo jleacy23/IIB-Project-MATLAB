@@ -68,10 +68,10 @@ function [y, frequency_offset] = differential_kay_fxp(x, training, Rs, CordicIts
     %% ----------------------------------------------------------------
     if data_aided
         [~, f_fine] = freq_recovery.tretter_kay_fxp( ...
-            x_coarse, training, Rs, CordicIts, T, true, 0, max_freq/3);
+            x_coarse, training, Rs, CordicIts, T, true, 0, max_freq);
     else
         [~, f_fine] = freq_recovery.tretter_kay_fxp( ...
-            x_coarse, training, Rs, CordicIts, T, false, D, max_freq/3);
+            x_coarse, training, Rs, CordicIts, T, false, D, max_freq);
     end
 
     %% ----------------------------------------------------------------
@@ -95,7 +95,9 @@ function [y, frequency_offset] = differential_kay_fxp(x, training, Rs, CordicIts
             theta = double(theta_fi) * max_freq;
             y(i, p) = cast(x_float(i, p) * exp(1j * theta), 'like', T.x);
 
-            theta_next = double(theta_fi + delta_theta);
+            % Add in double so the explicit phase wrap below is not
+            % pre-empted by fi-overflow on theta_fi + delta_theta.
+            theta_next = double(theta_fi) + double(delta_theta);
             theta_next = mod(theta_next + theta_wrap, 2 * theta_wrap) - theta_wrap;
             theta_fi = cast(theta_next, 'like', T.theta);
         end

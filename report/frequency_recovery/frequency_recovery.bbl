@@ -85,6 +85,47 @@
       \verb 10.1364/OE.21.022166
       \endverb
     \endentry
+    \entry{Andrea1994}{article}{}{}
+      \name{author}{3}{}{%
+        {{hash=808624665f528cb2a386566150e28112}{%
+           family={D'Andrea},
+           familyi={D\bibinitperiod},
+           given={A.N.},
+           giveni={A\bibinitperiod}}}%
+        {{hash=0f3bd93dcaca184bf812365b28e84351}{%
+           family={Mengali},
+           familyi={M\bibinitperiod},
+           given={Umberto},
+           giveni={U\bibinitperiod}}}%
+        {{hash=2a3f1fe2bde6ec842344eea82dc453f7}{%
+           family={Reggiannini},
+           familyi={R\bibinitperiod},
+           given={Ruggero},
+           giveni={R\bibinitperiod}}}%
+      }
+      \strng{namehash}{bb21694dde653053a5f452d0a84dc5eb}
+      \strng{fullhash}{bb21694dde653053a5f452d0a84dc5eb}
+      \strng{fullhashraw}{bb21694dde653053a5f452d0a84dc5eb}
+      \strng{bibnamehash}{bb21694dde653053a5f452d0a84dc5eb}
+      \strng{authorbibnamehash}{bb21694dde653053a5f452d0a84dc5eb}
+      \strng{authornamehash}{bb21694dde653053a5f452d0a84dc5eb}
+      \strng{authorfullhash}{bb21694dde653053a5f452d0a84dc5eb}
+      \strng{authorfullhashraw}{bb21694dde653053a5f452d0a84dc5eb}
+      \field{sortinit}{D}
+      \field{sortinithash}{6f385f66841fb5e82009dc833c761848}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Communications, IEEE Transactions on}
+      \field{month}{03}
+      \field{title}{The Modified Cramer-Rao Bound and Its Applications to Synchronization Problems}
+      \field{volume}{42}
+      \field{year}{1994}
+      \field{pages}{1391\bibrangedash 1399}
+      \range{pages}{9}
+      \verb{doi}
+      \verb 10.1109/TCOMM.1994.580247
+      \endverb
+    \endentry
     \entry{Jacobsen2007}{article}{}{}
       \name{author}{2}{}{%
         {{hash=1897f21248594933ce9722c3e2f698ce}{%

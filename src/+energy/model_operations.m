@@ -1,1 +1,0 @@
-function energy = model_operations(NMult, NAdd, )

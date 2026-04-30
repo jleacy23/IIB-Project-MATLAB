@@ -1,17 +1,17 @@
 # Fdb version 4
-["biber frequency_recovery"] 1777137700.15997 "frequency_recovery.bcf" "frequency_recovery.bbl" "frequency_recovery" 1777137965.14068 0
-  "frequency_recovery.bcf" 1777137964 108689 acff501f3f560406b953dffc228d696e "pdflatex"
-  "ref.bib" 1773739320 1595 7ef8b0a320794548fb30b06a6d7c92b8 ""
+["biber frequency_recovery"] 1777559076.98323 "frequency_recovery.bcf" "frequency_recovery.bbl" "frequency_recovery" 1777559082.18178 0
+  "frequency_recovery.bcf" 1777559082 108754 9e0af46a2bbccb23ce91e83b08076c8c "pdflatex"
+  "ref.bib" 1777558777 1554 5f443762d1d5dcd5fd6ffed8945c1a19 ""
   (generated)
   "frequency_recovery.bbl"
   "frequency_recovery.blg"
   (rewritten before read)
-["pdflatex"] 1777137964.34378 "c:/Users/joele/Downloads/iib_project/report/frequency_recovery/frequency_recovery.tex" "frequency_recovery.pdf" "frequency_recovery" 1777137965.1409 0
-  "MCRB_diff_data.png" 1773680529 68607 461a22e0e90fbafe608ab15f4b96dcd8 ""
-  "MCRB_diffkay_blind.png" 1773678735 114802 d67681ccc8703c859f2bd797713f5a16 ""
-  "MCRB_diffkay_data.png" 1773683538 68506 336167fecc974ac81de511252a4c5871 ""
-  "MCRB_fft_blind.png" 1773678719 115552 4048384856245eff79eb7b9ef8278d1c ""
-  "MCRB_fft_data.png" 1773677570 69358 cf8c2a3468ab15abebc10aaf853013e2 ""
+["pdflatex"] 1777559081.25696 "c:/Users/joele/Downloads/iib_project/report/frequency_recovery/frequency_recovery.tex" "frequency_recovery.pdf" "frequency_recovery" 1777559082.18322 0
+  "MCRB_diff_data.png" 1777557595 60356 89d654c5d714acb4ed5f023730229716 ""
+  "MCRB_diffkay_blind.png" 1777557750 111879 8aeb537be69d59d2e49acb7d40103ac2 ""
+  "MCRB_diffkay_data.png" 1777557564 57707 7cc3035dcd0b5ef4ecb0e2bd3c2b2583 ""
+  "MCRB_fft_blind.png" 1777557727 113249 c2e3942101aade483f3e6c828ac16de8 ""
+  "MCRB_fft_data.png" 1777557625 59014 9f57c0b140a32b0a93b0540f39d03c4b ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmbx12.tfm" 1772596488 1324 c910af8c371558dc20f2d7822f66fe64 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmcsc10.tfm" 1772596488 1300 63a6111ee6274895728663cf4b4e7e81 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmmi12.tfm" 1772596488 1524 4414a8315f39513458b80dfc63bff03a ""
@@ -89,13 +89,13 @@
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1772596550 94259 aec9939469efac8f0cf917369f632359 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/web2c/pdftex/pdflatex.fmt" 1772596566 2236130 036198fdb3bbb46401ac4d671e71ba73 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf.cnf" 1772596498 903 164c5b127cd0d6dc91abad2f62421ea2 ""
-  "c:/Users/joele/Downloads/iib_project/report/frequency_recovery/frequency_recovery.tex" 1777137963 18324 4c886de29b1b415926c4f2cd9cd01b84 ""
-  "diffkay_blind_data.png" 1776538306 45750 fd33bf0cec8e691d0315b0900e0b6c9a ""
-  "fft_blind_data.png" 1776538287 49719 3a669ca2642d2ae84887b12cbba23672 ""
-  "frequency_recovery.aux" 1777137964 7147 d793fb4b530ed991bbfd5b675dc525ba "pdflatex"
-  "frequency_recovery.bbl" 1777137701 4702 80292477859a4424607107d6af84c673 "biber frequency_recovery"
-  "frequency_recovery.run.xml" 1777137964 2396 ce56500e0d0c09abe9a2454d497875b2 "pdflatex"
-  "frequency_recovery.tex" 1777137963 18324 4c886de29b1b415926c4f2cd9cd01b84 ""
+  "c:/Users/joele/Downloads/iib_project/report/frequency_recovery/frequency_recovery.tex" 1777559075 18345 4c18197bd69495f188ced31f09a5b666 ""
+  "diffkay_blind_data.png" 1777554529 66949 fced9030327def25653bcc6248ccd198 ""
+  "fft_blind_data.png" 1777554554 63431 a457391569eb0d055922a7316a3d2cc5 ""
+  "frequency_recovery.aux" 1777559082 7281 c1d529ab8daffdcb21de9a44d70a51a0 "pdflatex"
+  "frequency_recovery.bbl" 1777559079 6416 06b91060a5e8e75dd407845203734a0f "biber frequency_recovery"
+  "frequency_recovery.run.xml" 1777559082 2396 ce56500e0d0c09abe9a2454d497875b2 "pdflatex"
+  "frequency_recovery.tex" 1777559075 18345 4c18197bd69495f188ced31f09a5b666 ""
   (generated)
   "frequency_recovery.aux"
   "frequency_recovery.bcf"

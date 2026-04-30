@@ -52,8 +52,9 @@ classdef data < matlab.unittest.TestCase
             NSNR     = numel(SNR_v);
 
             % Results: NMSE_alg(SNR_idx, DeltaF_idx)
-            NMSE_fft = zeros(NSNR, NF);
-            NMSE_dk  = zeros(NSNR, NF);
+            NMSE_fft  = zeros(NSNR, NF);
+            NMSE_dk   = zeros(NSNR, NF);
+            NMSE_diff = zeros(NSNR, NF);
 
             % Modified Cramér-Rao bound (MCRB) for frequency estimation
             N_train   = 11;   % TrainingLen
@@ -75,8 +76,9 @@ classdef data < matlab.unittest.TestCase
                 for fi = 1:NF
                     df = DeltaF_v(fi);
 
-                    se_fft = zeros(NT, 1);
-                    se_dk  = zeros(NT, 1);
+                    se_fft  = zeros(NT, 1);
+                    se_dk   = zeros(NT, 1);
+                    se_diff = zeros(NT, 1);
 
                     for tr = 1:NT
                         % Random ±3±3j training symbols (16-QAM corners), 11 x 2
@@ -87,60 +89,70 @@ classdef data < matlab.unittest.TestCase
                         rx_shifted = channel.lo_freq_shift(training, df * 1e-6, Rs_, 1);
                         rx         = channel.add_awgn(rx_shifted, SNR_dB);
 
-                        [~, est_fft] = freq_recovery.fft_search( ...
+                        [~, est_fft]  = freq_recovery.fft_search( ...
                             rx, training, Rs_, testCase.FR_FFT_K);
-                        [~, est_dk]  = freq_recovery.differential_kay( ...
+                        [~, est_dk]   = freq_recovery.differential_kay( ...
+                            rx, training, Rs_);
+                        [~, est_diff] = freq_recovery.differential( ...
                             rx, training, Rs_);
 
-                        se_fft(tr) = (est_fft - df)^2;
-                        se_dk(tr)  = (est_dk  - df)^2;
+                        se_fft(tr)  = (est_fft  - df)^2;
+                        se_dk(tr)   = (est_dk   - df)^2;
+                        se_diff(tr) = (est_diff - df)^2;
                     end
 
-                    NMSE_fft(si, fi) = mean(se_fft);
-                    NMSE_dk(si,  fi) = mean(se_dk);
+                    NMSE_fft(si,  fi) = mean(se_fft);
+                    NMSE_dk(si,   fi) = mean(se_dk);
+                    NMSE_diff(si, fi) = mean(se_diff);
                 end
             end
 
             % ============================================================
-            %  Plot — one figure per selected frequency, SNR on x-axis
+            %  Plot — one figure per algorithm per selected frequency
             % ============================================================
-            colors   = lines(2);
-            algNames = {'FFT search (float)', 'Diff Phase(float)'};
+            colors   = lines(3);
+            algNames = {'FFT search (float)', 'Differential + Kay (float)', 'Differential (float)'};
 
             for pi_ = 1:NPlot
                 df_idx    = plot_df_indices(pi_);
                 df_actual = DeltaF_v(df_idx);
 
-                figure('Name', sprintf('Freq Recovery NMSE | df = %g MHz', df_actual), ...
-                       'Position', [60 + (pi_-1)*40, 60 + (pi_-1)*40, 820, 520], ...
-                       'Color', 'w');
+                NMSE_alg = {NMSE_fft, NMSE_dk, NMSE_diff};
 
-                % semilogy(SNR_v, NMSE_fft(:, df_idx), '-',  'Color', colors(1,:), 'LineWidth', 1.8, 'DisplayName', algNames{1});
-                % hold on;
-                semilogy(SNR_v, NMSE_dk(:,  df_idx), '-',  'Color', colors(2,:), 'LineWidth', 1.8, 'DisplayName', algNames{2});
-                hold on;
-                semilogy(SNR_v, NMSE_MCRB,            'k--','LineWidth', 2.0,     'DisplayName', sprintf('MCRB (N=%d)', N_train));
-                hold off;
+                for ai = 1:numel(algNames)
+                    figure('Name', sprintf('%s | df = %g MHz', algNames{ai}, df_actual), ...
+                           'Position', [60 + ((pi_-1)*numel(algNames) + (ai-1))*40, ...
+                                        60 + ((pi_-1)*numel(algNames) + (ai-1))*40, ...
+                                        820, 520], ...
+                           'Color', 'w');
 
-                grid on;
-                set(gca, 'FontSize', 13, 'LineWidth', 1, 'Box', 'on');
-                xlabel('SNR [dB]', 'FontSize', 14);
-                ylabel('Normalised MSE', 'FontSize', 14);
-                legend('Location', 'best', 'FontSize', 12);
-                title(sprintf('Normalised Frequency Estimation MSE  \Deltaf = %g MHz  |  %d trials', ...
-                              df_actual, NT));
+                    semilogy(SNR_v, NMSE_alg{ai}(:, df_idx), '-',  'Color', colors(ai,:), ...
+                             'LineWidth', 1.8, 'DisplayName', algNames{ai});
+                    hold on;
+                    semilogy(SNR_v, NMSE_MCRB, 'k--', 'LineWidth', 2.0, ...
+                             'DisplayName', sprintf('MCRB (N=%d)', N_train));
+                    hold off;
+
+                    grid on;
+                    set(gca, 'FontSize', 13, 'LineWidth', 1, 'Box', 'on');
+                    xlabel('SNR [dB]', 'FontSize', 14);
+                    ylabel('Normalised MSE', 'FontSize', 14);
+                    legend('Location', 'best', 'FontSize', 12);
+                    title(sprintf('%s  |  \\Deltaf = %g MHz  |  %d trials', ...
+                                  algNames{ai}, df_actual, NT));
+                end
             end
 
             % Print summary table
             fprintf('\n%-14s', 'DeltaF [MHz]');
             for si = 1:NSNR
-                fprintf('  SNR=%ddB FFT      DiffKay', SNR_v(si));
+                fprintf('  SNR=%ddB FFT      DiffKay  Diff', SNR_v(si));
             end
             fprintf('\n');
             for fi = 1:NF
                 fprintf('%-14.0f', DeltaF_v(fi));
                 for si = 1:NSNR
-                    fprintf('  %8.2e %8.2e', NMSE_fft(si,fi), NMSE_dk(si,fi));
+                    fprintf('  %8.2e %8.2e %8.2e', NMSE_fft(si,fi), NMSE_dk(si,fi), NMSE_diff(si,fi));
                 end
                 fprintf('\n');
             end

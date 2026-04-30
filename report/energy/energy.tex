@@ -47,23 +47,18 @@ Timing recovery and fractionally-spaced equalisation require the sampling rate \
 \subsection{Total Energy and Power}
 The energy per symbol for the entire receiver is given by
 \begin{equation}
-    E_s = \sum_{k=1}^{L} N_A(k)E_A(n_k) + N_M(k)E_M(n_k),
+    E_{\mathrm{rx},s} = 2\sum_{k=1}^{L} N_A(k)E_A(n_k) + N_M(k)E_M(n_k),
 \end{equation}
-where the receiver is decomposed into \(L\) blocks that use different word lengths \(n_k\) according to their required precision. For \(N_s\) symbols per polarisation, the total energy is
+where the receiver is decomposed into \(L\) blocks that use different word lengths \(n_k\) according to their required precision and the factor of 2 is for the energy over both polarisations. The power is then
 \begin{equation}
-    E_\mathrm{rx} = 2N_sE_s
-    \label{eq:symbol_energy}
-\end{equation}
-and the total power
-\begin{equation}
-    P_\mathrm{rx} = 2R_sE_s.
+    P_\mathrm{rx} = R_sE_s.
 \end{equation}
 Converting to bits allows fair comparison across modulation schemes,
 \begin{equation}
-    E_\mathrm{rx} = \frac{2N_bE_s}{\log_2(M)},
+    E_\mathrm{rx} = \frac{E_{\mathrm{rx},s}}{\log_2(M)},
     \label{eq:rx_energy}
 \end{equation}
-where \(N_b\) is the number of bits per polarisation and \(M\) is the modulation order.
+where \(M\) is the modulation order.
 
 \section{Transmitter Energy}
 \subsection{Minimum Required SNR}
@@ -79,9 +74,9 @@ where \(B\) is the signal bandwidth. For receiver implementations with different
 \begin{equation}
     \Delta P_\mathrm{tx} = P_\mathrm{tx,1} - P_\mathrm{tx,2} = 2h\nu B (\mathrm{SNR}_1 - \mathrm{SNR}_2)
 \end{equation}
-and the difference in energy to transmit \(N_b\) bits is
+and the difference in energy per bit is
 \begin{equation}
-    \Delta E_\mathrm{tx} = E_\mathrm{tx,1} - E_\mathrm{tx,2} = \frac{N_b}{R_s}\left(\frac{P_\mathrm{tx,1}}{\log_2(M_1)} - \frac{P_\mathrm{tx,2}}{\log_2(M_2)}\right).
+    \Delta E_\mathrm{tx} = \frac{1}{R_s}\left(\frac{P_\mathrm{tx,1}}{\log_2(M_1)} - \frac{P_\mathrm{tx,2}}{\log_2(M_2)}\right).
     \label{eq:tx_energy}
 \end{equation}
 
@@ -138,11 +133,11 @@ Consider the downstream link of a PON with a single OLT transmitting to \(K\) ON
     \label{fig:pon}
 \end{figure}
 
-The total energy consumed to deliver \(N_b\) bits to every ONU is the sum of the transmitter energy (adjusted for laser efficiency) and the receiver energy across all \(K\) ONUs,
+The total energy consumed to deliver one bit to every ONU is the sum of the transmitter energy (adjusted for laser efficiency) and the receiver energy across all \(K\) ONUs,
 \begin{equation}
     E_\mathrm{sys} = \frac{1}{\eta}E_\mathrm{tx} + K E_\mathrm{rx}.
 \end{equation}
-When comparing two receiver implementations, the change in system energy is
+When comparing two receiver implementations, the change in system energy per bit is
 \begin{equation}
     \Delta E_\mathrm{sys} = \frac{1}{\eta}\Delta E_\mathrm{tx} + K\,\Delta E_\mathrm{rx},
     \label{eq:sys_energy}

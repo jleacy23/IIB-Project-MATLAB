@@ -25,14 +25,14 @@ classdef blind_data < matlab.unittest.TestCase
         TrainingLen = 11
 
         % Monte-Carlo
-        NTrials     = 30                % trials per (SNR, D) point
+        NTrials     = 100                % trials per (SNR, D) point
 
         % Sweep grids
         SNR_dB_vec = 0 : 1 : 20        % [dB]
         BlindD_vec = [16, 32, 64, 128, 256, 512]  % observation lengths [symbols]
 
         % Channel conditions (single operating point)
-        DeltaF_Hz      = 3e9            % frequency offset [Hz]
+        DeltaF_Hz      = 2e9            % frequency offset [Hz]
         LW_Hz          = 1000e3         % laser linewidth  [Hz]
 
         % Fixed-point configuration (word length / fraction length)

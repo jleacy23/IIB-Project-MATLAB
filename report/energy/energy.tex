@@ -66,13 +66,13 @@ It is not sufficient to only compare the energy consumption of receiver implemen
 
 \subsection{Noise}
 \subsubsection{Shot Noise}
-The relationship between SNR and transmitter power \(P_\mathrm{tx}\) depends on the dominant source of noise in the network. Optical access networks typically operate over short lengths and at low power. In this case amplifiers may not be needed and non-linear noise can be neglected. The dominant noise source is then shot noise, which gives
+The relationship between SNR and transmitter power \(P_\mathrm{tx}\) depends on the dominant source of noise in the network. Optical access networks typically operate over short lengths and at low power. In this case amplifiers may not be needed and non-linear noise can be neglected. The dominant noise source is then shot noise. For the downstream PON link of \cref{fig:pon}, the 1:\(K\) splitter divides the transmitter power equally between the \(K\) ONUs, so each ONU receives a \(1/K\) share and sees an SNR of
 \begin{equation}
-    \mathrm{SNR} = \frac{P_\mathrm{tx}}{2h\nu B},
+    \mathrm{SNR} = \frac{P_\mathrm{tx} \cdot 10^{\frac{-\alpha L}{10}}}{2Kh\nu B},
 \end{equation}
-where \(B\) is the signal bandwidth. For receiver implementations with different FEC SNRs, the corresponding difference in transmitter power is
+where \(B\) is the signal bandwidth, \(\alpha\) is the fibre loss in dB/km, and \(L\) is the fibre length. The factor of \(K\) in the denominator captures the splitter loss, so \(P_\mathrm{tx}\) is the OLT transmit power rather than the per-branch power. For receiver implementations with different FEC SNRs, the corresponding difference in transmitter power is
 \begin{equation}
-    \Delta P_\mathrm{tx} = P_\mathrm{tx,1} - P_\mathrm{tx,2} = 2h\nu B (\mathrm{SNR}_1 - \mathrm{SNR}_2)
+    \Delta P_\mathrm{tx} = P_\mathrm{tx,1} - P_\mathrm{tx,2} = 2Kh\nu B \cdot 10^\frac{\alpha L}{10}(\mathrm{SNR}_1 - \mathrm{SNR}_2)
 \end{equation}
 and the difference in energy per bit is
 \begin{equation}
@@ -89,16 +89,16 @@ For a single span, each EDFA with gain \(G\) and noise figure \(\mathrm{NF}\) (d
 \end{equation}
 The Gaussian Noise (GN) model \cite{poggiolini2012gn} gives the single-span NLI power as
 \begin{equation}
-    P_\mathrm{NL} = C_\mathrm{NLI} P_\mathrm{tx}^3,
+    P_\mathrm{NL} = \frac{C_\mathrm{NLI} P_\mathrm{tx}^3}{B^2},
 \end{equation}
 where \(C_\mathrm{NLI}\) depends on the fibre and span parameters.
 
-For a link of \(n\) identical spans, both the ASE and NLI contributions from each span accumulate at the receiver, giving a total noise power of \(n(P_\mathrm{ASE} + P_\mathrm{NL})\) and a link SNR of
+For a link of \(n\) identical spans, both the ASE and NLI contributions from each span accumulate at the receiver, giving a total noise power of \(n(P_\mathrm{ASE} + P_\mathrm{NL})\). Including the 1:\(K\) splitter loss between the OLT and each ONU as in the shot-noise case, the per-ONU SNR is
 \begin{equation}
-    \mathrm{SNR} = \frac{P_\mathrm{tx}}{n\left(N_\mathrm{ASE}B + C_\mathrm{NLI} P_\mathrm{tx}^3\right)}.
+    \mathrm{SNR} = \frac{P_\mathrm{tx}}{Kn\left(N_\mathrm{ASE}B + \frac{C_\mathrm{NLI} P_\mathrm{tx}^3}{B^2}\right)},
     \label{eq:snr_nl}
 \end{equation}
-The required transmit powers can be solved for numerically from \cref{eq:snr_nl}, with the difference in transmitter energy following from \cref{eq:tx_energy}.
+where, as before, \(P_\mathrm{tx}\) is the OLT transmit power and the splitter factor \(K\) ensures the derived power accounts for delivering the required SNR to every ONU. The required transmit powers can be solved for numerically from \cref{eq:snr_nl}, with the difference in transmitter energy following from \cref{eq:tx_energy}.
 
 \subsection{Laser Efficiency}
 The energy difference in \cref{eq:tx_energy} is the optical output energy of the transmitter laser. The true difference in energy consumed by the transmitter must account for the wall-plug efficiency \(\eta\) of the laser, giving

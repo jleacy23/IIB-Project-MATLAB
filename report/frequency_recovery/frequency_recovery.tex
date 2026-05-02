@@ -42,7 +42,7 @@ for blind operation or
     \label{eq:phase_data}
 \end{equation}
 for data-aided operation where the wrap operation can be done with no additional cost by aligning the wrap range to the overflow range of the fixed-point value used to store the phase.
-\subsubsection{Rife and Boorstyn (FFT Search)}
+\subsubsection{Rife and Boorstyn}
 The value of the CFO will appear as the strongest peak in the frequency spectrum of \(z[i], z[i+1], \dots, z[i+L]\) where \(L\) is the observation length. The Rife and Boorstyn (R\&B) algorithm first performs an FFT on the observed sequence and finds the index \(k\) corresponding to the strongest peak. This coarse estimation is refined with a parabolic interpolation on the complex FFT values \(X_{k-1}, X_k, X_{k+1}\) \cite{Jacobsen2007} to give
 \begin{equation}
     \delta = -\Re\left[\frac{X_{k+1} - X_{k-1}}{2X_k - X_{k-1} - X_{k+1}}\right].
@@ -73,17 +73,11 @@ The R\&B algorithm exhibits good performance even at low SNRs but is computation
     \arg (z[i]) - \arg (z[i-1]) = 2 \pi f_d T_s + \theta[i] - \theta[i-1] + \eta[i]
     \label{eq:phase_diff}
 \end{equation}
-over several symbols and averaging to remove the effect of \(\theta\). Estimating \(f_d\) in this manner is vulnerable to the effect of additive noise on the phase \(\eta[i]\) so exhibits poor accuracy as shown in \cref{fig:diffphase_data}. This can be improved with a second pass using the Kay estimator. The Kay estimator uses a least-squares approach, computing the estimated CFO as
+over several symbols and averaging to remove the effect of \(\theta\). Estimating \(f_d\) in this manner is vulnerable to the effect of additive noise on the phase \(\eta[i]\) so exhibits poor accuracy. This can be improved with a second pass using the Kay estimator. The Kay estimator uses a least-squares approach, computing the estimated CFO as
 \begin{equation}
     \hat{f_d} = \frac{R_s}{2 \pi} \sum_{k=1}^{L} \frac{6k(L-k)}{L(L^2 - 1)} \arg (z[k]z^*[k-1]).
 \end{equation}
 where \(\arg(z[k]z^*[k-1])\) computes the phase difference from \cref{eq:phase_diff} and \(\frac{6k(L-k)}{L(L^2 - 1)}\) is a weighting term that prioritises the contribution of phase differences in the middle of the observed sequence. This estimator is able to achieve the MCRB but the least-squares approach considers phase differences of non-adjacent symbols, making it vulnerable to phase wrapping that distorts the estimate when the CFO is high enough. This is demonstrated by considering the phase of symbols at either end of the observation sequence. The phase drift between these symbols \(\Delta \phi = 2 \pi f_d L T_s\). If \(|\Delta \phi| > 2 \pi\) then a phase wrap is guaranteed to occur, giving an estimated phase drift \(\Delta \hat{\phi} = \Delta \phi \pm 2 \pi\) and an estimated CFO \(\hat{f_d} = f_d \pm \frac{1}{L T_s}\). Thus, a first-pass CFO correction is needed to bring the residual CFO within range for the Kay estimator.
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{MCRB_diff_data.png}
-    \caption{Normalised MSE of frequency estimation with data-aided differential phase for \(L = 11\) training symbols.}
-    \label{fig:diffphase_data}
-\end{figure}
 The performance of the Differential Kay (DK) estimator for data-aided operation is shown in \cref{fig:diffkay_data}. The MCRB is achieved above a threshold SNR of \(\approx 7\) dB. This is higher than for R\&B but at a reduced computational cost. Unlike the R\&B algorithm, the threshold SNR of the DK estimator does not depend on observation length, as shown in \cref{fig:diffkay_blind}.
 \begin{figure}[H]
     \centering
@@ -188,29 +182,26 @@ Only phases are needed, so the entire estimation can be performed with CORDIC. T
 \end{table}
 
 \section{Methodology}
-All tests were run on fixed-point implementations of the above frequency and phase recovery algorithms with a CFO of 3 GHz (10\% of the symbol rate) and a laser linewidth of 1 MHz to reflect typical operating conditions. The FFT size used in the R\&B algorithm was fixed at 512. All tests were repeated 100 times with noise and data being randomly generated on each run.
-\subsection{Blind vs Data-Aided Operation}
-The FEC SNR was computed for a range of blind observation lengths and compared against data-aided performance for each combination of frequency recovery and phase recovery algorithm. All fixed-point implementations used 16 bits of precision.
-\subsection{Fixed-Point Precision}
-The FEC SNR was computed for the DK estimator (data-aided) and the R\&B algorithm (data-aided and blind with D=512) followed by both Pilots-Only and Viterbi \& Viterbi phase recovery. This was performed in two sweeps: first, the fixed-point precision of the phase recovery was varied while the frequency recovery precision was fixed at 16 bits; second, the frequency recovery precision was varied with the phase recovery precision fixed at 16 bits.
+
 
 
 \section{Results}
-\subsection{Blind vs Data-Aided Operation}
-The decrease in threshold SNR for longer observation lengths as shown in \cref{fig:fft_mcrb_blind} suggests that the R\&B algorithm will eventually exhibit better performance in blind operation where the observation length is not limited. This is shown in \cref{fig:fft_blind_data} where a blind observation length of \(40-50\) achieves data-aided performance, and continues to improve up to a length of 256, where it plateaus. Unlike the R\&B algorithm, the FEC SNR does not decrease for the DK estimator when the blind observation length increases. This is evident from \cref{fig:diffkay_blind_data} where the FEC SNR for blind operation remains well above that for data-aided operation.
+\subsection{Maximum CFO}
+The theoretical limit on the maximum CFO that can be corrected is given by Nyquist as \(0.5R_s\). From \cref{eq:blind_noise} we see that blind operation reduces this limit by a factor of 4. Both the R\&B and DK estimators accurately estimate the CFO up to the Nyquist limit as seen in \cref{fig:max_cfo}. Blind operation aliases as expected at \(f/R_s = 0.125\).
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{fft_blind_data.png}
-    \caption{FEC SNR vs blind observation length for the R\&B algorithm. The dashed line is the FEC SNR for data-aided operation. Orange: Pilots-Only. Blue: Viterbi \& Viterbi.}
-    \label{fig:fft_blind_data}
+    \includegraphics[width=0.8\textwidth]{max_cfo.png}
+    \caption{Normalised MSE in CFO estimate (\(\mathrm{MSE}^2/R_s^2\)) vs Normalised CFO (\(f/R_s\))}
+    \label{fig:max_cfo}
+\end{figure}
+\subsection{Blind vs Data-Aided Operation}
+The decrease in threshold SNR for longer observation lengths suggests that the performance of the R\&B algorithm will improve with blind observation length. This is not the case for the DK estimator, where increasing blind observation length has no effect on threshold SNR. The effect of observation length on FEC SNR is shown for both algorithms in \cref{fig:observation_length}, where blind R\&B shows a clear increase in performance over the blind DK estimator for longer observations and improves on data-aided R\&B after \(\approx 50\) symbols. The DK estimator in blind operation is thus not viable for frequency recovery but blind R\&B can provide the best performance at a higher computational cost.
+\begin{figure}[H]
+    \centering\includegraphics[width=0.8\textwidth]{blind_data.png}
+    \caption{FEC SNR vs blind observation length for the R\&B and DK estimators. CFO = 2GHz, laser linewidth = 1 MHz}
+    \label{fig:observation_length}
 \end{figure}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{diffkay_blind_data.png}
-    \caption{FEC SNR vs blind observation length for the DK estimator. The dashed line is the FEC SNR for data-aided operation. Orange: Pilots-Only. Blue: Viterbi \& Viterbi.}
-    \label{fig:diffkay_blind_data}
-\end{figure}
 
 \printbibliography
 

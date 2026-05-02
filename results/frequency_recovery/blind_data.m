@@ -168,13 +168,7 @@ classdef blind_data < matlab.unittest.TestCase
             end
 
             % ---- Plot ---------------------------------------------------
-            blind_data.plotAlgoResults(P, ...
-                sprintf('FFT Search  (N_{fft} = %d,  fixed)', P.FR_Nfft), ...
-                fecSNR_fft_blind, fecSNR_fft_DA);
-
-            blind_data.plotAlgoResults(P, ...
-                'Differential Kay', ...
-                fecSNR_dk_blind, fecSNR_dk_DA);
+            blind_data.plotCombinedResults(P, fecSNR_fft_blind, fecSNR_dk_blind, fecSNR_fft_DA);
         end
 
     end
@@ -325,43 +319,49 @@ classdef blind_data < matlab.unittest.TestCase
             end
         end
 
-        function plotAlgoResults(P, algoTitle, fecSNR_blind, fecSNR_DA)
-            % fecSNR_blind : [ND x 2]  columns = VV, PO
-            % fecSNR_DA    : [1  x 2]  same order — plotted as horizontal lines
+        function plotCombinedResults(P, fecSNR_fft_blind, fecSNR_dk_blind, fecSNR_fft_DA)
+            % fecSNR_fft_blind : [ND x 2]  columns = VV, PO  (FFT search, blind)
+            % fecSNR_dk_blind  : [ND x 2]  columns = VV, PO  (Differential Kay, blind)
+            % fecSNR_fft_DA    : [1  x 2]  FFT search data-aided reference
 
-            prNames = {'Viterbi-Viterbi', 'Pilots-only'};
-            colors  = lines(2);
-            markers = {'o', 's'};
+            prNames  = {'Viterbi-Viterbi', 'Pilots-only'};
+            frNames  = {sprintf('FFT Search (N_{fft}=%d)', P.FR_Nfft), 'Differential Kay'};
+            colors   = lines(4);
+            markers  = {'o', 's'};
 
-            figure('Name', sprintf('SNR at FEC vs Blind D  |  %s', algoTitle), ...
+            figure('Name', 'SNR at FEC vs Blind D', ...
                 'Position', [100 100 780 520], 'Color', 'w');
             ax = axes;
             hold(ax, 'on');
             grid(ax, 'on');
 
-            % Blind curves
-            for c = 1:2
-                valid = ~isnan(fecSNR_blind(:, c));
-                if any(valid)
-                    plot(ax, P.BlindD_vec(valid), fecSNR_blind(valid, c), ...
-                        'LineStyle', '-', 'Marker', markers{c}, ...
-                        'MarkerSize', 6, 'LineWidth', 1.8, ...
-                        'Color', colors(c, :), ...
-                        'DisplayName', sprintf('%s (blind)', prNames{c}));
+            fecSNR_blind = {fecSNR_fft_blind, fecSNR_dk_blind};
+            for ai = 1:2
+                for c = 1:2
+                    ci    = (ai - 1) * 2 + c;
+                    valid = ~isnan(fecSNR_blind{ai}(:, c));
+                    if any(valid)
+                        plot(ax, P.BlindD_vec(valid), fecSNR_blind{ai}(valid, c), ...
+                            'LineStyle', '-', 'Marker', markers{c}, ...
+                            'MarkerSize', 6, 'LineWidth', 1.8, ...
+                            'Color', colors(ci, :), ...
+                            'DisplayName', sprintf('%s — %s', frNames{ai}, prNames{c}));
+                    end
                 end
             end
 
-            % Data-aided horizontal reference lines
+            % FFT search data-aided horizontal reference lines only
             for c = 1:2
-                if ~isnan(fecSNR_DA(c))
-                    yline(ax, fecSNR_DA(c), ...
+                ci = c;
+                if ~isnan(fecSNR_fft_DA(c))
+                    yline(ax, fecSNR_fft_DA(c), ...
                         'LineStyle', '--', 'LineWidth', 1.2, ...
-                        'Color', colors(c, :), ...
+                        'Color', colors(ci, :), ...
                         'HandleVisibility', 'off');
                     plot(ax, NaN, NaN, ...
                         'LineStyle', '--', 'LineWidth', 1.2, ...
-                        'Color', colors(c, :), ...
-                        'DisplayName', sprintf('%s (data-aided)', prNames{c}));
+                        'Color', colors(ci, :), ...
+                        'DisplayName', sprintf('%s — %s (data-aided)', frNames{1}, prNames{c}));
                 end
             end
 
@@ -370,11 +370,11 @@ classdef blind_data < matlab.unittest.TestCase
 
             xlabel(ax, 'Blind observation length  D  [symbols]', 'FontSize', 12);
             ylabel(ax, sprintf('SNR at BER = %.0e  [dB]', P.FEC_BER), 'FontSize', 12);
-            title(ax, sprintf('%s\n\\DeltaF = %.0f MHz,  LW = %.0f kHz', ...
-                algoTitle, P.DeltaF_Hz/1e6, P.LW_Hz/1e3), 'FontSize', 12);
+            title(ax, sprintf('SNR at FEC vs Blind Observation Length\n\\DeltaF = %.0f MHz,  LW = %.0f kHz', ...
+                P.DeltaF_Hz/1e6, P.LW_Hz/1e3), 'FontSize', 12);
 
             lgd = legend(ax, 'Location', 'northeast', 'FontSize', 10);
-            lgd.Title.String = 'Phase recovery  (solid = blind, dashed = DA)';
+            lgd.Title.String = 'Algorithm — Phase recovery';
         end
 
     end

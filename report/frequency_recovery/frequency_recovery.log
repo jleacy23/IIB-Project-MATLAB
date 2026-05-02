@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.4)  30 APR 2026 15:24
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.4)  2 MAY 2026 17:37
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -482,40 +482,35 @@ Overfull \hbox (17.37683pt too wide) in paragraph at lines 71--72
 \OT1/cmr/m/n/12 ex-pen-sive. The FFT re-quires $[] [][](\OML/cmm/m/it/12 N[]\OT1/cmr/m/n/12 )$ com-plex mul-ti-pli-ca-tions and $\OML/cmm/m/it/12 N[] [][]\OT1/cmr/m/n/12 (\OML/cmm/m/it/12 N[]\OT1/cmr/m/n/12 )$
  []
 
-<MCRB_diff_data.png, id=22, 534.3162pt x 364.7226pt>
-File: MCRB_diff_data.png Graphic file (type png)
-<use MCRB_diff_data.png>
-Package pdftex.def Info: MCRB_diff_data.png  used on input line 83.
-(pdftex.def)             Requested size: 364.19667pt x 248.59799pt.
-[3 <./MCRB_fft_blind.png (PNG copy)>]
-<MCRB_diffkay_data.png, id=26, 534.3162pt x 360.8682pt>
+<MCRB_diffkay_data.png, id=22, 534.3162pt x 360.3864pt>
 File: MCRB_diffkay_data.png Graphic file (type png)
 <use MCRB_diffkay_data.png>
-Package pdftex.def Info: MCRB_diffkay_data.png  used on input line 90.
-(pdftex.def)             Requested size: 364.19667pt x 245.9708pt.
-<MCRB_diffkay_blind.png, id=27, 539.616pt x 364.7226pt>
+Package pdftex.def Info: MCRB_diffkay_data.png  used on input line 84.
+(pdftex.def)             Requested size: 364.19667pt x 245.6424pt.
+[3 <./MCRB_fft_blind.png (PNG copy)>]
+<MCRB_diffkay_blind.png, id=26, 539.616pt x 364.7226pt>
 File: MCRB_diffkay_blind.png Graphic file (type png)
 <use MCRB_diffkay_blind.png>
-Package pdftex.def Info: MCRB_diffkay_blind.png  used on input line 97.
+Package pdftex.def Info: MCRB_diffkay_blind.png  used on input line 91.
 (pdftex.def)             Requested size: 364.19667pt x 246.16599pt.
- [4 <./MCRB_diff_data.png (PNG copy)> <./MCRB_diffkay_data.png (PNG copy)>]
-Overfull \hbox (28.60747pt too wide) in paragraph at lines 111--121
+ [4 <./MCRB_diffkay_data.png (PNG copy)>]
+Overfull \hbox (28.60747pt too wide) in paragraph at lines 105--115
  [][] 
  []
 
-[5 <./MCRB_diffkay_blind.png (PNG copy)>] [6] [7]
-<fft_blind_data.png, id=42, 498.663pt x 359.4228pt>
-File: fft_blind_data.png Graphic file (type png)
-<use fft_blind_data.png>
-Package pdftex.def Info: fft_blind_data.png  used on input line 203.
-(pdftex.def)             Requested size: 364.19667pt x 262.5026pt.
- [8]
-<diffkay_blind_data.png, id=46, 661.0296pt x 436.9926pt>
-File: diffkay_blind_data.png Graphic file (type png)
-<use diffkay_blind_data.png>
-Package pdftex.def Info: diffkay_blind_data.png  used on input line 210.
-(pdftex.def)             Requested size: 364.19667pt x 240.76674pt.
- [9 <./fft_blind_data.png (PNG copy)> <./diffkay_blind_data.png (PNG copy)>] [10] (./frequency_recovery.aux)
+[5 <./MCRB_diffkay_blind.png (PNG copy)>] [6]
+<max_cfo.png, id=36, 491.436pt x 343.5234pt>
+File: max_cfo.png Graphic file (type png)
+<use max_cfo.png>
+Package pdftex.def Info: max_cfo.png  used on input line 193.
+(pdftex.def)             Requested size: 364.19667pt x 254.59122pt.
+ [7]
+<blind_data.png, id=42, 489.5088pt x 359.4228pt>
+File: blind_data.png Graphic file (type png)
+<use blind_data.png>
+Package pdftex.def Info: blind_data.png  used on input line 200.
+(pdftex.def)             Requested size: 364.19667pt x 267.41109pt.
+ [8 <./max_cfo.png (PNG copy)>] [9 <./blind_data.png (PNG copy)>] (./frequency_recovery.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
@@ -525,18 +520,18 @@ Package logreq Info: Writing requests to 'frequency_recovery.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 13267 strings out of 469515
- 262658 string characters out of 5467663
- 1083757 words of memory out of 5000000
- 41835 multiletter control sequences out of 15000+600000
+ 13258 strings out of 469515
+ 262320 string characters out of 5467663
+ 1083698 words of memory out of 5000000
+ 41826 multiletter control sequences out of 15000+600000
  633706 words of font info for 60 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  67i,12n,77p,1186b,1267s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmcsc10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb>
-Output written on frequency_recovery.pdf (10 pages, 720643 bytes).
+Output written on frequency_recovery.pdf (9 pages, 678902 bytes).
 PDF statistics:
- 119 PDF objects out of 1000 (max. 8388607)
- 69 compressed objects within 1 object stream
+ 115 PDF objects out of 1000 (max. 8388607)
+ 67 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
- 36 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 31 words of extra memory for PDF output out of 10000 (max. 10000000)
 

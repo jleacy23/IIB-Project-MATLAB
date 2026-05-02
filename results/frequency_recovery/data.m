@@ -116,31 +116,45 @@ classdef data < matlab.unittest.TestCase
             for pi_ = 1:NPlot
                 df_idx    = plot_df_indices(pi_);
                 df_actual = DeltaF_v(df_idx);
+                fig_offset = (pi_-1) * 2;
 
-                NMSE_alg = {NMSE_fft, NMSE_dk, NMSE_diff};
+                % Figure 1: FFT search alone
+                figure('Name', sprintf('%s | df = %g MHz', algNames{1}, df_actual), ...
+                       'Position', [60 + fig_offset*40, 60 + fig_offset*40, 820, 520], ...
+                       'Color', 'w');
+                semilogy(SNR_v, NMSE_fft(:, df_idx), '-', 'Color', colors(1,:), ...
+                         'LineWidth', 1.8, 'DisplayName', algNames{1});
+                hold on;
+                semilogy(SNR_v, NMSE_MCRB, 'k--', 'LineWidth', 2.0, ...
+                         'DisplayName', sprintf('MCRB (N=%d)', N_train));
+                hold off;
+                grid on;
+                set(gca, 'FontSize', 13, 'LineWidth', 1, 'Box', 'on');
+                xlabel('SNR [dB]', 'FontSize', 14);
+                ylabel('Normalised MSE', 'FontSize', 14);
+                legend('Location', 'best', 'FontSize', 12);
+                title(sprintf('%s  |  \\Deltaf = %g MHz  |  %d trials', ...
+                              algNames{1}, df_actual, NT));
 
-                for ai = 1:numel(algNames)
-                    figure('Name', sprintf('%s | df = %g MHz', algNames{ai}, df_actual), ...
-                           'Position', [60 + ((pi_-1)*numel(algNames) + (ai-1))*40, ...
-                                        60 + ((pi_-1)*numel(algNames) + (ai-1))*40, ...
-                                        820, 520], ...
-                           'Color', 'w');
-
-                    semilogy(SNR_v, NMSE_alg{ai}(:, df_idx), '-',  'Color', colors(ai,:), ...
-                             'LineWidth', 1.8, 'DisplayName', algNames{ai});
-                    hold on;
-                    semilogy(SNR_v, NMSE_MCRB, 'k--', 'LineWidth', 2.0, ...
-                             'DisplayName', sprintf('MCRB (N=%d)', N_train));
-                    hold off;
-
-                    grid on;
-                    set(gca, 'FontSize', 13, 'LineWidth', 1, 'Box', 'on');
-                    xlabel('SNR [dB]', 'FontSize', 14);
-                    ylabel('Normalised MSE', 'FontSize', 14);
-                    legend('Location', 'best', 'FontSize', 12);
-                    title(sprintf('%s  |  \\Deltaf = %g MHz  |  %d trials', ...
-                                  algNames{ai}, df_actual, NT));
-                end
+                % Figure 2: Differential Kay + Differential on shared axes
+                figure('Name', sprintf('Differential estimators | df = %g MHz', df_actual), ...
+                       'Position', [60 + (fig_offset+1)*40, 60 + (fig_offset+1)*40, 820, 520], ...
+                       'Color', 'w');
+                semilogy(SNR_v, NMSE_dk(:, df_idx), '-', 'Color', colors(2,:), ...
+                         'LineWidth', 1.8, 'DisplayName', algNames{2});
+                hold on;
+                semilogy(SNR_v, NMSE_diff(:, df_idx), '-', 'Color', colors(3,:), ...
+                         'LineWidth', 1.8, 'DisplayName', algNames{3});
+                semilogy(SNR_v, NMSE_MCRB, 'k--', 'LineWidth', 2.0, ...
+                         'DisplayName', sprintf('MCRB (N=%d)', N_train));
+                hold off;
+                grid on;
+                set(gca, 'FontSize', 13, 'LineWidth', 1, 'Box', 'on');
+                xlabel('SNR [dB]', 'FontSize', 14);
+                ylabel('Normalised MSE', 'FontSize', 14);
+                legend('Location', 'best', 'FontSize', 12);
+                title(sprintf('Differential estimators  |  \\Deltaf = %g MHz  |  %d trials', ...
+                              df_actual, NT));
             end
 
             % Print summary table

@@ -19,6 +19,40 @@
 
 \refsection{0}
   \datalist[entry]{nty/global//global/global/global}
+    \entry{CPON_PMD_2025}{report}{}{}
+      \name{author}{1}{}{%
+        {{hash=e358908c6177fc1d47af4dbbcdffdf89}{%
+           family={{Cable Television Laboratories, Inc.}},
+           familyi={C\bibinitperiod}}}%
+      }
+      \list{institution}{1}{%
+        {CableLabs}%
+      }
+      \strng{namehash}{e358908c6177fc1d47af4dbbcdffdf89}
+      \strng{fullhash}{e358908c6177fc1d47af4dbbcdffdf89}
+      \strng{fullhashraw}{e358908c6177fc1d47af4dbbcdffdf89}
+      \strng{bibnamehash}{e358908c6177fc1d47af4dbbcdffdf89}
+      \strng{authorbibnamehash}{e358908c6177fc1d47af4dbbcdffdf89}
+      \strng{authornamehash}{e358908c6177fc1d47af4dbbcdffdf89}
+      \strng{authorfullhash}{e358908c6177fc1d47af4dbbcdffdf89}
+      \strng{authorfullhashraw}{e358908c6177fc1d47af4dbbcdffdf89}
+      \field{sortinit}{C}
+      \field{sortinithash}{4d103a86280481745c9c897c925753c0}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{month}{12}
+      \field{note}{Issued specification, version I01}
+      \field{number}{CPON-SP-PMDv1.0-I01-251216}
+      \field{title}{{Coherent PON Physical Media Dependent Layer 1.0 Specification}}
+      \field{type}{techreport}
+      \field{year}{2025}
+      \verb{urlraw}
+      \verb https://www.cablelabs.com
+      \endverb
+      \verb{url}
+      \verb https://www.cablelabs.com
+      \endverb
+    \endentry
     \entry{horowitz2014computing}{inproceedings}{}{}
       \name{author}{1}{}{%
         {{hash=2c9d1aa766759ce8abffd16d2a35689e}{%

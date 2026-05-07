@@ -51,7 +51,7 @@ classdef bit_width_full < matlab.unittest.TestCase
         TrainingLen = 11
 
         % Monte-Carlo
-        NTrials     = 10
+        NTrials     = 50
 
         % SNR sweep
         SNR_dB_vec  = 0 : 1 : 30

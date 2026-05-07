@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.4)  5 MAY 2026 14:34
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.4)  7 MAY 2026 16:41
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -471,12 +471,12 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 File: MCRB_fft_data.png Graphic file (type png)
 <use MCRB_fft_data.png>
 Package pdftex.def Info: MCRB_fft_data.png  used on input line 58.
-(pdftex.def)             Requested size: 364.19667pt x 248.59799pt.
+(pdftex.def)             Requested size: 318.66948pt x 217.52185pt.
 <MCRB_fft_blind.png, id=17, 539.616pt x 364.7226pt>
 File: MCRB_fft_blind.png Graphic file (type png)
 <use MCRB_fft_blind.png>
 Package pdftex.def Info: MCRB_fft_blind.png  used on input line 65.
-(pdftex.def)             Requested size: 364.19667pt x 246.16599pt.
+(pdftex.def)             Requested size: 318.66948pt x 215.39037pt.
  [2 <./MCRB_fft_data.png (PNG copy)>]
 Overfull \hbox (17.37683pt too wide) in paragraph at lines 71--72
 \OT1/cmr/m/n/12 ex-pen-sive. The FFT re-quires $[] [][](\OML/cmm/m/it/12 N[]\OT1/cmr/m/n/12 )$ com-plex mul-ti-pli-ca-tions and $\OML/cmm/m/it/12 N[] [][]\OT1/cmr/m/n/12 (\OML/cmm/m/it/12 N[]\OT1/cmr/m/n/12 )$
@@ -486,31 +486,39 @@ Overfull \hbox (17.37683pt too wide) in paragraph at lines 71--72
 File: MCRB_diffkay_data.png Graphic file (type png)
 <use MCRB_diffkay_data.png>
 Package pdftex.def Info: MCRB_diffkay_data.png  used on input line 84.
-(pdftex.def)             Requested size: 364.19667pt x 245.6424pt.
+(pdftex.def)             Requested size: 318.66948pt x 214.93573pt.
 [3 <./MCRB_fft_blind.png (PNG copy)>]
 <MCRB_diffkay_blind.png, id=26, 539.616pt x 364.7226pt>
 File: MCRB_diffkay_blind.png Graphic file (type png)
 <use MCRB_diffkay_blind.png>
 Package pdftex.def Info: MCRB_diffkay_blind.png  used on input line 91.
-(pdftex.def)             Requested size: 364.19667pt x 246.16599pt.
- [4 <./MCRB_diffkay_data.png (PNG copy)>]
+(pdftex.def)             Requested size: 318.66948pt x 215.39037pt.
+ [4 <./MCRB_diffkay_data.png (PNG copy)> <./MCRB_diffkay_blind.png (PNG copy)>]
 Overfull \hbox (28.60747pt too wide) in paragraph at lines 105--115
  [][] 
  []
 
-[5 <./MCRB_diffkay_blind.png (PNG copy)>] [6]
-<max_cfo.png, id=36, 491.436pt x 343.5234pt>
+[5] [6]
+<max_cfo.png, id=37, 491.436pt x 343.5234pt>
 File: max_cfo.png Graphic file (type png)
 <use max_cfo.png>
-Package pdftex.def Info: max_cfo.png  used on input line 193.
-(pdftex.def)             Requested size: 364.19667pt x 254.59122pt.
+Package pdftex.def Info: max_cfo.png  used on input line 196.
+(pdftex.def)             Requested size: 318.66948pt x 222.76862pt.
  [7]
 <blind_data.png, id=42, 489.5088pt x 359.4228pt>
 File: blind_data.png Graphic file (type png)
 <use blind_data.png>
-Package pdftex.def Info: blind_data.png  used on input line 200.
-(pdftex.def)             Requested size: 364.19667pt x 267.41109pt.
- [8 <./max_cfo.png (PNG copy)>] [9 <./blind_data.png (PNG copy)>] (./frequency_recovery.aux)
+Package pdftex.def Info: blind_data.png  used on input line 203.
+(pdftex.def)             Requested size: 318.66948pt x 233.98401pt.
+<best_energy_per_snr.png, id=43, 570.933pt x 407.6028pt>
+File: best_energy_per_snr.png Graphic file (type png)
+<use best_energy_per_snr.png>
+Package pdftex.def Info: best_energy_per_snr.png  used on input line 212.
+(pdftex.def)             Requested size: 318.66948pt x 227.51588pt.
+ [8 <./max_cfo.png (PNG copy)> <./blind_data.png (PNG copy)>]
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <10.95> on input line 222.
+ [9 <./best_energy_per_snr.png (PNG copy)>] [10] (./frequency_recovery.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
@@ -520,18 +528,18 @@ Package logreq Info: Writing requests to 'frequency_recovery.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 13258 strings out of 469515
- 262320 string characters out of 5467663
- 1083698 words of memory out of 5000000
- 41826 multiletter control sequences out of 15000+600000
- 633706 words of font info for 60 fonts, out of 8000000 for 9000
+ 13273 strings out of 469515
+ 262692 string characters out of 5467663
+ 1084812 words of memory out of 5000000
+ 41841 multiletter control sequences out of 15000+600000
+ 634622 words of font info for 63 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  67i,12n,77p,1186b,1267s stack positions out of 10000i,1000n,20000p,200000b,200000s
-<c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmcsc10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb>
-Output written on frequency_recovery.pdf (9 pages, 677867 bytes).
+<c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmcsc10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb>
+Output written on frequency_recovery.pdf (10 pages, 788474 bytes).
 PDF statistics:
- 115 PDF objects out of 1000 (max. 8388607)
- 67 compressed objects within 1 object stream
+ 129 PDF objects out of 1000 (max. 8388607)
+ 75 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
- 31 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 36 words of extra memory for PDF output out of 10000 (max. 10000000)
 

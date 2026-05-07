@@ -55,7 +55,6 @@ classdef plot_energy_snr < matlab.unittest.TestCase
 
             nCombos = numel(FrAlgos_l) * numel(CrAlgos_l);
             colors  = lines(nCombos);
-            markers = {'o', 's', '^', 'd', 'v', 'p'};
 
             figure('Name', 'Energy vs FEC SNR — min-energy Pareto front', ...
                 'Color', 'w', 'Position', [100 100 900 600]);
@@ -63,7 +62,8 @@ classdef plot_energy_snr < matlab.unittest.TestCase
             hold(ax, 'on');
             grid(ax, 'on');
 
-            SNR_MAX = 10;   % dB — clip the x-axis to ignore high-SNR outliers
+            SNR_MIN = 7;    % dB
+            SNR_MAX = 10;   % dB
             globalMinSnr = Inf;
 
             k = 0;
@@ -80,7 +80,7 @@ classdef plot_energy_snr < matlab.unittest.TestCase
                     [snr_pf, e_pf] = plot_energy_snr.paretoFront( ...
                         sub.fec_snr_db, sub.energy_total_fJ);
 
-                    inRange = snr_pf <= SNR_MAX;
+                    inRange = snr_pf >= SNR_MIN & snr_pf <= SNR_MAX;
                     snr_pf  = snr_pf(inRange);
                     e_pf    = e_pf(inRange);
                     if isempty(snr_pf), continue; end
@@ -91,208 +91,20 @@ classdef plot_energy_snr < matlab.unittest.TestCase
                         plot_energy_snr.CrLabel.(char(cr)));
 
                     plot(ax, snr_pf, e_pf, ...
-                        'LineStyle', '-', 'Marker', markers{k}, ...
-                        'MarkerSize', 6, 'LineWidth', 1.8, ...
+                        'LineStyle', '-', 'Marker', 'o', ...
+                        'MarkerSize', 4, 'LineWidth', 1.8, ...
                         'Color', colors(k, :), ...
                         'DisplayName', label);
                 end
             end
 
-            if isfinite(globalMinSnr)
-                xlim(ax, [globalMinSnr, SNR_MAX]);
-            end
+            xlim(ax, [SNR_MIN, SNR_MAX]);
             set(ax, 'YScale', 'log', 'FontSize', 11, 'Box', 'on');
             xlabel(ax, 'FEC SNR threshold  [dB]', 'FontSize', 12);
             ylabel(ax, 'Total energy per bit  [fJ]', 'FontSize', 12);
             title(ax,  'Min-energy bit-width combination per FR \times CR pair', ...
                 'FontSize', 12);
             legend(ax, 'Location', 'best', 'FontSize', 10, 'Interpreter', 'none');
-        end
-
-        function test_plot_energy_breakdown(testCase)  %#ok<MANU>
-            % For each (FR, CR) pair and a few FEC SNR targets, plot the
-            % min-energy point as a stacked bar split into FR vs CR energy.
-            dataDir = fileparts(mfilename('fullpath'));
-            T = plot_energy_snr.loadCombinedTable(dataDir);
-
-            FrAlgos_l  = plot_energy_snr.FrAlgos;
-            CrAlgos_l  = plot_energy_snr.CrAlgos;
-            snrTargets = [10, 15, 20];
-
-            nCombos = numel(FrAlgos_l) * numel(CrAlgos_l);
-            labels  = strings(nCombos, 1);
-            E_fr    = nan(nCombos, numel(snrTargets));
-            E_cr    = nan(nCombos, numel(snrTargets));
-
-            k = 0;
-            for fi = 1:numel(FrAlgos_l)
-                for ci = 1:numel(CrAlgos_l)
-                    k  = k + 1;
-                    fr = FrAlgos_l(fi);
-                    cr = CrAlgos_l(ci);
-                    sub = T(T.fr_algo == fr & T.cr_algo == cr & ~isnan(T.fec_snr_db), :);
-                    labels(k) = sprintf('%s + %s', ...
-                        plot_energy_snr.FrLabel.(char(fr)), ...
-                        plot_energy_snr.CrLabel.(char(cr)));
-
-                    for ti = 1:numel(snrTargets)
-                        meet = sub(sub.fec_snr_db <= snrTargets(ti), :);
-                        if isempty(meet), continue; end
-                        [~, idx] = min(meet.energy_total_fJ);
-                        E_fr(k, ti) = meet.energy_fr_fJ(idx);
-                        E_cr(k, ti) = meet.energy_cr_fJ(idx);
-                    end
-                end
-            end
-
-            figure('Name', 'Energy breakdown (FR vs CR) at SNR targets', ...
-                'Color', 'w', 'Position', [120 120 1200 500]);
-            for ti = 1:numel(snrTargets)
-                subplot(1, numel(snrTargets), ti);
-                bar([E_fr(:, ti), E_cr(:, ti)], 'stacked');
-                set(gca, 'XTickLabel', labels, 'XTickLabelRotation', 30, ...
-                    'FontSize', 9, 'Box', 'on');
-                ylabel('Energy per bit  [fJ]');
-                title(sprintf('Min-energy config meeting FEC SNR \\leq %d dB', snrTargets(ti)));
-                legend({'FR', 'CR'}, 'Location', 'northwest');
-                grid on;
-            end
-        end
-
-        function test_plot_blind_d_sweep(testCase)  %#ok<MANU>
-            % Pareto fronts for the blind FFT search variant, one curve per
-            % BlindD value, broken out by CR algorithm.
-            dataDir = fileparts(mfilename('fullpath'));
-            T = plot_energy_snr.loadCombinedTable(dataDir);
-
-            CrAlgos_l = plot_energy_snr.CrAlgos;
-            figure('Name', 'Blind FFT — accuracy vs energy across BlindD', ...
-                'Color', 'w', 'Position', [140 140 1100 500]);
-
-            for ci = 1:numel(CrAlgos_l)
-                subplot(1, numel(CrAlgos_l), ci);
-                cr  = CrAlgos_l(ci);
-                sub = T(T.fr_algo == "fft_search_blind" & T.cr_algo == cr & ...
-                        ~isnan(T.fec_snr_db), :);
-
-                bds  = unique(sub.blind_d(~isnan(sub.blind_d)));
-                cmap = parula(max(numel(bds), 2));
-                hold on; grid on;
-                for bi = 1:numel(bds)
-                    sb = sub(sub.blind_d == bds(bi), :);
-                    [snr_pf, e_pf] = plot_energy_snr.paretoFront( ...
-                        sb.fec_snr_db, sb.energy_total_fJ);
-                    plot(snr_pf, e_pf, 'o-', 'Color', cmap(bi, :), ...
-                        'LineWidth', 1.6, 'MarkerSize', 5, ...
-                        'DisplayName', sprintf('D = %d', bds(bi)));
-                end
-                set(gca, 'YScale', 'log', 'FontSize', 11, 'Box', 'on');
-                xlabel('FEC SNR threshold  [dB]');
-                ylabel('Total energy per bit  [fJ]');
-                title(sprintf('Blind FFT + %s', ...
-                    plot_energy_snr.CrLabel.(char(cr))));
-                legend('Location', 'best');
-            end
-        end
-
-        function test_plot_snr_heatmaps(testCase)  %#ok<MANU>
-            % For each (FR, CR) pair, heatmap of FEC SNR threshold over the
-            % (fl_fr, fl_cr) grid.  For the blind FFT variant we collapse
-            % BlindD by taking the best (lowest) FEC SNR per cell.
-            dataDir = fileparts(mfilename('fullpath'));
-            T = plot_energy_snr.loadCombinedTable(dataDir);
-
-            FrAlgos_l = plot_energy_snr.FrAlgos;
-            CrAlgos_l = plot_energy_snr.CrAlgos;
-            fl_vec    = unique(T.fl_fr);
-
-            figure('Name', 'FEC SNR threshold heatmaps', 'Color', 'w', ...
-                'Position', [160 100 1200 720]);
-
-            nFR = numel(FrAlgos_l);
-            nCR = numel(CrAlgos_l);
-            k = 0;
-            for fi = 1:nFR
-                for ci = 1:nCR
-                    k  = k + 1;
-                    subplot(nFR, nCR, k);
-                    fr  = FrAlgos_l(fi);
-                    cr  = CrAlgos_l(ci);
-                    sub = T(T.fr_algo == fr & T.cr_algo == cr, :);
-
-                    G = nan(numel(fl_vec));
-                    for r = 1:numel(fl_vec)
-                        for c = 1:numel(fl_vec)
-                            sel  = sub.fl_fr == fl_vec(r) & sub.fl_cr == fl_vec(c);
-                            vals = sub.fec_snr_db(sel);
-                            vals = vals(~isnan(vals));
-                            if ~isempty(vals)
-                                G(r, c) = min(vals);
-                            end
-                        end
-                    end
-                    imagesc(fl_vec, fl_vec, G, 'AlphaData', ~isnan(G));
-                    set(gca, 'YDir', 'normal', 'Color', [0.9 0.9 0.9]);
-                    colorbar;
-                    xlabel('FL_{CR}'); ylabel('FL_{FR}');
-                    title(sprintf('%s + %s', ...
-                        plot_energy_snr.FrLabel.(char(fr)), ...
-                        plot_energy_snr.CrLabel.(char(cr))), ...
-                        'FontSize', 10);
-                end
-            end
-            sgtitle('FEC SNR threshold [dB] (lower = better, NaN = no convergence)', ...
-                'FontSize', 13);
-        end
-
-        function test_plot_bitwidth_along_pareto(testCase)  %#ok<MANU>
-            % For each (FR, CR) pair, show which fl_fr / fl_cr values land
-            % on the Pareto front as the FEC SNR target relaxes.
-            dataDir = fileparts(mfilename('fullpath'));
-            T = plot_energy_snr.loadCombinedTable(dataDir);
-
-            FrAlgos_l = plot_energy_snr.FrAlgos;
-            CrAlgos_l = plot_energy_snr.CrAlgos;
-
-            figure('Name', 'Pareto-optimal bit widths vs FEC SNR target', ...
-                'Color', 'w', 'Position', [180 120 1200 720]);
-
-            nFR = numel(FrAlgos_l);
-            nCR = numel(CrAlgos_l);
-            k = 0;
-            for fi = 1:nFR
-                for ci = 1:nCR
-                    k  = k + 1;
-                    subplot(nFR, nCR, k);
-                    fr  = FrAlgos_l(fi);
-                    cr  = CrAlgos_l(ci);
-                    sub = T(T.fr_algo == fr & T.cr_algo == cr & ~isnan(T.fec_snr_db), :);
-                    if isempty(sub), continue; end
-
-                    keep  = plot_energy_snr.paretoMask(sub.fec_snr_db, sub.energy_total_fJ);
-                    sub_p = sub(keep, :);
-                    [~, ord] = sort(sub_p.fec_snr_db);
-                    sub_p = sub_p(ord, :);
-
-                    plot(sub_p.fec_snr_db, sub_p.fl_fr, 'o-', ...
-                        'LineWidth', 1.6, 'MarkerSize', 6, ...
-                        'DisplayName', 'FL_{FR}');
-                    hold on; grid on;
-                    plot(sub_p.fec_snr_db, sub_p.fl_cr, 's--', ...
-                        'LineWidth', 1.6, 'MarkerSize', 6, ...
-                        'DisplayName', 'FL_{CR}');
-                    ylim([0 max(plot_energy_snr.FL_vec) + 2]);
-                    xlabel('FEC SNR threshold  [dB]');
-                    ylabel('Fractional bits');
-                    title(sprintf('%s + %s', ...
-                        plot_energy_snr.FrLabel.(char(fr)), ...
-                        plot_energy_snr.CrLabel.(char(cr))), ...
-                        'FontSize', 10);
-                    legend('Location', 'best');
-                end
-            end
-            sgtitle('Bit-width selection along the energy Pareto front', ...
-                'FontSize', 13);
         end
 
         function test_print_summary_tables(testCase)  %#ok<MANU>
@@ -480,20 +292,6 @@ classdef plot_energy_snr < matlab.unittest.TestCase
                 row = {label, K, sub.fec_snr_db(idx), ...
                     sub.energy_total_fJ(idx), E_tx_vec(idx), Esys_min, ...
                     sub.fl_fr(idx), sub.fl_cr(idx), sub.blind_d(idx)};
-            end
-        end
-
-        function keep = paretoMask(x, y)
-            % Logical mask for the lower-left Pareto front in (x, y).
-            x = x(:);  y = y(:);
-            n = numel(x);
-            keep = true(n, 1);
-            for i = 1:n
-                if ~keep(i), continue; end
-                dom = (x <= x(i)) & (y <= y(i)) & ((x < x(i)) | (y < y(i)));
-                if any(dom)
-                    keep(i) = false;
-                end
             end
         end
 

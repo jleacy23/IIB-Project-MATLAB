@@ -1,3 +1,6 @@
 Carrier Recovery Report:
-    - Plot Energy at which SNRs are achieved for each method, can vary bit width
-    - Blind operation can optimise over observation length and bit width.
+    - Choose suitable fibre as example, add Cnli formula, double check claude's energy calculations.
+    - Reword system energy section, it ignores energy from rest of receiver.
+
+Full Report:
+    - combine energy and carrier recovery sections

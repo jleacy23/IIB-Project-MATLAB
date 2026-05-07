@@ -55,14 +55,14 @@ The updated index \(k' = k + \delta\), which is then scaled by the sampling rate
 R\&B achieves this bound above a threshold SNR of \(\approx 4\) dB, where the threshold SNR is defined as the SNR below which the estimator begins to deviate from the MCRB. Below this, the noise has a significant contribution to the FFT values and can lead to an incorrect index being chosen.
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{MCRB_fft_data.png}
+    \includegraphics[width=0.7\textwidth]{MCRB_fft_data.png}
     \caption{Normalised MSE of the R\&B algorithm with FFT size \(N_{FFT} = 512\) compared to the MCRB for \(L=11\) training symbols.}
     \label{fig:fft_mcrb_data}
 \end{figure}
 Data-aided operation is constrained by the length of the training sequence, but the accuracy of the R\&B algorithm improves with longer observation lengths, as shown in \cref{fig:fft_mcrb_blind} for non-data-aided operation. The SNR threshold at which this algorithm begins to deviate from the MCRB is initially higher with data-aided operation due to the amplification of noise, but decreases for longer observation lengths.
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{MCRB_fft_blind.png}
+    \includegraphics[width=0.7\textwidth]{MCRB_fft_blind.png}
     \caption{Normalised MSE of the R\&B algorithm for non-data-aided operation and different observation lengths.}
     \label{fig:fft_mcrb_blind}
 \end{figure}
@@ -81,14 +81,14 @@ where \(\arg(z[k]z^*[k-1])\) computes the phase difference from \cref{eq:phase_d
 The performance of the Differential Kay (DK) estimator for data-aided operation is shown in \cref{fig:diffkay_data}. The MCRB is achieved above a threshold SNR of \(\approx 7\) dB. This is higher than for R\&B but at a reduced computational cost. Unlike the R\&B algorithm, the threshold SNR of the DK estimator does not depend on observation length, as shown in \cref{fig:diffkay_blind}.
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{MCRB_diffkay_data.png}
+    \includegraphics[width=0.7\textwidth]{MCRB_diffkay_data.png}
     \caption{Normalised MSE of frequency estimation with the DK estimator for \(L = 11\) training symbols.}
     \label{fig:diffkay_data}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{MCRB_diffkay_blind.png}
+    \includegraphics[width=0.7\textwidth]{MCRB_diffkay_blind.png}
     \caption{Normalised MSE of the DK estimator with blind operation for different observation lengths.}
     \label{fig:diffkay_blind}
 \end{figure}
@@ -181,6 +181,9 @@ Only phases are needed, so the entire estimation can be performed with CORDIC. T
     \label{tab:pilot_cost}
 \end{table}
 
+\subsection{Amortisation}
+The estimated CFO can be applied to the number of symbols that it can be assumed to remain constant over. Here the CFO is estimated for every new subframe of 3712 symbols, so the total number of operations found from \cref{tab:diffkay_cost} and \cref{tab:fft_cost} is divided by the subframe length to give the amortised operations per symbol. The phase recovery stage operates on blocks of 32 symbols, so the operations per symbol is found by dividing the total operations from \cref{tab:viterbi_cost} and \cref{tab:pilot_cost} by the block length.
+
 \section{Methodology}
 
 
@@ -190,19 +193,49 @@ Only phases are needed, so the entire estimation can be performed with CORDIC. T
 The theoretical limit on the maximum CFO that can be corrected is given by Nyquist as \(0.5R_s\). From \cref{eq:blind_noise} we see that blind operation reduces this limit by a factor of 4. Both the R\&B and DK estimators accurately estimate the CFO up to the Nyquist limit as seen in \cref{fig:max_cfo}. Blind operation aliases as expected at \(f/R_s = 0.125\).
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{max_cfo.png}
+    \includegraphics[width=0.7\textwidth]{max_cfo.png}
     \caption{Normalised MSE in CFO estimate (\(\mathrm{MSE}^2/R_s^2\)) vs Normalised CFO (\(f/R_s\))}
     \label{fig:max_cfo}
 \end{figure}
 \subsection{Blind vs Data-Aided Operation}
 The decrease in threshold SNR for longer observation lengths suggests that the performance of the R\&B algorithm will improve with blind observation length. This is not the case for the DK estimator, where increasing blind observation length has no effect on threshold SNR. The effect of observation length on FEC SNR is shown for both algorithms in \cref{fig:observation_length}, where blind R\&B shows a clear increase in performance over the blind DK estimator for longer observations and improves on data-aided R\&B after \(\approx 50\) symbols. The DK estimator in blind operation is thus not viable for frequency recovery but blind R\&B can provide the best performance at a higher computational cost.
 \begin{figure}[H]
-    \centering\includegraphics[width=0.8\textwidth]{blind_data.png}
+    \centering\includegraphics[width=0.7\textwidth]{blind_data.png}
     \caption{FEC SNR vs blind observation length for the R\&B and DK estimators. CFO = 2GHz, laser linewidth = 1 MHz}
     \label{fig:observation_length}
 \end{figure}
 
+\subsection{Combined Performance}
+The energy consumption of any combination of frequency and phase recovery algorithms can be optimised by varying the precision of the fixed point arithmetic in each stage. Blind operation also allows for optimisation over the observation length. The lowest receiver energy per bit for a given FEC SNR is shown for each combination in \cref{fig:best_energy_per_snr}. The amortisation of each stage means that the choice of phase recovery algorithm dominates the receiver energy. R\&B can also use less energy in blind operation when allowing fixed point precision to vary, as the more accurate CFO estimate can use fewer bits of precision to achieve the same FEC SNR.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{best_energy_per_snr.png}
+    \caption{Lowest receiver energy for each FEC SNR achieved.}
+    \label{fig:best_energy_per_snr}
+\end{figure}
 
+\subsection{System Energy}
+If carrier recovery limits the required SNR at the receiver, the FEC SNR and the receiver energy of each carrier recovery combination will determine the necessary system energy for acceptable operation. The minimum achievable system energy at the best FEC SNR for each combination is shown in \cref{tab:sys_energy} for both amplifier noise and shot noise limited links, and for $K = 1$, $10$, and $100$ ONUs per OLT. 
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabular}{lc rr rr rr}
+        \toprule
+        & & \multicolumn{2}{c}{$K = 1$} & \multicolumn{2}{c}{$K = 10$} & \multicolumn{2}{c}{$K = 100$} \\
+        \cmidrule(lr){3-4} \cmidrule(lr){5-6} \cmidrule(lr){7-8}
+        Algorithm pair & SNR (dB) & Amp. & Shot & Amp. & Shot & Amp. & Shot \\
+        \midrule
+        R\&B (DA) + V\&V      & 17.71 & 994   & 981   & 9820  & 9810  & 98100 & 98100 \\
+        R\&B (DA) + Pilots    & 10.11 & 29.6  & 27.2  & 275   & 272   & 2720  & 2720  \\
+        DK (DA) + V\&V        & 17.74 & 968   & 954   & 9550  & 9540  & 95400 & 95400 \\
+        DK (DA) + Pilots      & 10.73 & 3.69  & 0.940 & 11.8  & 9.40  & 93.0  & 94.1  \\
+        R\&B (blind) + V\&V   & 17.65 & 1010  & 992   & 9930  & 9920  & 99200 & 99200 \\
+        R\&B (blind) + Pilots & 10.30 & 41.2  & 38.8  & 390   & 387   & 3870  & 3870  \\
+        \bottomrule
+    \end{tabular}
+    \caption{Minimum system energy (fJ/bit) for each carrier recovery combination under amplifier noise and shot noise limited links for $K$ ONUs per OLT.}
+    \label{tab:sys_energy}
+\end{table}
 
 \printbibliography
 

@@ -1,6 +1,14 @@
-Carrier Recovery Report:
-    - Choose suitable fibre as example, add Cnli formula, double check claude's energy calculations.
-    - Reword system energy section, it ignores energy from rest of receiver.
+Carrier Recovery:
+    - Stress test VV and PO with phase noise
+    - amortise CFO to infinity
+   
+
+Energy:
+    - Check ASE noise SNR calculation (factor of K)
+    - State assumptions about complex multiplications
+
+Adaptive Equaliser:
+    - Check how often equaliser weights change sign -> determines effectiveness of removing redundant bits on power
 
 Full Report:
     - combine energy and carrier recovery sections

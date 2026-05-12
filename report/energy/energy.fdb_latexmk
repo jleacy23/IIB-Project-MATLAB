@@ -1,12 +1,12 @@
 # Fdb version 4
-["biber energy"] 1777992107.80107 "energy.bcf" "energy.bbl" "energy" 1778157822.26268 0
-  "energy.bcf" 1778157822 108835 0b51dfa2a47832ffe3bf934e6dfd6f0d "pdflatex"
+["biber energy"] 1777992107.80107 "energy.bcf" "energy.bbl" "energy" 1778601456.03879 0
+  "energy.bcf" 1778601455 108835 0b51dfa2a47832ffe3bf934e6dfd6f0d "pdflatex"
   "ref.bib" 1777992037 1213 3edeab146894889c227b177519c60136 ""
   (generated)
   "energy.bbl"
   "energy.blg"
   (rewritten before read)
-["pdflatex"] 1778157821.187 "c:/Users/joele/Downloads/iib_project/report/energy/energy.tex" "energy.pdf" "energy" 1778157822.26354 0
+["pdflatex"] 1778601454.92389 "c:/Users/joele/Downloads/iib_project/report/energy/energy.tex" "energy.pdf" "energy" 1778601456.04001 0
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmbx12.tfm" 1772596488 1324 c910af8c371558dc20f2d7822f66fe64 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmcsc10.tfm" 1772596488 1300 63a6111ee6274895728663cf4b4e7e81 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmmi10.tfm" 1772596488 1528 abec98dbc43e172678c11b3b9031252a ""
@@ -156,11 +156,11 @@
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1772596550 94259 aec9939469efac8f0cf917369f632359 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/web2c/pdftex/pdflatex.fmt" 1772596566 2236130 036198fdb3bbb46401ac4d671e71ba73 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf.cnf" 1772596498 903 164c5b127cd0d6dc91abad2f62421ea2 ""
-  "c:/Users/joele/Downloads/iib_project/report/energy/energy.tex" 1778157820 10599 cd49f20a15403c325dd555ac1789c3a8 ""
-  "energy.aux" 1778157822 3148 21b60b909f6f90519dfdeb0e6ed83c5c "pdflatex"
+  "c:/Users/joele/Downloads/iib_project/report/energy/energy.tex" 1778601454 10745 c9341725ce6a9650811695749308a648 ""
+  "energy.aux" 1778601455 3148 21b60b909f6f90519dfdeb0e6ed83c5c "pdflatex"
   "energy.bbl" 1777992109 5416 3d8046570694e11931a1a8d940df1c58 "biber energy"
-  "energy.run.xml" 1778157822 2312 9bb746cc4c234529e2187a2745c76752 "pdflatex"
-  "energy.tex" 1778157820 10599 cd49f20a15403c325dd555ac1789c3a8 ""
+  "energy.run.xml" 1778601455 2312 9bb746cc4c234529e2187a2745c76752 "pdflatex"
+  "energy.tex" 1778601454 10745 c9341725ce6a9650811695749308a648 ""
   (generated)
   "energy.aux"
   "energy.bcf"

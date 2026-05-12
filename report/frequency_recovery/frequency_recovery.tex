@@ -182,7 +182,7 @@ Only phases are needed, so the entire estimation can be performed with CORDIC. T
 \end{table}
 
 \subsection{Amortisation}
-The estimated CFO can be applied to the number of symbols that it can be assumed to remain constant over. Here the CFO is estimated for every new subframe of 3712 symbols, so the total number of operations found from \cref{tab:diffkay_cost} and \cref{tab:fft_cost} is divided by the subframe length to give the amortised operations per symbol. The phase recovery stage operates on blocks of 32 symbols, so the operations per symbol is found by dividing the total operations from \cref{tab:viterbi_cost} and \cref{tab:pilot_cost} by the block length.
+The estimated CFO can be applied to the number of symbols that it can be assumed to remain constant over, dividing the operation counts in \cref{tab:fft_cost} and \cref{tab:diffkay_cost} by this number gives the operations per symbol. The phase recovery stage operates on blocks of 32 symbols, so the operations per symbol is found by dividing the total operations from \cref{tab:viterbi_cost} and \cref{tab:pilot_cost} by the block length.
 
 \section{Methodology}
 
@@ -206,7 +206,7 @@ The decrease in threshold SNR for longer observation lengths suggests that the p
 \end{figure}
 
 \subsection{Combined Performance}
-The energy consumption of any combination of frequency and phase recovery algorithms can be optimised by varying the precision of the fixed point arithmetic in each stage. Blind operation also allows for optimisation over the observation length. The lowest receiver energy per bit for a given FEC SNR is shown for each combination in \cref{fig:best_energy_per_snr}. The amortisation of each stage means that the choice of phase recovery algorithm dominates the receiver energy. R\&B can also use less energy in blind operation when allowing fixed point precision to vary, as the more accurate CFO estimate can use fewer bits of precision to achieve the same FEC SNR.
+The energy consumption of any combination of frequency and phase recovery algorithms can be optimised by varying the precision of the fixed point arithmetic in each stage. Blind operation also allows for optimisation over the observation length. The lowest receiver energy per bit for a given FEC SNR is shown for each combination in \cref{fig:best_energy_per_snr}. Here the CFO is assumed to stay constant over each subframe of length 3712 symbols so the amortisation of each stage means that the choice of phase recovery algorithm dominates the receiver energy. R\&B can also use less energy in blind operation when allowing fixed point precision to vary, as the more accurate CFO estimate can use fewer bits of precision to achieve the same FEC SNR.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.7\textwidth]{best_energy_per_snr.png}
@@ -215,7 +215,7 @@ The energy consumption of any combination of frequency and phase recovery algori
 \end{figure}
 
 \subsection{System Energy}
-If carrier recovery limits the required SNR at the receiver, the FEC SNR and the receiver energy of each carrier recovery combination will determine the necessary system energy for acceptable operation. The minimum achievable system energy at the best FEC SNR for each combination is shown in \cref{tab:sys_energy} for both amplifier noise and shot noise limited links, and for $K = 1$, $10$, and $100$ ONUs per OLT. 
+If carrier recovery limits the required SNR at the receiver, the FEC SNR and the receiver energy of each carrier recovery combination will determine the system energy for acceptable operation. The minimum energy used by the transmitter and carrier recovery block to achieve the FEC limit, along with the SNR at which it is achieved, is shown in \cref{tab:sys_energy} for both amplifier noise and shot noise limited links, and for $K = 1$, $10$, and $100$ ONUs per OLT. 
 \begin{table}[H]
     \centering
     \small
@@ -228,12 +228,12 @@ If carrier recovery limits the required SNR at the receiver, the FEC SNR and the
         R\&B (DA) + V\&V      & 17.71 & 994   & 981   & 9820  & 9810  & 98100 & 98100 \\
         R\&B (DA) + Pilots    & 10.11 & 29.6  & 27.2  & 275   & 272   & 2720  & 2720  \\
         DK (DA) + V\&V        & 17.74 & 968   & 954   & 9550  & 9540  & 95400 & 95400 \\
-        DK (DA) + Pilots      & 10.73 & 3.69  & 0.940 & 11.8  & 9.40  & 93.0  & 94.1  \\
+        DK (DA) + Pilots & 10.73 & \textbf{3.69}  & \textbf{0.940} & \textbf{11.8}  & \textbf{9.40}  & \textbf{93.0}  & \textbf{94.1}  \\
         R\&B (blind) + V\&V   & 17.65 & 1010  & 992   & 9930  & 9920  & 99200 & 99200 \\
-        R\&B (blind) + Pilots & 10.30 & 41.2  & 38.8  & 390   & 387   & 3870  & 3870  \\
+        R\&B (blind) + Pilots & 10.30 & 41.2  & 38.7  & 390   & 387   & 3870  & 3870  \\
         \bottomrule
     \end{tabular}
-    \caption{Minimum system energy (fJ/bit) for each carrier recovery combination under amplifier noise and shot noise limited links for $K$ ONUs per OLT.}
+    \caption{Minimum combined energy (fJ/bit) for each carrier recovery combination under amplifier noise and shot noise limited links for $K$ ONUs per OLT.}
     \label{tab:sys_energy}
 \end{table}
 

@@ -31,13 +31,12 @@ function P = pipeline_params()
     P.NFFT    = 2^9;          % FFT block size (power of 2)
 
     % ---- Adaptive Equalizer -----------------------------------------
-    P.AEQ_Eq         = 'CMA';
     P.AEQ_NTaps      = 15;
     P.AEQ_Mu         = 2e-9;
     P.AEQ_SingleSpike = true;
     P.AEQ_N1         = 2000;       % y-pol re-init iteration
-    P.AEQ_N2         = 4000;       % CMA→RDE switch iteration
     P.AEQ_NOut       = 5000;        % transient discard
+    P.AEQ_SignOnly   = false;      % if true, use sign(err) & complex-sign(y) updates
 
     % ---- Carrier Recovery ----------------------------
     P.VV_NTaps       = 5;         % half-width of VV averaging filter

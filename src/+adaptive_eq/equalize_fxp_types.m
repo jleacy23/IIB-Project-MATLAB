@@ -1,35 +1,48 @@
 function T = equalize_fxp_types(dt) %#codegen
-%equalize_FXP_TYPES  Data-type table for equalize_fxp.
+%EQUALIZE_FXP_TYPES  Fixed-point type table for equalize_fxp (adaptive EQ).
 %
 %   T = equalize_fxp_types(dt)
 %
-%   Returns a struct of fi prototype objects (empty values) that define
-%   every fixed-point type used inside equalize_fxp.
+%   Returns a struct of fi prototype objects that define every fixed-point
+%   type used inside equalize_fxp.
 %
-%   Supported configurations:
-%     'double'              - all types are double (floating-point baseline)
-%     'single'              - all types are single (useful for mismatch checking)
-%     'fixed16'             - 16-bit fixed-point, suitable for FPGA / ASIC
-%     'fixed32'             - 32-bit fixed-point, higher precision
+%   Supported configurations
+%     'double'              - all types are double (floating-point baseline / reference)
+%     'single'              - all types are single
+%     'fixed16'             - uniform 16-bit fixed-point, suitable for FPGA / ASIC
+%     'fixed32'             - uniform 32-bit fixed-point, higher precision
 %     struct('WL',wl,'FL',fl) - custom: uniform word length wl, fraction length fl
 %
-%   You can add your own cases or adjust word / fraction lengths to
-%   explore design trade-offs without modifying the algorithm.
-%
-%   Fields returned
-%     T.x      - input signal
-%     T.w      - filter (tap) coefficients
+%   Fields
+%     T.x      - input signal (complex QAM samples, tap delay line)
+%     T.w      - filter / tap coefficients (complex, updated by CMA)
 %     T.y      - equalizer output samples
-%     T.acc    - accumulator for inner-product computation
-%     T.err    - error signal  (R - |y|^2)  or  (R^2 - |y|^2)
+%     T.acc    - accumulator for the butterfly inner product
+%     T.err    - error signal  (R_CMA - |y|^2)
 %     T.mu     - step-size scalar
 %     T.R_CMA  - CMA target radius
-%     T.R_RDE  - RDE target radii
-
-    % fimath is defined per-configuration below with SpecifyPrecision
-    % for both products and sums.  Every arithmetic result is truncated to
-    % the same word-length and fraction-length — no bit-growth, no
-    % rescaling, matching a real fixed-point datapath.
+%
+%   Numerical design notes
+%
+%   Signal range
+%     Unit-average-power QAM samples have |z| ≈ 1; with a CMA target of
+%     R_CMA = sqrt(2) the equalised samples sit on |y| ≈ 1.  Tap weights
+%     and accumulator stay within a few units, so a few integer bits suffice.
+%
+%   Error / step-size range
+%     err = R_CMA - |y|^2 has magnitude < 2 once convergence is approached.
+%     The product mu * x * err * conj(y) is very small (mu ≈ 1e-3 ... 1e-9),
+%     so the fraction length governs the smallest stable update.
+%
+%   Update precision
+%     fixed16 (FL = 8, LSB ≈ 3.9e-3) is comfortable for CMA convergence.
+%     fixed32 (FL = 16, LSB ≈ 1.5e-5) gives near-floating-point behaviour.
+%
+%   SpecifyPrecision fimath
+%     All fi arithmetic uses SpecifyPrecision so every product and sum is
+%     truncated to a known WL/FL with no implicit bit growth — required for
+%     deterministic codegen behaviour and to mimic a uniform fixed-point
+%     datapath (FPGA / ASIC).
 
     if isstruct(dt)
         wl = dt.WL;
@@ -50,7 +63,6 @@ function T = equalize_fxp_types(dt) %#codegen
         T.err   = fi([], 1, wl, fl, F);
         T.mu    = fi([], 1, wl, fl, F);
         T.R_CMA = fi([], 1, wl, fl, F);
-        T.R_RDE = fi([], 1, wl, fl, F);
         return;
     end
 
@@ -64,7 +76,6 @@ function T = equalize_fxp_types(dt) %#codegen
             T.err   = double([]);
             T.mu    = double([]);
             T.R_CMA = double([]);
-            T.R_RDE = double([]);
 
         % ==============================================================
         case 'single'
@@ -75,13 +86,12 @@ function T = equalize_fxp_types(dt) %#codegen
             T.err   = single([]);
             T.mu    = single([]);
             T.R_CMA = single([]);
-            T.R_RDE = single([]);
 
         % ==============================================================
         case 'fixed16'
             %  Uniform 16-bit / FL=8 throughout.
             %  Range ±4, LSB = 2^{-8} ≈ 3.9e-3.
-            %  mu = 1e-3 ≈ 8 LSBs.  Adequate for CMA/RDE convergence.
+            %  mu = 1e-3 ≈ 8 LSBs.  Adequate for CMA convergence.
             F = fimath( ...
                 'RoundingMethod',       'Floor', ...
                 'OverflowAction',       'Wrap',  ...
@@ -99,7 +109,6 @@ function T = equalize_fxp_types(dt) %#codegen
             T.err   = fi([], 1, 32, 8, F);
             T.mu    = fi([], 1, 32, 8, F);
             T.R_CMA = fi([], 1, 32, 8, F);
-            T.R_RDE = fi([], 1, 32, 8, F);
 
         % ==============================================================
         case 'fixed32'
@@ -122,7 +131,6 @@ function T = equalize_fxp_types(dt) %#codegen
             T.err   = fi([], 1, 32, 16, F);
             T.mu    = fi([], 1, 32, 16, F);
             T.R_CMA = fi([], 1, 32, 16, F);
-            T.R_RDE = fi([], 1, 32, 16, F);
 
         otherwise
             error('equalize_fxp_types:BadType', ...

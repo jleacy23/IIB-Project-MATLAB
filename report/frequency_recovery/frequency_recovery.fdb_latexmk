@@ -1,18 +1,19 @@
 # Fdb version 4
-["biber frequency_recovery"] 0 "frequency_recovery.bcf" "frequency_recovery.bbl" "frequency_recovery" 1778168509.22936 -1
-  "frequency_recovery.bcf" 1778168508 108754 9e0af46a2bbccb23ce91e83b08076c8c "pdflatex"
+["biber frequency_recovery"] 1778604839.32406 "frequency_recovery.bcf" "frequency_recovery.bbl" "frequency_recovery" 1778604998.11988 0
+  "frequency_recovery.bcf" 1778604997 108754 9e0af46a2bbccb23ce91e83b08076c8c "pdflatex"
   "ref.bib" 1777558777 1554 5f443762d1d5dcd5fd6ffed8945c1a19 ""
   (generated)
   "frequency_recovery.bbl"
   "frequency_recovery.blg"
   (rewritten before read)
-["pdflatex"] 1778168507.9749 "c:/Users/joele/Downloads/iib_project/report/frequency_recovery/frequency_recovery.tex" "frequency_recovery.pdf" "frequency_recovery" 1778168509.23046 0
+["pdflatex"] 1778604997.216 "c:/Users/joele/Downloads/iib_project/report/frequency_recovery/frequency_recovery.tex" "frequency_recovery.pdf" "frequency_recovery" 1778604998.12099 0
   "MCRB_diffkay_blind.png" 1777557750 111879 8aeb537be69d59d2e49acb7d40103ac2 ""
   "MCRB_diffkay_data.png" 1777732882 64321 26955a43795a765aa0ee04b8c2c0d657 ""
   "MCRB_fft_blind.png" 1777557727 113249 c2e3942101aade483f3e6c828ac16de8 ""
   "MCRB_fft_data.png" 1777557625 59014 9f57c0b140a32b0a93b0540f39d03c4b ""
   "best_energy_per_snr.png" 1778165805 82106 d70cabbaa6b91b4262c9b1799706192e ""
   "blind_data.png" 1777737067 72999 ca79bc8ab0f9c0670d870bfb53de2835 ""
+  "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmbx10.tfm" 1772596488 1328 c834bbb027764024c09d3d2bf908b5f0 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmbx12.tfm" 1772596488 1324 c910af8c371558dc20f2d7822f66fe64 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmcsc10.tfm" 1772596488 1300 63a6111ee6274895728663cf4b4e7e81 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmmi10.tfm" 1772596488 1528 abec98dbc43e172678c11b3b9031252a ""
@@ -29,6 +30,7 @@
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmsy8.tfm" 1772596488 1120 8b7d695260f3cff42e636090a8002094 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmti12.tfm" 1772596488 1484 ed72f8f5cf654cda15ecc8e32bfcbee5 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmtt12.tfm" 1772596488 772 9a936b7f5e2ff0557fce0f62822f0bbf ""
+  "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb" 1772596518 34811 78b52f49e893bcba91bd7581cdc144c0 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb" 1772596518 32080 340ef9bf63678554ee606688e7b5339d ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmcsc10.pfb" 1772596518 32001 6aeea3afe875097b1eb0da29acd61e28 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb" 1772596518 30251 6afa5cb1d0204815a708a080681d4674 ""
@@ -94,11 +96,11 @@
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1772596550 94259 aec9939469efac8f0cf917369f632359 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/web2c/pdftex/pdflatex.fmt" 1772596566 2236130 036198fdb3bbb46401ac4d671e71ba73 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf.cnf" 1772596498 903 164c5b127cd0d6dc91abad2f62421ea2 ""
-  "c:/Users/joele/Downloads/iib_project/report/frequency_recovery/frequency_recovery.tex" 1778168505 20204 0b9a74d2de5cd179674f3c2efadd7a96 ""
-  "frequency_recovery.aux" 1778168508 7622 43841849828cc6224eec1bcac63ee602 "pdflatex"
-  "frequency_recovery.bbl" 1777559079 6416 06b91060a5e8e75dd407845203734a0f "biber frequency_recovery"
-  "frequency_recovery.run.xml" 1778168508 2396 ce56500e0d0c09abe9a2454d497875b2 "pdflatex"
-  "frequency_recovery.tex" 1778168505 20204 0b9a74d2de5cd179674f3c2efadd7a96 ""
+  "c:/Users/joele/Downloads/iib_project/report/frequency_recovery/frequency_recovery.tex" 1778604996 20284 d31cb868b85a1415085b73827b06f8b7 ""
+  "frequency_recovery.aux" 1778604997 7627 57499eb12473922431ea8ae3d0b3c068 "pdflatex"
+  "frequency_recovery.bbl" 1778604907 6416 06b91060a5e8e75dd407845203734a0f "biber frequency_recovery"
+  "frequency_recovery.run.xml" 1778604997 2396 ce56500e0d0c09abe9a2454d497875b2 "pdflatex"
+  "frequency_recovery.tex" 1778604996 20284 d31cb868b85a1415085b73827b06f8b7 ""
   "max_cfo.png" 1777987780 70139 1299b24a64ed79d6d297da9a669a8c25 ""
   (generated)
   "frequency_recovery.aux"

@@ -25,18 +25,15 @@ function build_adaptive_eq_equalize_fxp_mex(P, cfg)
     x_aeq = fi(complex(0,0), numerictype(T_aeq.x), fimath(T_aeq.x));
     In_aeq_type = coder.typeof(x_aeq, [Inf, 2], [true, false]);
 
-    Eq_type = coder.typeof('a', [1, 7], [false, true]);
-
     args_aeq = { ...
         In_aeq_type, ...                    % x
         double(P.SpS), ...                  % SpS
-        Eq_type, ...                        % Eq
         double(P.AEQ_NTaps), ...            % NTaps
         double(P.AEQ_Mu), ...               % Mu
         logical(P.AEQ_SingleSpike), ...     % SingleSpike
         double(P.AEQ_N1), ...               % N1
-        double(P.AEQ_N2), ...               % N2
         double(P.AEQ_NOut), ...             % NOut
+        logical(P.AEQ_SignOnly), ...        % SignOnly
         T_aeq};                             % T
 
     codegen('-config', cfg, ...

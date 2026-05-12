@@ -1,18 +1,19 @@
-function y = equalize_fxp(x, SpS, Eq, NTaps, Mu, SingleSpike, N1, N2, NOut, T) %#codegen
-%equalize_fxp  Fixed-point adaptive butterfly equalization (CMA / RDE / CMA+RDE).
+function y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, T) %#codegen
+%equalize_fxp  Fixed-point adaptive butterfly equalization (CMA).
 %
-%   y = equalize_fxp(x, SpS, Eq, NTaps, Mu, SingleSpike, N1, N2, NOut, T)
+%   y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, T)
 %
 %   Inputs
 %     x             - input signal [samples x 2] (fi or double)
 %     SpS           - samples per symbol
-%     Eq            - algorithm: 'CMA', 'RDE', or 'CMA+RDE'
 %     NTaps         - number of FIR taps
 %     Mu            - step size (fi or double)
 %     SingleSpike   - true/false for single-spike initialisation
 %     N1            - iteration to reinitialise y-pol weights
-%     N2            - iteration to switch CMA->RDE ([] if unused)
 %     NOut          - samples to discard after equalisation
+%     SignOnly      - if true, use sign(error) and complex-sign of y
+%                     (sign(real(y)) + j*sign(imag(y))) in the update
+%                     instead of the full multiplications
 %     T             - (optional) fixed-point types table from
 %                     equalize_fxp_types.  If omitted, calls
 %                     equalize_fxp_types('fixed16').
@@ -25,11 +26,10 @@ function y = equalize_fxp(x, SpS, Eq, NTaps, Mu, SingleSpike, N1, N2, NOut, T) %
 %     T.err    - error signal type
 %     T.mu     - step-size type
 %     T.R_CMA  - CMA radius type
-%     T.R_RDE  - RDE radii type
 %
 %   Best practices applied (per MathWorks Fixed-Point Designer manual):
 %     - Data type definitions are separated from the algorithm via a types
-%       table (cast/zeros ...'like'...).  
+%       table (cast/zeros ...'like'...).
 %     - Subscripted assignment (:)= is used everywhere inside the loop to
 %       prevent bit growth and preserve declared types.
 %     - fimath uses SpecifyPrecision for products and sums so every
@@ -39,44 +39,12 @@ function y = equalize_fxp(x, SpS, Eq, NTaps, Mu, SingleSpike, N1, N2, NOut, T) %
 %       indexing into a tap-delay line.
 
     %% Default types table
-    if nargin < 10 || isempty(T)
+    if nargin < 9 || isempty(T)
         T = equalize_fxp_types('fixed16');
     end
 
-    %% Algorithm / mode flags (integer logic – no fi needed)
-    CMAFlag  = false;
-    RDEFlag  = false;
-    CMAtoRDE = false;
-
-    if strcmp(Eq, 'CMA')
-        CMAFlag = true;
-    elseif strcmp(Eq, 'RDE')
-        RDEFlag = true;
-    elseif strcmp(Eq, 'CMA+RDE')
-        CMAFlag  = true;
-        CMAtoRDE = true;
-    else
-        error('Unsupported equalizer type');
-    end
-
-    %% Cast constants to fixed-point types
-    % CMA radius
-    if CMAFlag
-        if ~CMAtoRDE
-            R_CMA = cast(sqrt(2), 'like', T.R_CMA);
-        else
-            R_CMA = cast(1.32, 'like', T.R_CMA);
-        end
-    else
-        R_CMA = cast(0, 'like', T.R_CMA);   % placeholder
-    end
-
-    % RDE radii
-    if CMAtoRDE || RDEFlag
-        R_RDE = cast([1/sqrt(5), 1, 3/sqrt(5)], 'like', T.R_RDE);
-    else
-        R_RDE = cast([0 0 0], 'like', T.R_RDE);   % placeholder
-    end
+    %% Cast CMA radius
+    R_CMA = cast(sqrt(2), 'like', T.R_CMA);
 
     %% Cast step size
     mu_fxp = cast(Mu, 'like', T.mu);
@@ -117,6 +85,8 @@ function y = equalize_fxp(x, SpS, Eq, NTaps, Mu, SingleSpike, N1, N2, NOut, T) %
     acc2 = cast(complex(0, 0), 'like', T.acc);
     err1 = cast(0, 'like', T.err);
     err2 = cast(0, 'like', T.err);
+    yc1  = complex(zeros(1, 1, 'like', T.y));
+    yc2  = complex(zeros(1, 1, 'like', T.y));
 
     %% ====================================================================
     %  Adaptive equalisation loop
@@ -136,37 +106,25 @@ function y = equalize_fxp(x, SpS, Eq, NTaps, Mu, SingleSpike, N1, N2, NOut, T) %
         y1(i) = acc1;
         y2(i) = acc2;
 
-        % --- Coefficient update ---
-        if CMAFlag
-            % CMA error: e = (R - |y|^2)
+        % --- CMA error and conjugate-output factor ---
+        if SignOnly
+            err1(:) = sign(R_CMA - abs(y1(i))^2);
+            err2(:) = sign(R_CMA - abs(y2(i))^2);
+            yc1(:) = complex(sign(real(y1(i))), -sign(imag(y1(i))));
+            yc2(:) = complex(sign(real(y2(i))), -sign(imag(y2(i))));
+        else
             err1(:) = (R_CMA - abs(y1(i))^2);
             err2(:) = (R_CMA - abs(y2(i))^2);
-            for k = 1:NTaps
-                w1V(k) = w1V(k) + mu_fxp * xv_i(k) * err1 * conj(y1(i));
-                w1H(k) = w1H(k) + mu_fxp * xh_i(k) * err1 * conj(y1(i));
-                w2V(k) = w2V(k) + mu_fxp * xv_i(k) * err2 * conj(y2(i));
-                w2H(k) = w2H(k) + mu_fxp * xh_i(k) * err2 * conj(y2(i));
-            end
+            yc1(:) = conj(y1(i));
+            yc2(:) = conj(y2(i));
+        end
 
-            % Switch CMA -> RDE
-            if CMAtoRDE && i == N2
-                CMAFlag = false;
-                RDEFlag = true;
-            end
-
-        elseif RDEFlag
-            % RDE: find closest ring radius
-            [~, r1] = min(abs(R_RDE - cast(abs(y1(i)), 'like', T.R_RDE)));
-            [~, r2] = min(abs(R_RDE - cast(abs(y2(i)), 'like', T.R_RDE)));
-
-            err1(:) = (R_RDE(r1)^2 - abs(y1(i))^2);
-            err2(:) = (R_RDE(r2)^2 - abs(y2(i))^2);
-            for k = 1:NTaps
-                w1V(k) = w1V(k) + mu_fxp * xv_i(k) * err1 * conj(y1(i));
-                w1H(k) = w1H(k) + mu_fxp * xh_i(k) * err1 * conj(y1(i));
-                w2V(k) = w2V(k) + mu_fxp * xv_i(k) * err2 * conj(y2(i));
-                w2H(k) = w2H(k) + mu_fxp * xh_i(k) * err2 * conj(y2(i));
-            end
+        % --- CMA coefficient update ---
+        for k = 1:NTaps
+            w1V(k) = w1V(k) + mu_fxp * xv_i(k) * err1 * yc1;
+            w1H(k) = w1H(k) + mu_fxp * xh_i(k) * err1 * yc1;
+            w2V(k) = w2V(k) + mu_fxp * xv_i(k) * err2 * yc2;
+            w2H(k) = w2H(k) + mu_fxp * xh_i(k) * err2 * yc2;
         end
 
         % --- Reinitialisation for SingleSpike ---

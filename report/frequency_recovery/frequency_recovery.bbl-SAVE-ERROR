@@ -1,0 +1,169 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.3 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \datalist[entry]{nty/global//global/global/global}
+    \entry{Cheng2013PilotCycleSlip}{article}{}{}
+      \name{author}{8}{}{%
+        {{hash=e36db839c89a3aa806556a9bcfba974c}{%
+           family={Cheng},
+           familyi={C\bibinitperiod},
+           given={Haiquan},
+           giveni={H\bibinitperiod}}}%
+        {{hash=92e14a8c19eb5a0c7c199c85db74f106}{%
+           family={Li},
+           familyi={L\bibinitperiod},
+           given={Yan},
+           giveni={Y\bibinitperiod}}}%
+        {{hash=21ba01928d84f4285e4012efffd36d51}{%
+           family={Zhang},
+           familyi={Z\bibinitperiod},
+           given={Fangzheng},
+           giveni={F\bibinitperiod}}}%
+        {{hash=bb371597af3d6d97a656e6f879c0189d}{%
+           family={Wu},
+           familyi={W\bibinitperiod},
+           given={Jian},
+           giveni={J\bibinitperiod}}}%
+        {{hash=061d769e0d5f39cb1bccf5ebe95d6e74}{%
+           family={Lu},
+           familyi={L\bibinitperiod},
+           given={Jianxin},
+           giveni={J\bibinitperiod}}}%
+        {{hash=a74a24775c42f1bf874d63d526404e6c}{%
+           family={Zhang},
+           familyi={Z\bibinitperiod},
+           given={Guoyi},
+           giveni={G\bibinitperiod}}}%
+        {{hash=3c38570c1a2c89c3525a2139602c96b0}{%
+           family={Xu},
+           familyi={X\bibinitperiod},
+           given={Jian},
+           giveni={J\bibinitperiod}}}%
+        {{hash=17cc87798fcfdbc8260518f2b4126e52}{%
+           family={Lin},
+           familyi={L\bibinitperiod},
+           given={Jintong},
+           giveni={J\bibinitperiod}}}%
+      }
+      \strng{namehash}{d899aacc1689ad574e5b4cbe3a1e895a}
+      \strng{fullhash}{77293626672b590e3ac3a91b6bcab1a9}
+      \strng{fullhashraw}{77293626672b590e3ac3a91b6bcab1a9}
+      \strng{bibnamehash}{d899aacc1689ad574e5b4cbe3a1e895a}
+      \strng{authorbibnamehash}{d899aacc1689ad574e5b4cbe3a1e895a}
+      \strng{authornamehash}{d899aacc1689ad574e5b4cbe3a1e895a}
+      \strng{authorfullhash}{77293626672b590e3ac3a91b6bcab1a9}
+      \strng{authorfullhashraw}{77293626672b590e3ac3a91b6bcab1a9}
+      \field{sortinit}{C}
+      \field{sortinithash}{4d103a86280481745c9c897c925753c0}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Optics Express}
+      \field{number}{19}
+      \field{title}{Pilot-symbols-aided cycle slip mitigation for DP-16QAM optical communication systems}
+      \field{volume}{21}
+      \field{year}{2013}
+      \field{pages}{22166\bibrangedash 22172}
+      \range{pages}{7}
+      \verb{doi}
+      \verb 10.1364/OE.21.022166
+      \endverb
+    \endentry
+    \entry{Andrea1994}{article}{}{}
+      \name{author}{3}{}{%
+        {{hash=808624665f528cb2a386566150e28112}{%
+           family={D'Andrea},
+           familyi={D\bibinitperiod},
+           given={A.N.},
+           giveni={A\bibinitperiod}}}%
+        {{hash=0f3bd93dcaca184bf812365b28e84351}{%
+           family={Mengali},
+           familyi={M\bibinitperiod},
+           given={Umberto},
+           giveni={U\bibinitperiod}}}%
+        {{hash=2a3f1fe2bde6ec842344eea82dc453f7}{%
+           family={Reggiannini},
+           familyi={R\bibinitperiod},
+           given={Ruggero},
+           giveni={R\bibinitperiod}}}%
+      }
+      \strng{namehash}{bb21694dde653053a5f452d0a84dc5eb}
+      \strng{fullhash}{bb21694dde653053a5f452d0a84dc5eb}
+      \strng{fullhashraw}{bb21694dde653053a5f452d0a84dc5eb}
+      \strng{bibnamehash}{bb21694dde653053a5f452d0a84dc5eb}
+      \strng{authorbibnamehash}{bb21694dde653053a5f452d0a84dc5eb}
+      \strng{authornamehash}{bb21694dde653053a5f452d0a84dc5eb}
+      \strng{authorfullhash}{bb21694dde653053a5f452d0a84dc5eb}
+      \strng{authorfullhashraw}{bb21694dde653053a5f452d0a84dc5eb}
+      \field{sortinit}{D}
+      \field{sortinithash}{6f385f66841fb5e82009dc833c761848}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Communications, IEEE Transactions on}
+      \field{month}{03}
+      \field{title}{The Modified Cramer-Rao Bound and Its Applications to Synchronization Problems}
+      \field{volume}{42}
+      \field{year}{1994}
+      \field{pages}{1391\bibrangedash 1399}
+      \range{pages}{9}
+      \verb{doi}
+      \verb 10.1109/TCOMM.1994.580247
+      \endverb
+    \endentry
+    \entry{Jacobsen2007}{article}{}{}
+      \name{author}{2}{}{%
+        {{hash=1897f21248594933ce9722c3e2f698ce}{%
+           family={Jacobsen},
+           familyi={J\bibinitperiod},
+           given={Eric},
+           giveni={E\bibinitperiod}}}%
+        {{hash=15ca597d8ed8e8475bb7023f3e79cd51}{%
+           family={Kootsookos},
+           familyi={K\bibinitperiod},
+           given={Peter},
+           giveni={P\bibinitperiod}}}%
+      }
+      \strng{namehash}{52b6e5792a4ab122fe494bac8f5d0a5f}
+      \strng{fullhash}{52b6e5792a4ab122fe494bac8f5d0a5f}
+      \strng{fullhashraw}{52b6e5792a4ab122fe494bac8f5d0a5f}
+      \strng{bibnamehash}{52b6e5792a4ab122fe494bac8f5d0a5f}
+      \strng{authorbibnamehash}{52b6e5792a4ab122fe494bac8f5d0a5f}
+      \strng{authornamehash}{52b6e5792a4ab122fe494bac8f5d0a5f}
+      \strng{authorfullhash}{52b6e5792a4ab122fe494bac8f5d0a5f}
+      \strng{authorfullhashraw}{52b6e5792a4ab122fe494bac8f5d0a5f}
+      \field{sortinit}{J}
+      \field{sortinithash}{b2f54a9081ace9966a7cb9413811edb4}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{IEEE Signal Processing Magazine}
+      \field{month}{5}
+      \field{number}{3}
+      \field{title}{Fast, Accurate Frequency Estimators}
+      \field{volume}{24}
+      \field{year}{2007}
+      \field{pages}{123\bibrangedash 125}
+      \range{pages}{3}
+      \verb{doi}
+      \verb 10.1109/MSP.2007.361611
+      \endverb
+    \endentry
+  \enddatalist
+\endrefsection
+\endinput
+

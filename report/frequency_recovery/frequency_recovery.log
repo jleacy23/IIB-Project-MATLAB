@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.4)  12 MAY 2026 17:56
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.4)  13 MAY 2026 10:23
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -459,42 +459,42 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <7> on input line 17.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <12> on input line 24.
+(Font)              <12> on input line 23.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <8> on input line 24.
+(Font)              <8> on input line 23.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <6> on input line 24.
+(Font)              <6> on input line 23.
  [1
 
 {c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
-<MCRB_fft_data.png, id=16, 534.3162pt x 364.7226pt>
+<MCRB_fft_data.png, id=17, 534.3162pt x 364.7226pt>
 File: MCRB_fft_data.png Graphic file (type png)
 <use MCRB_fft_data.png>
-Package pdftex.def Info: MCRB_fft_data.png  used on input line 58.
+Package pdftex.def Info: MCRB_fft_data.png  used on input line 57.
 (pdftex.def)             Requested size: 318.66948pt x 217.52185pt.
-<MCRB_fft_blind.png, id=17, 539.616pt x 364.7226pt>
+<MCRB_fft_blind.png, id=18, 539.616pt x 364.7226pt>
 File: MCRB_fft_blind.png Graphic file (type png)
 <use MCRB_fft_blind.png>
-Package pdftex.def Info: MCRB_fft_blind.png  used on input line 65.
+Package pdftex.def Info: MCRB_fft_blind.png  used on input line 64.
 (pdftex.def)             Requested size: 318.66948pt x 215.39037pt.
  [2 <./MCRB_fft_data.png (PNG copy)>]
-Overfull \hbox (17.37683pt too wide) in paragraph at lines 71--72
+Overfull \hbox (17.37683pt too wide) in paragraph at lines 70--71
 \OT1/cmr/m/n/12 ex-pen-sive. The FFT re-quires $[] [][](\OML/cmm/m/it/12 N[]\OT1/cmr/m/n/12 )$ com-plex mul-ti-pli-ca-tions and $\OML/cmm/m/it/12 N[] [][]\OT1/cmr/m/n/12 (\OML/cmm/m/it/12 N[]\OT1/cmr/m/n/12 )$
  []
 
 <MCRB_diffkay_data.png, id=22, 534.3162pt x 360.3864pt>
 File: MCRB_diffkay_data.png Graphic file (type png)
 <use MCRB_diffkay_data.png>
-Package pdftex.def Info: MCRB_diffkay_data.png  used on input line 84.
+Package pdftex.def Info: MCRB_diffkay_data.png  used on input line 83.
 (pdftex.def)             Requested size: 318.66948pt x 214.93573pt.
 [3 <./MCRB_fft_blind.png (PNG copy)>]
 <MCRB_diffkay_blind.png, id=26, 539.616pt x 364.7226pt>
 File: MCRB_diffkay_blind.png Graphic file (type png)
 <use MCRB_diffkay_blind.png>
-Package pdftex.def Info: MCRB_diffkay_blind.png  used on input line 91.
+Package pdftex.def Info: MCRB_diffkay_blind.png  used on input line 90.
 (pdftex.def)             Requested size: 318.66948pt x 215.39037pt.
  [4 <./MCRB_diffkay_data.png (PNG copy)> <./MCRB_diffkay_blind.png (PNG copy)>]
-Overfull \hbox (28.60747pt too wide) in paragraph at lines 105--115
+Overfull \hbox (28.60747pt too wide) in paragraph at lines 104--114
  [][] 
  []
 
@@ -502,22 +502,22 @@ Overfull \hbox (28.60747pt too wide) in paragraph at lines 105--115
 <max_cfo.png, id=37, 491.436pt x 343.5234pt>
 File: max_cfo.png Graphic file (type png)
 <use max_cfo.png>
-Package pdftex.def Info: max_cfo.png  used on input line 196.
+Package pdftex.def Info: max_cfo.png  used on input line 195.
 (pdftex.def)             Requested size: 318.66948pt x 222.76862pt.
  [7]
 <blind_data.png, id=42, 489.5088pt x 359.4228pt>
 File: blind_data.png Graphic file (type png)
 <use blind_data.png>
-Package pdftex.def Info: blind_data.png  used on input line 203.
+Package pdftex.def Info: blind_data.png  used on input line 202.
 (pdftex.def)             Requested size: 318.66948pt x 233.98401pt.
 <best_energy_per_snr.png, id=43, 570.933pt x 407.6028pt>
 File: best_energy_per_snr.png Graphic file (type png)
 <use best_energy_per_snr.png>
-Package pdftex.def Info: best_energy_per_snr.png  used on input line 212.
+Package pdftex.def Info: best_energy_per_snr.png  used on input line 211.
 (pdftex.def)             Requested size: 318.66948pt x 227.51588pt.
  [8 <./max_cfo.png (PNG copy)> <./blind_data.png (PNG copy)>]
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <10.95> on input line 222.
+(Font)              <10.95> on input line 221.
  [9 <./best_energy_per_snr.png (PNG copy)>] [10] (./frequency_recovery.aux)
  ***********
 LaTeX2e <2025-11-01>
@@ -536,7 +536,7 @@ Here is how much of TeX's memory you used:
  14 hyphenation exceptions out of 8191
  67i,12n,77p,1186b,1267s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmcsc10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb>
-Output written on frequency_recovery.pdf (10 pages, 799462 bytes).
+Output written on frequency_recovery.pdf (10 pages, 799321 bytes).
 PDF statistics:
  134 PDF objects out of 1000 (max. 8388607)
  78 compressed objects within 1 object stream

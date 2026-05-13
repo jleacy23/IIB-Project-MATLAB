@@ -9,7 +9,7 @@ function E = transmitter_amplified(SNR, B, lambda_m, n_spans, L_span, ...
     % power root lies above the NLI-limited optimum.
     %
     % SNR      : linear required SNR (scalar)
-    % B        : signal bandwidth [Hz] = symbol rate Rs under Nyquist
+    % B        : full WDM bandwidth [Hz]
     % lambda_m : optical carrier wavelength [m]
     % n_spans  : number of identical fibre spans (each with one EDFA)
     % L_span   : span length [km]

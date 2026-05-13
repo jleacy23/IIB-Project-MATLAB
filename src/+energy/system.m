@@ -9,5 +9,5 @@ function E = system(E_tx, E_rx, K)
     %        energy.receiver)
     % K    : number of ONUs (= passive splitter ratio)
 
-    E = E_tx + K * E_rx;
+    E = E_tx / K + E_rx;
 end

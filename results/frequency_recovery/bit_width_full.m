@@ -32,7 +32,7 @@ classdef bit_width_full < matlab.unittest.TestCase
 %       fl_fr     (double)  — FR fractional bits
 %       fl_cr     (double)  — CR fractional bits
 %       blind_d   (double)  — blind observation length (NaN for non-blind)
-%       fec_snr_db (double) — FEC SNR threshold [dB]
+%       fec_snr_trials (cell) — per-trial FEC SNR thresholds [dB], NTrials×1 (NaN if curve never crosses)
 %       energy_fr_fJ (double) — FR energy per bit [fJ]
 %       energy_cr_fJ (double) — CR energy per bit [fJ]
 %
@@ -51,7 +51,7 @@ classdef bit_width_full < matlab.unittest.TestCase
         TrainingLen = 11
 
         % Monte-Carlo
-        NTrials     = 50
+        NTrials     = 20
 
         % SNR sweep
         SNR_dB_vec  = 0 : 1 : 30
@@ -140,10 +140,11 @@ classdef bit_width_full < matlab.unittest.TestCase
         function test_full_grid_sweep(testCase)
             % Full Cartesian grid over (fl_fr, fl_cr) for every FR x CR pair.
             % BlindD is additionally swept for the fft_search_blind variant.
-            P    = testCase;
-            NFL  = length(P.FL_vec);
-            NBD  = length(P.BlindD_vec);
-            Prms = bit_width_full.extractParams(testCase);
+            P        = testCase;
+            NFL      = length(P.FL_vec);
+            NBD      = length(P.BlindD_vec);
+            NTrials  = P.NTrials;
+            Prms     = bit_width_full.extractParams(testCase);
 
             % ---- Phase 1: serial MEX builds — FR variants live in temp dirs
             % (added to the worker's path inside parfor); CR variants are
@@ -166,15 +167,16 @@ classdef bit_width_full < matlab.unittest.TestCase
             % Indexing: fec*( fr_idx, cr_idx, cr_col )            for non-blind
             %           fec_blind( fr_idx, cr_idx, bd_idx, cr_col ) for blind
             % cr_col 1 = Viterbi-Viterbi, 2 = Pilots-only.
-            fecSNR_fft_DA    = nan(NFL, NFL, 2);
-            fecSNR_dk_DA     = nan(NFL, NFL, 2);
-            fecSNR_fft_blind = nan(NFL, NFL, NBD, 2);
+            fecSNR_fft_DA    = nan(NFL, NFL, NTrials, 2);
+            fecSNR_dk_DA     = nan(NFL, NFL, NTrials, 2);
+            fecSNR_fft_blind = nan(NFL, NFL, NBD, NTrials, 2);
 
             FL_vec_b     = P.FL_vec;
             IntBits_b    = P.IntBits;
             SNR_dB_b     = P.SNR_dB_vec;
             FEC_BER_b    = P.FEC_BER;
             BlindD_vec_b = P.BlindD_vec;
+            NTrials_b    = NTrials;
 
             for cri = 1:NFL
                 fl_cr = P.FL_vec(cri);
@@ -192,9 +194,9 @@ classdef bit_width_full < matlab.unittest.TestCase
                     wait(parfevalOnAll(gcp, @bit_width_full.clearWorkerMex, 0));
                 end
 
-                slice_fft_DA = nan(NFL, 2);
-                slice_dk_DA  = nan(NFL, 2);
-                slice_blind  = nan(NFL, NBD, 2);
+                slice_fft_DA = nan(NFL, NTrials_b, 2);
+                slice_dk_DA  = nan(NFL, NTrials_b, 2);
+                slice_blind  = nan(NFL, NBD, NTrials_b, 2);
 
                 parfor fri = 1:NFL
                     addpath(frDirs{fri});  %#ok<PFBNS>
@@ -203,29 +205,29 @@ classdef bit_width_full < matlab.unittest.TestCase
                     T_fr_w = freq_recovery.fxp_types(struct('WL', IntBits_b + fl_fr, 'FL', fl_fr));
 
                     ber = bit_width_full.runSnrSweepStatic(Prms, 'fft_search', 0, T_fr_w, T_cr_w);
-                    slice_fft_DA(fri, :) = [ ...
-                        bit_width_full.fecCrossing(SNR_dB_b, ber(:,1), FEC_BER_b), ...
-                        bit_width_full.fecCrossing(SNR_dB_b, ber(:,2), FEC_BER_b)];
+                    v_vv = bit_width_full.fecCrossingsAll(SNR_dB_b, ber(:,:,1), FEC_BER_b);
+                    v_po = bit_width_full.fecCrossingsAll(SNR_dB_b, ber(:,:,2), FEC_BER_b);
+                    slice_fft_DA(fri, :, :) = reshape([v_vv(:), v_po(:)], 1, NTrials_b, 2);
 
                     ber = bit_width_full.runSnrSweepStatic(Prms, 'differential_kay', 0, T_fr_w, T_cr_w);
-                    slice_dk_DA(fri, :) = [ ...
-                        bit_width_full.fecCrossing(SNR_dB_b, ber(:,1), FEC_BER_b), ...
-                        bit_width_full.fecCrossing(SNR_dB_b, ber(:,2), FEC_BER_b)];
+                    v_vv = bit_width_full.fecCrossingsAll(SNR_dB_b, ber(:,:,1), FEC_BER_b);
+                    v_po = bit_width_full.fecCrossingsAll(SNR_dB_b, ber(:,:,2), FEC_BER_b);
+                    slice_dk_DA(fri, :, :) = reshape([v_vv(:), v_po(:)], 1, NTrials_b, 2);
 
-                    row_blind = nan(NBD, 2);
+                    row_blind = nan(NBD, NTrials_b, 2);
                     for di = 1:length(BlindD_vec_b)
                         Dval = BlindD_vec_b(di);
                         ber  = bit_width_full.runSnrSweepStatic(Prms, 'fft_search_blind', Dval, T_fr_w, T_cr_w);
-                        row_blind(di, :) = [ ...
-                            bit_width_full.fecCrossing(SNR_dB_b, ber(:,1), FEC_BER_b), ...
-                            bit_width_full.fecCrossing(SNR_dB_b, ber(:,2), FEC_BER_b)];
+                        v_vv = bit_width_full.fecCrossingsAll(SNR_dB_b, ber(:,:,1), FEC_BER_b);
+                        v_po = bit_width_full.fecCrossingsAll(SNR_dB_b, ber(:,:,2), FEC_BER_b);
+                        row_blind(di, :, :) = reshape([v_vv(:), v_po(:)], 1, NTrials_b, 2);
                     end
-                    slice_blind(fri, :, :) = row_blind;
+                    slice_blind(fri, :, :, :) = row_blind;
                 end
 
-                fecSNR_fft_DA(:, cri, :)        = slice_fft_DA;
-                fecSNR_dk_DA(:, cri, :)         = slice_dk_DA;
-                fecSNR_fft_blind(:, cri, :, :)  = slice_blind;
+                fecSNR_fft_DA(:, cri, :, :)       = slice_fft_DA;
+                fecSNR_dk_DA(:, cri, :, :)        = slice_dk_DA;
+                fecSNR_fft_blind(:, cri, :, :, :) = slice_blind;
 
                 % Workers may have cached FR MEX bound to the fri they ran.
                 % Clear before the next outer iteration so a new fri-to-worker
@@ -267,67 +269,67 @@ classdef bit_width_full < matlab.unittest.TestCase
 
         function T = assembleGridTable(P, fec_fft, fec_dk, fec_blind, ...
                 E_fft_per_fl, E_dk_per_fl, E_fft_blind_grid, E_cr_grid)
-            % fec_fft, fec_dk:    NFL x NFL x 2  (fri, cri, cr_col)
-            % fec_blind:          NFL x NFL x NBD x 2  (fri, cri, di, cr_col)
-            % E_fft_per_fl:       NFL x 1  (FR fft energy per FR FL)
-            % E_dk_per_fl:        NFL x 1
-            % E_fft_blind_grid:   NFL x NBD  (FR FL × BlindD)
-            % E_cr_grid:          NFL x 2  (CR FL × {VV, PO})
+            % fec_fft, fec_dk:  NFL x NFL x NTrials x 2  (fri, cri, trial, cr_col) — per-trial FEC SNR
+            % fec_blind:        NFL x NFL x NBD x NTrials x 2
+            % E_fft_per_fl:     NFL x 1  (FR fft energy per FR FL)
+            % E_dk_per_fl:      NFL x 1
+            % E_fft_blind_grid: NFL x NBD  (FR FL × BlindD)
+            % E_cr_grid:        NFL x 2  (CR FL × {VV, PO})
             NFL    = length(P.FL_vec);
             NBD    = length(P.BlindD_vec);
             crNames = {"viterbi_viterbi", "pilots_only"};
 
-            N_total = 2 * (2 * NFL * NFL + NFL * NFL * NBD);
-            fr_algo      = strings(N_total, 1);
-            cr_algo      = strings(N_total, 1);
-            fl_fr        = nan(N_total, 1);
-            fl_cr        = nan(N_total, 1);
-            blind_d      = nan(N_total, 1);
-            fec_snr_db   = nan(N_total, 1);
-            energy_fr_fJ = nan(N_total, 1);
-            energy_cr_fJ = nan(N_total, 1);
+            N_total        = 2 * (2 * NFL * NFL + NFL * NFL * NBD);
+            fr_algo        = strings(N_total, 1);
+            cr_algo        = strings(N_total, 1);
+            fl_fr          = nan(N_total, 1);
+            fl_cr          = nan(N_total, 1);
+            blind_d        = nan(N_total, 1);
+            fec_snr_trials = cell(N_total, 1);
+            energy_fr_fJ   = nan(N_total, 1);
+            energy_cr_fJ   = nan(N_total, 1);
 
             row = 0;
             for c = 1:2
                 for fri = 1:NFL
                     for cri = 1:NFL
                         row = row + 1;
-                        fr_algo(row)      = "fft_search";
-                        cr_algo(row)      = crNames{c};
-                        fl_fr(row)        = P.FL_vec(fri);
-                        fl_cr(row)        = P.FL_vec(cri);
-                        blind_d(row)      = NaN;
-                        fec_snr_db(row)   = fec_fft(fri, cri, c);
-                        energy_fr_fJ(row) = E_fft_per_fl(fri);
-                        energy_cr_fJ(row) = E_cr_grid(cri, c);
+                        fr_algo(row)        = "fft_search";
+                        cr_algo(row)        = crNames{c};
+                        fl_fr(row)          = P.FL_vec(fri);
+                        fl_cr(row)          = P.FL_vec(cri);
+                        blind_d(row)           = NaN;
+                        fec_snr_trials{row}    = squeeze(fec_fft(fri, cri, :, c));
+                        energy_fr_fJ(row)      = E_fft_per_fl(fri);
+                        energy_cr_fJ(row)      = E_cr_grid(cri, c);
 
                         row = row + 1;
-                        fr_algo(row)      = "differential_kay";
-                        cr_algo(row)      = crNames{c};
-                        fl_fr(row)        = P.FL_vec(fri);
-                        fl_cr(row)        = P.FL_vec(cri);
-                        blind_d(row)      = NaN;
-                        fec_snr_db(row)   = fec_dk(fri, cri, c);
-                        energy_fr_fJ(row) = E_dk_per_fl(fri);
-                        energy_cr_fJ(row) = E_cr_grid(cri, c);
+                        fr_algo(row)           = "differential_kay";
+                        cr_algo(row)           = crNames{c};
+                        fl_fr(row)             = P.FL_vec(fri);
+                        fl_cr(row)             = P.FL_vec(cri);
+                        blind_d(row)           = NaN;
+                        fec_snr_trials{row}    = squeeze(fec_dk(fri, cri, :, c));
+                        energy_fr_fJ(row)      = E_dk_per_fl(fri);
+                        energy_cr_fJ(row)      = E_cr_grid(cri, c);
 
                         for di = 1:NBD
                             row = row + 1;
-                            fr_algo(row)      = "fft_search_blind";
-                            cr_algo(row)      = crNames{c};
-                            fl_fr(row)        = P.FL_vec(fri);
-                            fl_cr(row)        = P.FL_vec(cri);
-                            blind_d(row)      = P.BlindD_vec(di);
-                            fec_snr_db(row)   = fec_blind(fri, cri, di, c);
-                            energy_fr_fJ(row) = E_fft_blind_grid(fri, di);
-                            energy_cr_fJ(row) = E_cr_grid(cri, c);
+                            fr_algo(row)        = "fft_search_blind";
+                            cr_algo(row)        = crNames{c};
+                            fl_fr(row)          = P.FL_vec(fri);
+                            fl_cr(row)          = P.FL_vec(cri);
+                            blind_d(row)        = P.BlindD_vec(di);
+                            fec_snr_trials{row} = squeeze(fec_blind(fri, cri, di, :, c));
+                            energy_fr_fJ(row)   = E_fft_blind_grid(fri, di);
+                            energy_cr_fJ(row)   = E_cr_grid(cri, c);
                         end
                     end
                 end
             end
 
             T = table(fr_algo, cr_algo, fl_fr, fl_cr, blind_d, ...
-                fec_snr_db, energy_fr_fJ, energy_cr_fJ);
+                fec_snr_trials, energy_fr_fJ, energy_cr_fJ);
         end
 
     end
@@ -530,7 +532,10 @@ classdef bit_width_full < matlab.unittest.TestCase
             Params.VVFilters      = testCase.VVFilters;
         end
 
-        function ber_avg = runSnrSweepStatic(Params, fr_algo, blindD, T_fr, T_cr)
+        function ber_all = runSnrSweepStatic(Params, fr_algo, blindD, T_fr, T_cr)
+            % Returns per-trial BER: ber_all(tr, si, c) for trial tr, SNR
+            % index si and CR column c (1 = VV, 2 = PO).  Callers compute
+            % the FEC-SNR mean and std from per-trial crossings.
             NSNR    = length(Params.SNR_dB_vec);
             ber_all = zeros(Params.NTrials, NSNR, 2);
 
@@ -557,12 +562,6 @@ classdef bit_width_full < matlab.unittest.TestCase
                     ber_all(tr, si, 2) = bit_width_full.computeBER(cr_po, txRefBits);
                 end
             end
-
-            ber_avg = reshape(mean(ber_all, 1), [NSNR, 2]);
-
-            nBits    = 3712 * Params.N_pol * 2;
-            berFloor = 1 / (Params.NTrials * nBits);
-            ber_avg(ber_avg == 0) = berFloor;
         end
 
         function [fr_out, pilots, txRefBits] = buildChannel(P, SNR_dB, fr_algo, blindD, T_fr)
@@ -632,6 +631,16 @@ classdef bit_width_full < matlab.unittest.TestCase
                     bestBER = ber;
                     best    = rot;
                 end
+            end
+        end
+
+        function snrs = fecCrossingsAll(snrDb, berPerTrial, fecBer)
+            % Per-trial FEC SNR crossings. berPerTrial is [NTrials × NSNR].
+            % Returns NTrials×1 vector; NaN where the curve never crosses fecBer.
+            NTrials = size(berPerTrial, 1);
+            snrs    = nan(NTrials, 1);
+            for t = 1:NTrials
+                snrs(t) = bit_width_full.fecCrossing(snrDb, berPerTrial(t, :), fecBer);
             end
         end
 

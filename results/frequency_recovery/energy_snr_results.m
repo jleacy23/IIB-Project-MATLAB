@@ -1,4 +1,4 @@
-function [tbl_shot, tbl_amp] = energy_snr_results()
+function [tbl_shot, tbl_amp] = energy_snr_results(ignore_fr_energy)
 % ENERGY_SNR_RESULTS  Optimal DSP algorithm system energy vs FEC SNR.
 %
 %   For each FR+CR algorithm pair and PON splitting ratio K, finds the
@@ -14,6 +14,14 @@ function [tbl_shot, tbl_amp] = energy_snr_results()
 %     tbl_amp  — 3 × 80 km EDFA-amplified link (ASE + NLI limited)
 %
 %   K ∈ {1, 10, 100} in both cases.
+%
+%   ignore_fr_energy (default false) — when true, drops the frequency
+%       recovery energy from the receiver total, modelling the limit where
+%       FR cost is amortised over infinite symbols.
+
+if nargin < 1 || isempty(ignore_fr_energy)
+    ignore_fr_energy = false;
+end
 
 addpath(fullfile(fileparts(mfilename('fullpath')), '..', '..', 'src'));
 
@@ -22,7 +30,7 @@ Rs     = 30.5e9;        % symbol rate [Hz]
 M      = 4;             % QPSK
 lambda = 1550e-9;       % wavelength [m]
 eta    = 0.1;           % laser wall-plug efficiency
-K_vec  = [1, 10, 100];  % PON splitting / WDM fan-out ratios
+K_vec  = [1, 10, 20];  % PON splitting / WDM fan-out ratios
 
 %% Link parameters -------------------------------------------------------
 
@@ -43,7 +51,11 @@ an.NF_dB    = 5;                        % EDFA noise figure [dB]
 d       = load(fullfile(fileparts(mfilename('fullpath')), ...
                'bit_width_full_grid_sweep.mat'));
 sweep   = d.tbl;
-E_rx_fJ = sweep.energy_fr_fJ + sweep.energy_cr_fJ;  % total Rx DSP energy [fJ/bit]
+if ignore_fr_energy
+    E_rx_fJ = sweep.energy_cr_fJ;                      % FR cost amortised away
+else
+    E_rx_fJ = sweep.energy_fr_fJ + sweep.energy_cr_fJ; % total Rx DSP energy [fJ/bit]
+end
 
 %% Build tables ----------------------------------------------------------
 tbl_shot = build_table(sweep, E_rx_fJ, K_vec, 'shot', Rs, M, lambda, eta, sn, an);
@@ -66,6 +78,8 @@ function out = build_table(sweep, E_rx_fJ, K_vec, regime, Rs, M, lambda, eta, sn
 
     v_fr  = strings(NR, 1);  v_cr  = strings(NR, 1);
     v_K   = nan(NR, 1);
+    v_flFR = nan(NR, 1);  v_flCR = nan(NR, 1);
+    v_blindD = nan(NR, 1);
     v_mE  = nan(NR, 1);  v_sE  = nan(NR, 1);
     v_mSN = nan(NR, 1);  v_sSN = nan(NR, 1);
     v_Prx = nan(NR, 1);
@@ -101,6 +115,9 @@ function out = build_table(sweep, E_rx_fJ, K_vec, regime, Rs, M, lambda, eta, sn
 
             row = row + 1;
             v_fr(row)  = fr;    v_cr(row)  = cr;    v_K(row)  = K;
+            v_flFR(row) = sweep.fl_fr(idx(best));
+            v_flCR(row) = sweep.fl_cr(idx(best));
+            v_blindD(row) = sweep.blind_d(idx(best));
             v_mE(row)  = mean(E_sys);
             v_sE(row)  = std(E_sys);
             v_mSN(row) = mean(snr_v);
@@ -109,8 +126,8 @@ function out = build_table(sweep, E_rx_fJ, K_vec, regime, Rs, M, lambda, eta, sn
         end
     end
 
-    out = table(v_fr, v_cr, v_K, v_mE, v_sE, v_mSN, v_sSN, v_Prx, ...
-        'VariableNames', {'fr_algo', 'cr_algo', 'K', ...
+    out = table(v_fr, v_cr, v_K, v_flFR, v_flCR, v_blindD, v_mE, v_sE, v_mSN, v_sSN, v_Prx, ...
+        'VariableNames', {'fr_algo', 'cr_algo', 'K', 'fl_fr', 'fl_cr', 'blind_d', ...
         'mean_sys_energy_fJ', 'std_sys_energy_fJ', ...
         'mean_fec_snr_dB', 'std_fec_snr_dB', 'prx_dBm'});
 end

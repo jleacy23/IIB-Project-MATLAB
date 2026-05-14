@@ -10,6 +10,7 @@
 \usepackage{biblatex}
 \usepackage{multirow}
 \usepackage{tikz}
+\usepackage{bm}
 \usetikzlibrary{shapes.geometric, arrows.meta, positioning}
 
 % Look for figures in each chapter's source directory.
@@ -275,6 +276,15 @@ The DK estimator has lower complexity, only requiring CORDIC, real additions, an
 \subsection{Optimising Bit Width}
 These frequency recovery algorithms compute an estimate of the normalised CFO \(f_d / R_s\). For \(n\) bits of precision, the smallest normalised CFO that can be estimated is \(2^{-n}\) when \(0 \leq |f_d / R_s| \leq 1\) is the estimation range. In reality a much smaller range of CFOs needs to be estimated. If the maximum permitted value of \(|f_d / R_s| = 2^{-d}\), \(d\) bits of precision that would otherwise be redundant can be utilised by scaling each estimate by \(2^d\) during calculation then inserting \(d\) bits in the final answer to recover the true normalised CFO. This improves the resolution to \(2^{-(n+d)}\)  without any increase in energy consumption.
 
+\subsection{Maximum CFO}
+The theoretical limit on the maximum CFO that can be corrected is given by Nyquist as \(0.5R_s\). From \cref{eq:blind_noise} we see that blind operation reduces this limit by a factor of 4. Both the R\&B and DK estimators accurately estimate the CFO up to the Nyquist limit as seen in \cref{fig:max_cfo}. Blind operation aliases as expected at \(f/R_s = 0.125\), making it viable for CFOs up to 3.8 GHz with a symbol rate of 30.5 GHz.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{max_cfo.png}
+    \caption{Normalised MSE in CFO estimate (\(\mathrm{MSE}^2/R_s^2\)) vs Normalised CFO (\(f/R_s\))}
+    \label{fig:max_cfo}
+\end{figure}
+
 \section{Phase Recovery}
 \subsection{Feed-Forward vs PLL Algorithms}
 One of the first techniques investigated for phase recovery was a digital phase-locked loop (PLL) to incrementally correct the phase of each symbol with feedback. This dramatically simplifies the phase estimation and correction due to the use of small angle approximations. The CPON spec sets the symbol rate at 30.5 GBd. With an oversampling rate of \(8/7\) the total samples per second would be 35 GSa/s. This is beyond the achievable clock speed of CMOS, so symbols must be processed in blocks of e.g., 32 symbols with a clock speed of 1.1 GHz. This approach hinders the effectiveness of a PLL, as updates can only be made every 32 symbols. For this reason, feed-forward algorithms that can operate on blocks of data were used instead.
@@ -324,14 +334,15 @@ Only phases are needed, so the entire estimation can be performed with CORDIC. T
 
 
 \section{Results \& Discussion}
-\subsection{Maximum CFO}
-The theoretical limit on the maximum CFO that can be corrected is given by Nyquist as \(0.5R_s\). From \cref{eq:blind_noise} we see that blind operation reduces this limit by a factor of 4. Both the R\&B and DK estimators accurately estimate the CFO up to the Nyquist limit as seen in \cref{fig:max_cfo}. Blind operation aliases as expected at \(f/R_s = 0.125\).
+\subsection{Pilots-Only vs Viterbi \& Viterbi}
+To replace Viterbi \& Viterbi with the simplified pilots-only phase correction, it must exhibit comparable performance over the range of linewidths that could be expected during operation of the network. The BER for each phase recovery algorithm as SNR varies is shown in
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.7\textwidth]{max_cfo.png}
-    \caption{Normalised MSE in CFO estimate (\(\mathrm{MSE}^2/R_s^2\)) vs Normalised CFO (\(f/R_s\))}
-    \label{fig:max_cfo}
+    \includegraphics[width=0.7\textwidth]{vv_vs_pilots.png}
+    \caption{Performance comparison of V\&V and Pilots-Only phase correction}
+    \label{fig:vv_vs_pilots}
 \end{figure}
+
 \subsection{Blind vs Data-Aided Operation}
 The decrease in threshold SNR for longer observation lengths suggests that the performance of the R\&B algorithm will improve with blind observation length. This is not the case for the DK estimator, where increasing blind observation length has no effect on threshold SNR. The effect of observation length on FEC SNR is shown for both algorithms in \cref{fig:observation_length}, where blind R\&B shows a clear increase in performance over the blind DK estimator for longer observations and improves on data-aided R\&B after \(\approx 50\) symbols. The DK estimator in blind operation is thus not viable for frequency recovery but blind R\&B can provide the best performance at a higher computational cost.
 \begin{figure}[H]
@@ -343,94 +354,159 @@ The decrease in threshold SNR for longer observation lengths suggests that the p
 
 \subsection{System Energy}
 
-\begin{table}[H]
-    \centering
-    \tiny
-    \caption{Minimum combined per-bit energy for the transmitter and carrier recovery for a 10\,km passive-split PON (shot-noise limited), in fJ/bit. Values are independent of $K$.}
-    \label{tab:energy_shot}
-    \begin{tabular}{llrccc}
-        \toprule
-        FR & CR & $K$ & $E_\mathrm{sys} \pm \sigma$ (fJ/bit) & FEC SNR (dB) & $P_\mathrm{rx}$ (dBm) \\
-        \midrule
-        \multirow{6}{*}{Diff.\ Kay}
-            & \multirow{3}{*}{Pilots}
-                &   1 & $0.923 \pm 0.0050$ & \multirow{3}{*}{$10.0 \pm 0.95$} & $-41.0$ \\
-            & &  10 & $0.923 \pm 0.0050$  &                                    & $-41.0$ \\
-            & & 100 & $0.923 \pm 0.0050$  &                                    & $-41.0$ \\
-        \cmidrule(lr){2-6}
-            & \multirow{3}{*}{V\&V}
-                &   1 & $283   \pm 0$      & \multirow{3}{*}{$15.9 \pm 0$}     & $-35.1$ \\
-            & &  10 & $283   \pm 0$       &                                    & $-35.1$ \\
-            & & 100 & $283   \pm 0$       &                                    & $-35.1$ \\
-        \midrule
-        \multirow{6}{*}{R\&B}
-            & \multirow{3}{*}{Pilots}
-                &   1 & $27.2  \pm 0.0030$ & \multirow{3}{*}{$9.39 \pm 0.68$} & $-41.7$ \\
-            & &  10 & $27.2  \pm 0.0030$  &                                    & $-41.7$ \\
-            & & 100 & $27.2  \pm 0.0030$  &                                    & $-41.7$ \\
-        \cmidrule(lr){2-6}
-            & \multirow{3}{*}{V\&V}
-                &   1 & $310   \pm 0.38$   & \multirow{3}{*}{$23.4 \pm 3.6$}  & $-27.7$ \\
-            & &  10 & $310   \pm 0.38$    &                                    & $-27.7$ \\
-            & & 100 & $310   \pm 0.38$    &                                    & $-27.7$ \\
-        \midrule
-        \multirow{6}{*}{R\&B blind}
-            & \multirow{3}{*}{Pilots}
-                &   1 & $38.7  \pm 0.0027$ & \multirow{3}{*}{$9.59 \pm 0.61$} & $-41.5$ \\
-            & &  10 & $38.7  \pm 0.0027$  &                                    & $-41.5$ \\
-            & & 100 & $38.7  \pm 0.0027$  &                                    & $-41.5$ \\
-        \cmidrule(lr){2-6}
-            & \multirow{3}{*}{V\&V}
-                &   1 & $321   \pm 0.33$   & \multirow{3}{*}{$19.2 \pm 4.9$}  & $-31.9$ \\
-            & &  10 & $321   \pm 0.33$    &                                    & $-31.9$ \\
-            & & 100 & $321   \pm 0.33$    &                                    & $-31.9$ \\
-        \bottomrule
-    \end{tabular}
-\end{table}
+
 
 \begin{table}[H]
     \centering
     \tiny
-    \caption{Minimum combined per-bit energy for the transmitter and carrier recovery for a 3\,$\times$\,80\,km amplified link (ASE\,+\,NLI limited), in fJ/bit.}
-    \label{tab:energy_amp}
-    \begin{tabular}{llrccc}
-        \toprule
-        FR & CR & $K$ & $E_\mathrm{sys} \pm \sigma$ (fJ/bit) & FEC SNR (dB) & $P_\mathrm{rx}$ (dBm) \\
-        \midrule
-        \multirow{6}{*}{Diff.\ Kay}
-            & \multirow{3}{*}{Pilots}
-                &   1 & $3.34  \pm 0.58$   & \multirow{3}{*}{$10.0 \pm 0.95$} & $-18.4$ \\
-            & &  10 & $1.15  \pm 0.058$   &                                   & $-18.4$ \\
-            & & 100 & $0.927 \pm 0.0058$  &                                   & $-18.4$ \\
-        \cmidrule(lr){2-6}
-            & \multirow{3}{*}{V\&V}
-                &   1 & $292   \pm 0$      & \multirow{3}{*}{$15.9 \pm 0$}    & $-12.5$ \\
-            & &  10 & $284   \pm 0$       &                                   & $-12.5$ \\
-            & & 100 & $283   \pm 0$       &                                   & $-12.5$ \\
-        \midrule
-        \multirow{6}{*}{R\&B}
-            & \multirow{3}{*}{Pilots}
-                &   1 & $29.3  \pm 0.34$   & \multirow{3}{*}{$9.39 \pm 0.68$} & $-19.0$ \\
-            & &  10 & $27.4  \pm 0.034$   &                                   & $-19.0$ \\
-            & & 100 & $27.2  \pm 0.0034$  &                                   & $-19.0$ \\
-        \cmidrule(lr){2-6}
-            & \multirow{3}{*}{V\&V}
-                &   1 & $351   \pm 27$     & $21.6 \pm 3.0$                   & $-6.7$  \\
-            & &  10 & $312   \pm 1.6$     & $20.5 \pm 2.4$                   & $-7.8$  \\
-            & & 100 & $310   \pm 0.17$    & $20.5 \pm 2.4$                   & $-7.7$  \\
-        \midrule
-        \multirow{6}{*}{R\&B blind}
-            & \multirow{3}{*}{Pilots}
-                &   1 & $40.9  \pm 0.32$   & \multirow{3}{*}{$9.59 \pm 0.61$} & $-18.8$ \\
-            & &  10 & $38.9  \pm 0.032$   &                                   & $-18.8$ \\
-            & & 100 & $38.7  \pm 0.0032$  &                                   & $-18.8$ \\
-        \cmidrule(lr){2-6}
-            & \multirow{3}{*}{V\&V}
-                &   1 & $339   \pm 13$     & \multirow{3}{*}{$17.7 \pm 3.7$}  & $-10.7$ \\
-            & &  10 & $323   \pm 1.3$     &                                   & $-10.7$ \\
-            & & 100 & $321   \pm 0.14$    &                                   & $-10.7$ \\
-        \bottomrule
-    \end{tabular}
+    \caption{Minimum combined per-bit energy for the transmitter and carrier recovery, in fJ/bit, for the two link regimes.}
+    \label{tab:energy_sys}
+
+    \begin{subtable}{\textwidth}
+        \centering
+        \caption{10\,km passive-split PON (shot-noise limited).}
+        \label{tab:energy_shot}
+        \begin{tabular}{llrccc}
+            \toprule
+            FR & PR & $K$ & $E_\mathrm{sys} \pm \sigma$ (fJ/bit) & FEC SNR (dB) & $(n_\mathrm{FR}, n_\mathrm{PR})$ \\
+            \midrule
+            \multirow{6}{*}{DK}
+                & \multirow{3}{*}{Pilots}
+                    &   1 & $\bm{0.922 \pm 0.0044}$ & $9.76 \pm 0.89$ & $(2, 2)$ \\
+                & &  10 & $\bm{0.922 \pm 0.0044}$ & $9.76 \pm 0.89$ & $(2, 2)$ \\
+                & &  20 & $\bm{0.922 \pm 0.0044}$ & $9.76 \pm 0.89$ & $(2, 2)$ \\
+            \cmidrule(lr){2-6}
+                & \multirow{3}{*}{V\&V}
+                    &   1 & $284   \pm 0.64$   & $23.2 \pm 5.4$ & $(2, 2)$ \\
+                & &  10 & $284   \pm 0.64$   & $23.2 \pm 5.4$ & $(2, 2)$ \\
+                & &  20 & $284   \pm 0.64$   & $23.2 \pm 5.4$ & $(2, 2)$ \\
+            \midrule
+            \multirow{6}{*}{R\&B}
+                & \multirow{3}{*}{Pilots}
+                    &   1 & $27.2  \pm 0.0026$ & $9.30 \pm 0.61$ & $(2, 2)$ \\
+                & &  10 & $27.2  \pm 0.0026$ & $9.30 \pm 0.61$ & $(2, 2)$ \\
+                & &  20 & $27.2  \pm 0.0026$ & $9.30 \pm 0.61$ & $(2, 2)$ \\
+            \cmidrule(lr){2-6}
+                & \multirow{3}{*}{V\&V}
+                    &   1 & $310   \pm 0.55$   & $23.6 \pm 4.2$ & $(2, 2)$ \\
+                & &  10 & $310   \pm 0.55$   & $23.6 \pm 4.2$ & $(2, 2)$ \\
+                & &  20 & $310   \pm 0.55$   & $23.6 \pm 4.2$ & $(2, 2)$ \\
+            \midrule
+            \multirow{6}{*}{R\&B blind (D = 32)}
+                & \multirow{3}{*}{Pilots}
+                    &   1 & $38.7  \pm 0.0028$ & $9.40 \pm 0.63$ & $(2, 2)$ \\
+                & &  10 & $38.7  \pm 0.0028$ & $9.40 \pm 0.63$ & $(2, 2)$ \\
+                & &  20 & $38.7  \pm 0.0028$ & $9.40 \pm 0.63$ & $(2, 2)$ \\
+            \cmidrule(lr){2-6}
+                & \multirow{3}{*}{V\&V}
+                    &   1 & $321   \pm 0.48$   & $22.1 \pm 4.4$ & $(2, 2)$ \\
+                & &  10 & $321   \pm 0.48$   & $22.1 \pm 4.4$ & $(2, 2)$ \\
+                & &  20 & $321   \pm 0.48$   & $22.1 \pm 4.4$ & $(2, 2)$ \\
+            \bottomrule
+        \end{tabular}
+    \end{subtable}
+
+    \vspace{1em}
+
+    \begin{subtable}{\textwidth}
+        \centering
+        \caption{3\,$\times$\,80\,km amplified link (ASE\,+\,NLI limited).}
+        \label{tab:energy_amp}
+        \begin{tabular}{llrccc}
+            \toprule
+            FR & PR & $K$ & $E_\mathrm{sys} \pm \sigma$ (fJ/bit) & FEC SNR (dB) & $(n_\mathrm{FR}, n_\mathrm{PR})$ \\
+            \midrule
+            \multirow{6}{*}{DK}
+                & \multirow{3}{*}{Pilots}
+                    &   1 & $\bm{3.19  \pm 0.51}$   & $9.76 \pm 0.89$ & $(2, 2)$ \\
+                & &  10 & $\bm{1.13  \pm 0.051}$  & $9.76 \pm 0.89$ & $(2, 2)$ \\
+                & &  20 & $\bm{1.02  \pm 0.026}$  & $9.76 \pm 0.89$ & $(2, 2)$ \\
+            \cmidrule(lr){2-6}
+                & \multirow{3}{*}{V\&V}
+                    &   1 & $321   \pm 29$     & $20.2 \pm 3.9$ & $(6, 2)$ \\
+                & &  10 & $285   \pm 1.8$    & $18.6 \pm 3.3$ & $(2, 2)$ \\
+                & &  20 & $284   \pm 0.94$   & $18.6 \pm 3.3$ & $(2, 2)$ \\
+            \midrule
+            \multirow{6}{*}{R\&B}
+                & \multirow{3}{*}{Pilots}
+                    &   1 & $29.2  \pm 0.31$   & $9.30 \pm 0.61$ & $(2, 2)$ \\
+                & &  10 & $27.4  \pm 0.031$  & $9.30 \pm 0.61$ & $(2, 2)$ \\
+                & &  20 & $27.3  \pm 0.015$  & $9.30 \pm 0.61$ & $(2, 2)$ \\
+            \cmidrule(lr){2-6}
+                & \multirow{3}{*}{V\&V}
+                    &   1 & $354   \pm 28$     & $21.7 \pm 3.3$ & $(2, 2)$ \\
+                & &  10 & $313   \pm 2.1$    & $20.6 \pm 3.0$ & $(2, 2)$ \\
+                & &  20 & $311   \pm 1.1$    & $20.6 \pm 3.0$ & $(2, 2)$ \\
+            \midrule
+            \multirow{6}{*}{R\&B blind (D = 32)}
+                & \multirow{3}{*}{Pilots}
+                    &   1 & $40.8  \pm 0.33$   & $9.40 \pm 0.63$ & $(2, 2)$ \\
+                & &  10 & $38.9  \pm 0.033$  & $9.40 \pm 0.63$ & $(2, 2)$ \\
+                & &  20 & $38.8  \pm 0.016$  & $9.40 \pm 0.63$ & $(2, 2)$ \\
+            \cmidrule(lr){2-6}
+                & \multirow{3}{*}{V\&V}
+                    &   1 & $351   \pm 19$     & $18.4 \pm 3.5$ & $(2, 2)$ \\
+                & &  10 & $323   \pm 2.0$    & $19.3 \pm 3.0$ & $(2, 2)$ \\
+                & &  20 & $322   \pm 1.0$    & $19.3 \pm 3.0$ & $(2, 2)$ \\
+            \bottomrule
+        \end{tabular}
+    \end{subtable}
+\end{table}
+
+
+\begin{table}[H]
+    \centering
+    \tiny
+    \caption{Minimum combined per-bit energy when the frequency recovery energy is amortised away.}
+    \label{tab:energy_sys_no_fr}
+
+    \begin{subtable}{\textwidth}
+        \centering
+        \caption{10\,km passive-split PON (shot-noise limited).}
+        \label{tab:energy_shot_no_fr}
+        \begin{tabular}{llrccc}
+            \toprule
+            FR & PR & $K$ & $E_\mathrm{sys} \pm \sigma$ (fJ/bit) & FEC SNR (dB) & $(n_\mathrm{FR}, n_\mathrm{PR})$ \\
+            \midrule
+            \multirow{3}{*}{DK}
+                & \multirow{3}{*}{Pilots}
+                    &   1 & $0.592 \pm 0.0022$   & $8.84 \pm 0.59$ & $(14, 2)$ \\
+                & &  10 & $0.592 \pm 0.0022$   & $8.84 \pm 0.59$ & $(14, 2)$ \\
+                & &  20 & $0.592 \pm 0.0022$   & $8.84 \pm 0.59$ & $(14, 2)$ \\
+            \midrule
+            \multirow{3}{*}{R\&B blind (D = 512)}
+                & \multirow{3}{*}{Pilots}
+                    &   1 & $\bm{0.590 \pm 0.00049}$  & $8.39 \pm 0.15$ & $(12, 2)$ \\
+                & &  10 & $\bm{0.590 \pm 0.00049}$  & $8.39 \pm 0.15$ & $(12, 2)$ \\
+                & &  20 & $\bm{0.590 \pm 0.00049}$  & $8.39 \pm 0.15$ & $(12, 2)$ \\
+            \bottomrule
+        \end{tabular}
+    \end{subtable}
+
+    \vspace{1em}
+
+    \begin{subtable}{\textwidth}
+        \centering
+        \caption{3\,$\times$\,80\,km amplified link (ASE\,+\,NLI limited).}
+        \label{tab:energy_amp_no_fr}
+        \begin{tabular}{llrccc}
+            \toprule
+            FR & PR & $K$ & $E_\mathrm{sys} \pm \sigma$ (fJ/bit) & FEC SNR (dB) & $(n_\mathrm{FR}, n_\mathrm{PR})$\\
+            \midrule
+            \multirow{3}{*}{DK}
+                & \multirow{3}{*}{Pilots}
+                    &   1 & $2.40  \pm 0.26$    & $8.84 \pm 0.59$ & $(14, 2)$ \\
+                & &  10 & $0.759 \pm 0.026$   & $8.84 \pm 0.59$ & $(14, 2)$ \\
+                & &  20 & $0.667 \pm 0.013$   & $8.84 \pm 0.59$ & $(14, 2)$ \\
+            \midrule
+            \multirow{3}{*}{R\&B blind (D = 512)}
+                & \multirow{3}{*}{Pilots}
+                    &   1 & $\bm{2.21  \pm 0.057}$   & $8.39 \pm 0.15$ & $(12, 2)$ \\
+                & &  10 & $\bm{0.739 \pm 0.0057}$  & $8.39 \pm 0.15$ & $(12, 2)$ \\
+                & &  20 & $\bm{0.658 \pm 0.0029}$  & $8.39 \pm 0.15$ & $(12, 2)$ \\
+            \bottomrule
+        \end{tabular}
+    \end{subtable}
 \end{table}
 
 \printbibliography

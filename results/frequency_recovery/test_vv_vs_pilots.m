@@ -23,11 +23,11 @@ classdef test_vv_vs_pilots < matlab.unittest.TestCase
         N_pol        = 2
 
         % Monte-Carlo trials per (LW, SNR) point
-        NTrials      = 10
+        NTrials      = 50
 
         % Sweep grid
         LW_Hz_vec    = [100e3, 1e6, 10e6]
-        SNR_dB_vec   = [5, 15, 25]
+        SNR_dB_vec   = [0:1:30]
 
         % Carrier recovery
         BlockLen       = 32
@@ -175,7 +175,8 @@ classdef test_vv_vs_pilots < matlab.unittest.TestCase
         end
 
         function plotResults(P, ber_vv, ber_po)
-            NLW = numel(P.LW_Hz_vec);
+            NLW      = numel(P.LW_Hz_vec);
+            berFloor = 1 / (P.NTrials * 3586 * 4 * 2);   % 1 error / total bits sent (×2 polarisations)
 
             figure('Name', 'V&V vs Pilots-only — BER across linewidths', ...
                 'Color', 'w', 'Position', [100 100 900 600]);
@@ -192,15 +193,17 @@ classdef test_vv_vs_pilots < matlab.unittest.TestCase
                 end
                 plot(ax, P.SNR_dB_vec, ber_vv(li, :), ...
                     'Color', colors(li, :), 'LineStyle', '-', 'Marker', 'o', ...
-                    'LineWidth', 1.8, 'MarkerSize', 7, 'MarkerFaceColor', colors(li, :), ...
+                    'LineWidth', 1.8, 'MarkerSize', 4, 'MarkerFaceColor', colors(li, :), ...
                     'DisplayName', sprintf('V&V, LW = %s', lwStr));
                 plot(ax, P.SNR_dB_vec, ber_po(li, :), ...
-                    'Color', colors(li, :), 'LineStyle', '--', 'Marker', 's', ...
-                    'LineWidth', 1.8, 'MarkerSize', 7, ...
+                    'Color', colors(li, :), 'LineStyle', '--', 'Marker', 'o', ...
+                    'LineWidth', 1.8, 'MarkerSize', 4, ...
                     'DisplayName', sprintf('Pilots, LW = %s', lwStr));
             end
             yline(ax, P.FEC_BER, 'k:', 'LineWidth', 1.5, ...
                 'DisplayName', sprintf('FEC limit (%.0e)', P.FEC_BER));
+            yline(ax, berFloor, 'k--', 'LineWidth', 1.0, ...
+                'DisplayName', sprintf('BER floor (%.0e)', berFloor));
 
             set(ax, 'YScale', 'log', 'FontSize', 11, 'Box', 'on');
             xlabel(ax, 'SNR [dB]', 'FontSize', 12);

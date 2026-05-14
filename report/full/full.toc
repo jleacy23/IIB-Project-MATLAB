@@ -20,15 +20,16 @@
 \contentsline {paragraph}{R\&B}{10}{}%
 \contentsline {paragraph}{DK}{10}{}%
 \contentsline {subsection}{\numberline {2.2.5}Optimising Bit Width}{10}{}%
+\contentsline {subsection}{\numberline {2.2.6}Maximum CFO}{10}{}%
 \contentsline {section}{\numberline {2.3}Phase Recovery}{11}{}%
 \contentsline {subsection}{\numberline {2.3.1}Feed-Forward vs PLL Algorithms}{11}{}%
 \contentsline {subsection}{\numberline {2.3.2}Viterbi \& Viterbi}{11}{}%
-\contentsline {subsubsection}{Pilots-Only Correction}{11}{}%
-\contentsline {subsection}{\numberline {2.3.3}Computational Complexity}{11}{}%
-\contentsline {paragraph}{Viterbi \& Viterbi}{11}{}%
+\contentsline {subsubsection}{Pilots-Only Correction}{12}{}%
+\contentsline {subsection}{\numberline {2.3.3}Computational Complexity}{12}{}%
+\contentsline {paragraph}{Viterbi \& Viterbi}{12}{}%
 \contentsline {paragraph}{Pilots-Only}{12}{}%
-\contentsline {section}{\numberline {2.4}Methodology}{12}{}%
-\contentsline {section}{\numberline {2.5}Results \& Discussion}{12}{}%
-\contentsline {subsection}{\numberline {2.5.1}Maximum CFO}{12}{}%
+\contentsline {section}{\numberline {2.4}Methodology}{13}{}%
+\contentsline {section}{\numberline {2.5}Results \& Discussion}{13}{}%
+\contentsline {subsection}{\numberline {2.5.1}Pilots-Only vs Viterbi \& Viterbi}{13}{}%
 \contentsline {subsection}{\numberline {2.5.2}Blind vs Data-Aided Operation}{13}{}%
-\contentsline {subsection}{\numberline {2.5.3}System Energy}{13}{}%
+\contentsline {subsection}{\numberline {2.5.3}System Energy}{15}{}%

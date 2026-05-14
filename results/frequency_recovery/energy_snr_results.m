@@ -66,6 +66,8 @@ disp(tbl_shot);
 fprintf('\n=== Amplified-noise limited (3 × 80 km EDFA spans) ===\n');
 disp(tbl_amp);
 
+plot_energy_split(tbl_shot, tbl_amp);
+
 end
 
 
@@ -81,6 +83,8 @@ function out = build_table(sweep, E_rx_fJ, K_vec, regime, Rs, M, lambda, eta, sn
     v_flFR = nan(NR, 1);  v_flCR = nan(NR, 1);
     v_blindD = nan(NR, 1);
     v_mE  = nan(NR, 1);  v_sE  = nan(NR, 1);
+    v_mErx = nan(NR, 1);  v_mEtx = nan(NR, 1);
+    v_mEfr = nan(NR, 1);  v_mEcr = nan(NR, 1);
     v_mSN = nan(NR, 1);  v_sSN = nan(NR, 1);
     v_Prx = nan(NR, 1);
 
@@ -120,15 +124,20 @@ function out = build_table(sweep, E_rx_fJ, K_vec, regime, Rs, M, lambda, eta, sn
             v_blindD(row) = sweep.blind_d(idx(best));
             v_mE(row)  = mean(E_sys);
             v_sE(row)  = std(E_sys);
+            v_mErx(row) = Erx(best);
+            v_mEtx(row) = mean(E_sys) - Erx(best);
+            v_mEfr(row) = sweep.energy_fr_fJ(idx(best));
+            v_mEcr(row) = sweep.energy_cr_fJ(idx(best));
             v_mSN(row) = mean(snr_v);
             v_sSN(row) = std(snr_v);
             v_Prx(row) = mean(10 * log10(P_rx_W * 1e3));   % mean dBm
         end
     end
 
-    out = table(v_fr, v_cr, v_K, v_flFR, v_flCR, v_blindD, v_mE, v_sE, v_mSN, v_sSN, v_Prx, ...
+    out = table(v_fr, v_cr, v_K, v_flFR, v_flCR, v_blindD, v_mE, v_sE, v_mEtx, v_mEfr, v_mEcr, v_mErx, v_mSN, v_sSN, v_Prx, ...
         'VariableNames', {'fr_algo', 'cr_algo', 'K', 'fl_fr', 'fl_cr', 'blind_d', ...
         'mean_sys_energy_fJ', 'std_sys_energy_fJ', ...
+        'mean_tx_energy_fJ', 'mean_fr_energy_fJ', 'mean_cr_energy_fJ', 'mean_rx_energy_fJ', ...
         'mean_fec_snr_dB', 'std_fec_snr_dB', 'prx_dBm'});
 end
 
@@ -176,4 +185,64 @@ function [E_sys, snr_dB_valid, P_rx_W] = trial_energies( ...
     E_sys        = E_tx_J(valid) * 1e15 + E_rx_fJ_row;
     snr_dB_valid = snr_dB(valid);
     P_rx_W       = P_rx_W(valid);
+end
+
+
+function plot_energy_split(tbl_shot, tbl_amp)
+    titles = {'Shot-noise limited (10 km passive PON)', ...
+               'Amplified (3 × 80 km EDFA)'};
+    tbls   = {tbl_shot, tbl_amp};
+
+    for sub = 1:2
+        figure('Name', titles{sub}, 'Color', 'w', 'Position', [100 + (sub-1)*80, 100, 900, 500]);
+        ax  = axes;
+        tbl = tbls{sub};
+
+        combos = unique(tbl(:, {'fr_algo', 'cr_algo'}), 'rows', 'stable');
+        NC  = height(combos);
+        NK  = numel(unique(tbl.K));
+        gap = 1.5;   % extra units of space between algorithm groups
+
+        % Assign x positions: bars within a group are contiguous, groups are separated
+        xpos = zeros(1, NC * NK);
+        for ci = 1:NC
+            xpos((ci-1)*NK + (1:NK)) = (ci-1)*(NK + gap) + (1:NK);
+        end
+
+        data = [tbl.mean_tx_energy_fJ, tbl.mean_fr_energy_fJ, tbl.mean_cr_energy_fJ];
+        bar(ax, xpos, data, 'stacked');
+
+        % One tick per algorithm combo, centred on its group of K bars
+        tickPos = arrayfun(@(ci) (ci-1)*(NK + gap) + (NK + 1)/2, 1:NC);
+        tickLbl = strings(NC, 1);
+        for ci = 1:NC
+            tickLbl(ci) = sprintf('%s / %s', ...
+                abbrevAlgo(combos.fr_algo(ci)), abbrevAlgo(combos.cr_algo(ci)));
+        end
+
+        ax.XTick = tickPos;
+        ax.XTickLabel = tickLbl;
+        ax.XTickLabelRotation = 20;
+        ax.FontSize = 10;
+        grid(ax, 'on');
+        ylabel(ax, 'Energy [fJ/bit]', 'FontSize', 11);
+        title(ax, titles{sub}, 'FontSize', 11, 'Interpreter', 'none');
+        legend(ax, {'TX', 'FR (freq. recovery)', 'CR (phase recovery)'}, ...
+            'Location', 'best', 'FontSize', 9, 'Interpreter', 'none');
+    end
+end
+
+
+function s = abbrevAlgo(name)
+    map = {'fft_search',       'R&B';       ...
+           'fft_search_blind', 'R&B blind'; ...
+           'differential_kay', 'DK';        ...
+           'viterbi_viterbi',  'V&V';       ...
+           'pilots_only',      'PO'};
+    idx = strcmp(map(:, 1), name);
+    if any(idx)
+        s = map{idx, 2};
+    else
+        s = name;
+    end
 end

@@ -1,19 +1,21 @@
 # Fdb version 4
-["biber full"] 1778689350.64944 "full.bcf" "full.bbl" "full" 1778756380.08033 0
+["biber full"] 1778772429.62181 "full.bcf" "full.bbl" "full" 1778774251.02684 0
   "../energy/ref.bib" 1777992037 1213 3edeab146894889c227b177519c60136 ""
   "../frequency_recovery/ref.bib" 1777558777 1554 5f443762d1d5dcd5fd6ffed8945c1a19 ""
-  "full.bcf" 1778756379 109165 e38151bc1e9427c7d10bc4f909329d7f "pdflatex"
+  "full.bcf" 1778774250 109301 2f88ffd19926a8d3069c3d343745ffe6 "pdflatex"
   (generated)
   "full.bbl"
   "full.blg"
   (rewritten before read)
-["pdflatex"] 1778756378.77834 "c:/Users/joele/Downloads/iib_project/report/full/full.tex" "full.pdf" "full" 1778756380.08151 0
+["pdflatex"] 1778774249.67775 "c:/Users/joele/Downloads/iib_project/report/full/full.tex" "full.pdf" "full" 1778774251.02775 0
   "../frequency_recovery/MCRB_diffkay_blind.png" 1777557750 111879 8aeb537be69d59d2e49acb7d40103ac2 ""
   "../frequency_recovery/MCRB_diffkay_data.png" 1777732882 64321 26955a43795a765aa0ee04b8c2c0d657 ""
   "../frequency_recovery/MCRB_fft_blind.png" 1777557727 113249 c2e3942101aade483f3e6c828ac16de8 ""
   "../frequency_recovery/MCRB_fft_data.png" 1777557625 59014 9f57c0b140a32b0a93b0540f39d03c4b ""
+  "../frequency_recovery/amp_noise_bar.png" 1778766146 44422 8458bcd173b22a50f7b20cf34f5fe0fa ""
   "../frequency_recovery/blind_data.png" 1777737067 72999 ca79bc8ab0f9c0670d870bfb53de2835 ""
   "../frequency_recovery/max_cfo.png" 1777987780 70139 1299b24a64ed79d6d297da9a669a8c25 ""
+  "../frequency_recovery/shot_noise_bar.png" 1778766116 42198 fa2dfb5f759a6b355e3af4926d05f2d6 ""
   "../frequency_recovery/vv_vs_pilots.png" 1778755789 81893 b0b4c33fde5b1546e28302431205b4ed ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy5.tfm" 1772596518 1120 1e8878807317373affa7f7bba4cf2f6a ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy6.tfm" 1772596518 1124 14ccf5552bc7f77ca02a8a402bea8bfb ""
@@ -186,12 +188,12 @@
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1772596550 94259 aec9939469efac8f0cf917369f632359 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/web2c/pdftex/pdflatex.fmt" 1772596566 2236130 036198fdb3bbb46401ac4d671e71ba73 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf.cnf" 1772596498 903 164c5b127cd0d6dc91abad2f62421ea2 ""
-  "c:/Users/joele/Downloads/iib_project/report/full/full.tex" 1778756377 35470 78f5a9816402d5dfcda35465275403b1 ""
-  "full.aux" 1778756379 12254 0298a75e56a0936c38a080f1d7e488ff "pdflatex"
-  "full.bbl" 1778689360 11242 a5c68d9b52b3e48a51edc90f85c142f5 "biber full"
-  "full.run.xml" 1778756379 2357 9653b78a1ee3bce96fb622892065b332 "pdflatex"
-  "full.tex" 1778756377 35470 78f5a9816402d5dfcda35465275403b1 ""
-  "full.toc" 1778756379 2345 8d638ecc804d37d659bd5b72892d1bc8 "pdflatex"
+  "c:/Users/joele/Downloads/iib_project/report/full/full.tex" 1778774249 48759 2d933da16777c24857023ef7e62a6014 ""
+  "full.aux" 1778774250 15604 1eba36df1bc81a4e93fe6b20a6df4912 "pdflatex"
+  "full.bbl" 1778772431 11242 a5c68d9b52b3e48a51edc90f85c142f5 "biber full"
+  "full.run.xml" 1778774250 2357 9653b78a1ee3bce96fb622892065b332 "pdflatex"
+  "full.tex" 1778774249 48759 2d933da16777c24857023ef7e62a6014 ""
+  "full.toc" 1778774250 3170 f9d81f625d80677c1ea4903cf25b81c9 "pdflatex"
   (generated)
   "full.aux"
   "full.bcf"

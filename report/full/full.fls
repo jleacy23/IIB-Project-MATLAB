@@ -280,6 +280,7 @@ INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmsy
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmbx10.tfm
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmmib10.tfm
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmbsy10.tfm
+INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmtt12.tfm
 INPUT ../frequency_recovery/MCRB_fft_data.png
 INPUT ../frequency_recovery/MCRB_fft_data.png
 INPUT ../frequency_recovery/MCRB_fft_data.png
@@ -308,11 +309,18 @@ INPUT ../frequency_recovery/blind_data.png
 INPUT ../frequency_recovery/blind_data.png
 INPUT ../frequency_recovery/blind_data.png
 INPUT ../frequency_recovery/blind_data.png
+INPUT ../frequency_recovery/shot_noise_bar.png
+INPUT ../frequency_recovery/shot_noise_bar.png
+INPUT ../frequency_recovery/shot_noise_bar.png
+INPUT ../frequency_recovery/shot_noise_bar.png
+INPUT ../frequency_recovery/amp_noise_bar.png
+INPUT ../frequency_recovery/amp_noise_bar.png
+INPUT ../frequency_recovery/amp_noise_bar.png
+INPUT ../frequency_recovery/amp_noise_bar.png
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmbx5.tfm
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmmib5.tfm
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy5.tfm
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmcsc10.tfm
-INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmtt12.tfm
 INPUT full.aux
 INPUT full.run.xml
 OUTPUT full.run.xml

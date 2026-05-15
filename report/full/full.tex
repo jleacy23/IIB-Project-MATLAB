@@ -83,7 +83,7 @@ The fundamental framing unit is the \emph{DSP subframe} of 3\,712 symbols, organ
 
 The OLT transmitter laser must be within $\pm1.5$\,GHz of its DWDM channel centre, and the ONU must acquire signals within $\pm1.8$\,GHz of the grid. In the worst case, the combined transmitter and LO offsets yield a carrier frequency offset (CFO) of up to $\approx3$\,GHz that the receiver DSP must correct. Both OLT and ONU lasers must have a linewidth of at most 1\,MHz; the combined linewidth drives the phase noise that the carrier recovery block must track.
 
-The specification requires a pre-FEC bit error ratio of $\leq 2\times10^{-2}$, which the hard-decision LDPC FEC reduces to a post-FEC BER of $\leq10^{-12}$.
+The specification requires a pre-FEC bit error ratio of $\leq 2\times10^{-2}$, which the soft-decision LDPC FEC reduces to a post-FEC BER of $\leq10^{-12}$.
 
 % =====================================================================
 \chapter{Experimental Setup and Methodology}\label{chapter:energy}

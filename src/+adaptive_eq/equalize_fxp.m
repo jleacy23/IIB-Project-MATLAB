@@ -1,7 +1,7 @@
-function y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, T) %#codegen
+function y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, UpdateStep, T) %#codegen
 %equalize_fxp  Fixed-point adaptive butterfly equalization (CMA).
 %
-%   y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, T)
+%   y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, UpdateStep, T)
 %
 %   Inputs
 %     x             - input signal [samples x 2] (fi or double)
@@ -14,18 +14,26 @@ function y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, T)
 %     SignOnly      - if true, use sign(error) and complex-sign of y
 %                     (sign(real(y)) + j*sign(imag(y))) in the update
 %                     instead of the full multiplications
+%     UpdateStep    - (optional) number of output samples between weight
+%                     updates.  1 (default) updates every sample.
 %     T             - (optional) fixed-point types table from
 %                     equalize_fxp_types.  If omitted, calls
 %                     equalize_fxp_types('fixed16').
 %
 %   The types table T must supply prototype fi objects for:
 %     T.x      - input signal type
-%     T.w      - filter coefficient type
+%     T.w      - filter coefficient type (needs enough FL for mu*grad)
 %     T.y      - equalizer output type
 %     T.acc    - accumulator type (inner product)
 %     T.err    - error signal type
-%     T.mu     - step-size type
+%     T.grad   - unscaled gradient type  x*err*conj(y)  before mu scaling
 %     T.R_CMA  - CMA radius type
+%
+%   Weight update
+%     The gradient x*err*conj(y) is computed in T.grad fixed-point precision,
+%     then converted to double, scaled by double(Mu), and cast back to T.w.
+%     This prevents very small mu values from being rounded to zero inside
+%     the fixed-point datapath.
 %
 %   Best practices applied (per MathWorks Fixed-Point Designer manual):
 %     - Data type definitions are separated from the algorithm via a types
@@ -38,16 +46,19 @@ function y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, T)
 %     - convmtx (not fixed-point friendly) is replaced with explicit
 %       indexing into a tap-delay line.
 
-    %% Default types table
-    if nargin < 9 || isempty(T)
+    %% Defaults for optional trailing arguments
+    if nargin < 9 || isempty(UpdateStep)
+        UpdateStep = 1;
+    end
+    if nargin < 10 || isempty(T)
         T = equalize_fxp_types('fixed16');
     end
 
     %% Cast CMA radius
     R_CMA = cast(sqrt(2), 'like', T.R_CMA);
 
-    %% Cast step size
-    mu_fxp = cast(Mu, 'like', T.mu);
+    %% Step size kept as double so very small values are not rounded to zero
+    mu_dbl = double(Mu);
 
     %% Circular-pad input and cast to fixed-point
     halfTaps = floor(NTaps/2);
@@ -88,6 +99,12 @@ function y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, T)
     yc1  = complex(zeros(1, 1, 'like', T.y));
     yc2  = complex(zeros(1, 1, 'like', T.y));
 
+    %% Pre-allocate gradient temporaries (T.grad precision, scaled to double before weight update)
+    g1V  = cast(complex(0, 0), 'like', T.grad);
+    g1H  = cast(complex(0, 0), 'like', T.grad);
+    g2V  = cast(complex(0, 0), 'like', T.grad);
+    g2H  = cast(complex(0, 0), 'like', T.grad);
+
     %% ====================================================================
     %  Adaptive equalisation loop
     %  ====================================================================
@@ -119,12 +136,20 @@ function y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, T)
             yc2(:) = conj(y2(i));
         end
 
-        % --- CMA coefficient update ---
-        for k = 1:NTaps
-            w1V(k) = w1V(k) + mu_fxp * xv_i(k) * err1 * yc1;
-            w1H(k) = w1H(k) + mu_fxp * xh_i(k) * err1 * yc1;
-            w2V(k) = w2V(k) + mu_fxp * xv_i(k) * err2 * yc2;
-            w2H(k) = w2H(k) + mu_fxp * xh_i(k) * err2 * yc2;
+        % --- CMA coefficient update (every UpdateStep output samples) ---
+        % Gradient computed in T.grad fixed-point precision, then scaled by
+        % mu_dbl in double to avoid small mu values rounding to zero in fxp.
+        if mod(i, UpdateStep) == 0
+            for k = 1:NTaps
+                g1V(:) = xv_i(k) * err1 * yc1;
+                g1H(:) = xh_i(k) * err1 * yc1;
+                g2V(:) = xv_i(k) * err2 * yc2;
+                g2H(:) = xh_i(k) * err2 * yc2;
+                w1V(k) = w1V(k) + cast(mu_dbl * double(g1V), 'like', T.w);
+                w1H(k) = w1H(k) + cast(mu_dbl * double(g1H), 'like', T.w);
+                w2V(k) = w2V(k) + cast(mu_dbl * double(g2V), 'like', T.w);
+                w2H(k) = w2H(k) + cast(mu_dbl * double(g2H), 'like', T.w);
+            end
         end
 
         % --- Reinitialisation for SingleSpike ---

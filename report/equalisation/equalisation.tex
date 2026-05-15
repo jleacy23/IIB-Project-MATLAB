@@ -5,9 +5,10 @@
 \usepackage{subcaption}
 \usepackage{booktabs}
 \usepackage{parskip}
-\usepackage{cleveref}
 \usepackage{gensymb}
 \usepackage{biblatex}
+\usepackage{amsmath}
+\usepackage{cleveref}
 \addbibresource{ref.bib}
 \title{Equalisation}
 \author{Joe Leacy}
@@ -18,6 +19,18 @@
 
 \section{Introduction}
 
-\section
+\section{Adaptive Equalisation}
+Tracking fast-varying channel effects like PMD is done with a 2x2 MIMO equaliser that employs 4 finite impulse response (FIR) filters to give outputs
+\begin{equation}
+    x_\mathrm{out} = \mathbf{h}_{xx}^H \mathbf{x}_\mathrm{in} + \mathbf{h}_{xy}^H \mathbf{y}_\mathrm{in}, \quad y_\mathrm{out} = \mathbf{h}_{yx}^H \mathbf{x}_\mathrm{in} + \mathbf{h}_{yy}^H \mathbf{y}_\mathrm{in}.
+\end{equation}
+The filter weights are updated using an error estimate as
+\begin{equation}
+    \begin{aligned}
+    \mathbf{h_{xx}}\leftarrow \mathbf{h_{xx}} + \mu e_x \mathbf{x}_\mathrm{in}x_\mathrm{out}^*, \quad \mathbf{h_{xy}}\leftarrow \mathbf{h_{xy}} + \mu e_x \mathbf{y}_\mathrm{in}x_\mathrm{out}^*, \\
+    \mathbf{h_{yx}}\leftarrow \mathbf{h_{yx}} + \mu e_y \mathbf{x}_\mathrm{in}y_\mathrm{out}^*, \quad \mathbf{h_{yy}}\leftarrow \mathbf{h_{yy}} + \mu e_y \mathbf{y}_\mathrm{in}y_\mathrm{out}^*.
+    \end{aligned}
+\end{equation}
+
 
 \end{document}

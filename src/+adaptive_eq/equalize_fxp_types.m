@@ -19,8 +19,15 @@ function T = equalize_fxp_types(dt) %#codegen
 %     T.y      - equalizer output samples
 %     T.acc    - accumulator for the butterfly inner product
 %     T.err    - error signal  (R_CMA - |y|^2)
-%     T.mu     - step-size scalar
+%     T.grad   - unscaled gradient  x * err * conj(y)  before mu scaling
 %     T.R_CMA  - CMA target radius
+%
+%   Weight update strategy
+%     The gradient x*err*conj(y) is computed in T.grad fixed-point precision,
+%     then converted to double and scaled by mu (a plain double scalar) before
+%     being cast back to T.w.  This avoids mu being rounded to zero when it is
+%     too small to be represented in the weight bit-width.  T.w must therefore
+%     have enough fractional bits to represent mu*grad after the scaling.
 %
 %   Numerical design notes
 %
@@ -29,10 +36,10 @@ function T = equalize_fxp_types(dt) %#codegen
 %     R_CMA = sqrt(2) the equalised samples sit on |y| ≈ 1.  Tap weights
 %     and accumulator stay within a few units, so a few integer bits suffice.
 %
-%   Error / step-size range
-%     err = R_CMA - |y|^2 has magnitude < 2 once convergence is approached.
-%     The product mu * x * err * conj(y) is very small (mu ≈ 1e-3 ... 1e-9),
-%     so the fraction length governs the smallest stable update.
+%   Gradient range
+%     grad = x * err * conj(y) has |grad| < 2 once convergence is approached.
+%     T.grad should have enough fractional bits to represent this faithfully
+%     before the mu scaling step promotes small updates out of fixed-point.
 %
 %   Update precision
 %     fixed16 (FL = 8, LSB ≈ 3.9e-3) is comfortable for CMA convergence.
@@ -61,7 +68,7 @@ function T = equalize_fxp_types(dt) %#codegen
         T.y     = fi([], 1, wl, fl, F);
         T.acc   = fi([], 1, wl, fl, F);
         T.err   = fi([], 1, wl, fl, F);
-        T.mu    = fi([], 1, wl, fl, F);
+        T.grad  = fi([], 1, wl, fl, F);
         T.R_CMA = fi([], 1, wl, fl, F);
         return;
     end
@@ -74,7 +81,7 @@ function T = equalize_fxp_types(dt) %#codegen
             T.y     = double([]);
             T.acc   = double([]);
             T.err   = double([]);
-            T.mu    = double([]);
+            T.grad  = double([]);
             T.R_CMA = double([]);
 
         % ==============================================================
@@ -84,7 +91,7 @@ function T = equalize_fxp_types(dt) %#codegen
             T.y     = single([]);
             T.acc   = single([]);
             T.err   = single([]);
-            T.mu    = single([]);
+            T.grad  = single([]);
             T.R_CMA = single([]);
 
         % ==============================================================
@@ -102,13 +109,13 @@ function T = equalize_fxp_types(dt) %#codegen
                 'SumWordLength',         32, ...
                 'SumFractionLength',     8);
 
-            T.x     = fi([], 1, 32, 8, F);   % all types identical
-            T.w     = fi([], 1, 32, 8, F);
-            T.y     = fi([], 1, 32, 8, F);
-            T.acc   = fi([], 1, 32, 8, F);
-            T.err   = fi([], 1, 32, 8, F);
-            T.mu    = fi([], 1, 32, 8, F);
-            T.R_CMA = fi([], 1, 32, 8, F);
+            T.x     = fi([], 1, 32, 8,  F);
+            T.w     = fi([], 1, 32, 24, F);   % extra FL lets mu*grad be non-zero
+            T.y     = fi([], 1, 32, 8,  F);
+            T.acc   = fi([], 1, 32, 8,  F);
+            T.err   = fi([], 1, 32, 8,  F);
+            T.grad  = fi([], 1, 32, 8,  F);   % unscaled gradient type (same as acc)
+            T.R_CMA = fi([], 1, 32, 8,  F);
 
         % ==============================================================
         case 'fixed32'
@@ -125,11 +132,11 @@ function T = equalize_fxp_types(dt) %#codegen
                 'SumFractionLength',     16);
 
             T.x     = fi([], 1, 32, 16, F);
-            T.w     = fi([], 1, 32, 16, F);
+            T.w     = fi([], 1, 32, 28, F);   % extra FL lets mu*grad be non-zero
             T.y     = fi([], 1, 32, 16, F);
             T.acc   = fi([], 1, 32, 16, F);
             T.err   = fi([], 1, 32, 16, F);
-            T.mu    = fi([], 1, 32, 16, F);
+            T.grad  = fi([], 1, 32, 16, F);   % unscaled gradient type (same as acc)
             T.R_CMA = fi([], 1, 32, 16, F);
 
         otherwise

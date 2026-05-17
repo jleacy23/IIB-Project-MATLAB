@@ -37,6 +37,7 @@ function P = pipeline_params()
     P.AEQ_N1         = 2000;       % y-pol re-init iteration
     P.AEQ_NOut       = 5000;        % transient discard
     P.AEQ_SignOnly   = false;      % if true, use sign(err) & complex-sign(y) updates
+    P.AEQ_PLanes     = 1;          % parallel lanes (1 = serial fixed-point CMA)
 
     % ---- Carrier Recovery ----------------------------
     P.VV_NTaps       = 5;         % half-width of VV averaging filter

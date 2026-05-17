@@ -1,7 +1,7 @@
-function y = equalize(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly)
-%equalize  Adaptive butterfly equalization (CMA).
+function y = equalize(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, PLanes)
+%equalize  Adaptive butterfly equalization (CMA), parallel-lane version.
 %
-%   y = equalize(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly)
+%   y = equalize(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, PLanes)
 %
 %   Inputs
 %     x             - input signal [samples x 2]
@@ -14,6 +14,21 @@ function y = equalize(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly)
 %     SignOnly      - if true, use sign(error) and complex-sign of y
 %                     (sign(real(y)) + j*sign(imag(y))) in the update
 %                     instead of the full multiplications
+%     PLanes        - number of parallel lanes (default 1 = serial). The
+%                     symbol stream is split into PLanes overlapping
+%                     buffers (each successive buffer shifted by one
+%                     symbol). All lanes in a block are filtered with the
+%                     same (frozen) weights and each produces one output
+%                     sample exactly as in the serial implementation. The
+%                     per-lane gradient terms are summed and divided by the
+%                     number of lanes in the block, then applied as a
+%                     single weight update.
+%
+%   With PLanes = 1 this is bit-identical to the serial CMA.
+
+    if nargin < 9 || isempty(PLanes)
+        PLanes = 1;
+    end
 
     % CMA radius
     R_CMA = sqrt(2);
@@ -43,33 +58,60 @@ function y = equalize(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly)
         w1V(floor(NTaps/2)+1) = 1;
     end
 
-    %% Adaptive equalisation loop
-    for i = 1:OutLength
-        % Compute outputs
-        y1(i) = w1V'*xV(:,i) + w1H'*xH(:,i);
-        y2(i) = w2V'*xV(:,i) + w2H'*xH(:,i);
+    %% Adaptive equalisation loop (block-parallel over PLanes lanes)
+    for iStart = 1:PLanes:OutLength
+        % Lanes processed in this block (the last block may be partial).
+        % Each lane is one overlapping symbol buffer; adjacent buffers
+        % overlap by all but one symbol (the regressor columns of xV/xH).
+        iEnd   = min(iStart + PLanes - 1, OutLength);
+        nLanes = iEnd - iStart + 1;
 
-        % CMA error and conjugate-output factor (optionally sign-reduced)
-        if SignOnly
-            e1  = sign(R_CMA - abs(y1(i))^2);
-            e2  = sign(R_CMA - abs(y2(i))^2);
-            yc1 = sign(real(y1(i))) - 1j*sign(imag(y1(i)));
-            yc2 = sign(real(y2(i))) - 1j*sign(imag(y2(i)));
-        else
-            e1  = R_CMA - abs(y1(i))^2;
-            e2  = R_CMA - abs(y2(i))^2;
-            yc1 = conj(y1(i));
-            yc2 = conj(y2(i));
+        % Accumulated gradient terms over the lanes in this block.
+        g1V = zeros(NTaps, 1);
+        g1H = zeros(NTaps, 1);
+        g2V = zeros(NTaps, 1);
+        g2H = zeros(NTaps, 1);
+
+        reinit = false;
+
+        for i = iStart:iEnd
+            % Compute outputs with the weights frozen for the block
+            y1(i) = w1V'*xV(:,i) + w1H'*xH(:,i);
+            y2(i) = w2V'*xV(:,i) + w2H'*xH(:,i);
+
+            % CMA error and conjugate-output factor (optionally sign-reduced)
+            if SignOnly
+                e1  = sign(R_CMA - abs(y1(i))^2);
+                e2  = sign(R_CMA - abs(y2(i))^2);
+                yc1 = sign(real(y1(i))) - 1j*sign(imag(y1(i)));
+                yc2 = sign(real(y2(i))) - 1j*sign(imag(y2(i)));
+            else
+                e1  = R_CMA - abs(y1(i))^2;
+                e2  = R_CMA - abs(y2(i))^2;
+                yc1 = conj(y1(i));
+                yc2 = conj(y2(i));
+            end
+
+            % Accumulate the per-lane gradient terms
+            g1V = g1V + xV(:,i)*e1*yc1;
+            g1H = g1H + xH(:,i)*e1*yc1;
+            g2V = g2V + xV(:,i)*e2*yc2;
+            g2H = g2H + xH(:,i)*e2*yc2;
+
+            % Flag the block in which the y-pol reinitialisation falls
+            if i == N1 && SingleSpike
+                reinit = true;
+            end
         end
 
-        % CMA update
-        w1V = w1V + Mu*xV(:,i)*e1*yc1;
-        w1H = w1H + Mu*xH(:,i)*e1*yc1;
-        w2V = w2V + Mu*xV(:,i)*e2*yc2;
-        w2H = w2H + Mu*xH(:,i)*e2*yc2;
+        % Single weight update from the averaged gradient over the block
+        w1V = w1V + Mu*g1V;
+        w1H = w1H + Mu*g1H;
+        w2V = w2V + Mu*g2V;
+        w2H = w2H + Mu*g2H;
 
-        % Reinitialisation for SingleSpike
-        if i == N1 && SingleSpike
+        % Reinitialisation for SingleSpike (applied after the block update)
+        if reinit
             w2H = conj(w1V(end:-1:1, 1));
             w2V = -conj(w1H(end:-1:1, 1));
         end

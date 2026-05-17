@@ -1,7 +1,7 @@
-function y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, UpdateStep, T) %#codegen
-%equalize_fxp  Fixed-point adaptive butterfly equalization (CMA).
+function y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, UpdateStep, T, PLanes) %#codegen
+%equalize_fxp  Fixed-point adaptive butterfly equalization (CMA), parallel-lane.
 %
-%   y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, UpdateStep, T)
+%   y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, UpdateStep, T, PLanes)
 %
 %   Inputs
 %     x             - input signal [samples x 2] (fi or double)
@@ -15,10 +15,22 @@ function y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, Up
 %                     (sign(real(y)) + j*sign(imag(y))) in the update
 %                     instead of the full multiplications
 %     UpdateStep    - (optional) number of output samples between weight
-%                     updates.  1 (default) updates every sample.
+%                     updates.  1 (default) updates every block.
 %     T             - (optional) fixed-point types table from
 %                     equalize_fxp_types.  If omitted, calls
 %                     equalize_fxp_types('fixed16').
+%     PLanes        - (optional) number of parallel lanes (default 1 =
+%                     serial).  The symbol stream is split into PLanes
+%                     overlapping buffers (each successive buffer shifted
+%                     by one symbol).  All lanes in a block are filtered
+%                     with the same (frozen) weights and each produces one
+%                     output sample exactly as in the serial case.  The
+%                     per-tap gradient terms are summed over the lanes in
+%                     the block (no averaging) and applied as a single
+%                     weight update at the end of the block.
+%
+%   With PLanes = 1 this is bit-identical to the serial fixed-point CMA
+%   (including the UpdateStep gating).
 %
 %   The types table T must supply prototype fi objects for:
 %     T.x      - input signal type
@@ -30,10 +42,10 @@ function y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, Up
 %     T.R_CMA  - CMA radius type
 %
 %   Weight update
-%     The gradient x*err*conj(y) is computed in T.grad fixed-point precision,
-%     then converted to double, scaled by double(Mu), and cast back to T.w.
-%     This prevents very small mu values from being rounded to zero inside
-%     the fixed-point datapath.
+%     The per-tap gradient x*err*conj(y), accumulated over the lanes of a
+%     block in T.grad fixed-point precision, is converted to double, scaled
+%     by double(Mu), and cast back to T.w.  This prevents very small mu
+%     values from being rounded to zero inside the fixed-point datapath.
 %
 %   Best practices applied (per MathWorks Fixed-Point Designer manual):
 %     - Data type definitions are separated from the algorithm via a types
@@ -52,6 +64,9 @@ function y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, Up
     end
     if nargin < 10 || isempty(T)
         T = equalize_fxp_types('fixed16');
+    end
+    if nargin < 11 || isempty(PLanes)
+        PLanes = 1;
     end
 
     %% Cast CMA radius
@@ -99,61 +114,87 @@ function y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, Up
     yc1  = complex(zeros(1, 1, 'like', T.y));
     yc2  = complex(zeros(1, 1, 'like', T.y));
 
-    %% Pre-allocate gradient temporaries (T.grad precision, scaled to double before weight update)
-    g1V  = cast(complex(0, 0), 'like', T.grad);
-    g1H  = cast(complex(0, 0), 'like', T.grad);
-    g2V  = cast(complex(0, 0), 'like', T.grad);
-    g2H  = cast(complex(0, 0), 'like', T.grad);
+    %% Pre-allocate per-tap gradient accumulators (T.grad precision).
+    %  These sum the gradient terms over the lanes of a block before the
+    %  single (double-scaled) weight update.
+    g1V  = complex(zeros(NTaps, 1, 'like', T.grad));
+    g1H  = complex(zeros(NTaps, 1, 'like', T.grad));
+    g2V  = complex(zeros(NTaps, 1, 'like', T.grad));
+    g2H  = complex(zeros(NTaps, 1, 'like', T.grad));
 
     %% ====================================================================
-    %  Adaptive equalisation loop
+    %  Adaptive equalisation loop (block-parallel over PLanes lanes)
     %  ====================================================================
-    for i = 1:OutLength
-        % --- Extract tap vectors for this iteration ---
-        xv_i = xPad(tapIdx(:, i), 1);   % vertical   pol taps
-        xh_i = xPad(tapIdx(:, i), 2);   % horizontal pol taps
+    for iStart = 1:PLanes:OutLength
+        % Lanes processed in this block (the last block may be partial).
+        iEnd = min(iStart + PLanes - 1, OutLength);
 
-        % --- Compute butterfly outputs (inner products) ---
-        acc1(:) = complex(0, 0);
-        acc2(:) = complex(0, 0);
-        for k = 1:NTaps
-            acc1(:) = acc1 + conj(w1V(k)) * xv_i(k) + conj(w1H(k)) * xh_i(k);
-            acc2(:) = acc2 + conj(w2V(k)) * xv_i(k) + conj(w2H(k)) * xh_i(k);
-        end
-        y1(i) = acc1;
-        y2(i) = acc2;
+        % Zero the per-tap gradient accumulators for this block.
+        g1V(:) = complex(0, 0);
+        g1H(:) = complex(0, 0);
+        g2V(:) = complex(0, 0);
+        g2H(:) = complex(0, 0);
 
-        % --- CMA error and conjugate-output factor ---
-        if SignOnly
-            err1(:) = sign(R_CMA - abs(y1(i))^2);
-            err2(:) = sign(R_CMA - abs(y2(i))^2);
-            yc1(:) = complex(sign(real(y1(i))), -sign(imag(y1(i))));
-            yc2(:) = complex(sign(real(y2(i))), -sign(imag(y2(i))));
-        else
-            err1(:) = (R_CMA - abs(y1(i))^2);
-            err2(:) = (R_CMA - abs(y2(i))^2);
-            yc1(:) = conj(y1(i));
-            yc2(:) = conj(y2(i));
-        end
+        doReinit = false;
 
-        % --- CMA coefficient update (every UpdateStep output samples) ---
-        % Gradient computed in T.grad fixed-point precision, then scaled by
-        % mu_dbl in double to avoid small mu values rounding to zero in fxp.
-        if mod(i, UpdateStep) == 0
+        for i = iStart:iEnd
+            % --- Extract tap vectors for this lane ---
+            xv_i = xPad(tapIdx(:, i), 1);   % vertical   pol taps
+            xh_i = xPad(tapIdx(:, i), 2);   % horizontal pol taps
+
+            % --- Butterfly outputs (inner products, frozen weights) ---
+            acc1(:) = complex(0, 0);
+            acc2(:) = complex(0, 0);
             for k = 1:NTaps
-                g1V(:) = xv_i(k) * err1 * yc1;
-                g1H(:) = xh_i(k) * err1 * yc1;
-                g2V(:) = xv_i(k) * err2 * yc2;
-                g2H(:) = xh_i(k) * err2 * yc2;
-                w1V(k) = w1V(k) + cast(mu_dbl * double(g1V), 'like', T.w);
-                w1H(k) = w1H(k) + cast(mu_dbl * double(g1H), 'like', T.w);
-                w2V(k) = w2V(k) + cast(mu_dbl * double(g2V), 'like', T.w);
-                w2H(k) = w2H(k) + cast(mu_dbl * double(g2H), 'like', T.w);
+                acc1(:) = acc1 + conj(w1V(k)) * xv_i(k) + conj(w1H(k)) * xh_i(k);
+                acc2(:) = acc2 + conj(w2V(k)) * xv_i(k) + conj(w2H(k)) * xh_i(k);
+            end
+            y1(i) = acc1;
+            y2(i) = acc2;
+
+            % --- CMA error and conjugate-output factor ---
+            if SignOnly
+                err1(:) = sign(R_CMA - abs(y1(i))^2);
+                err2(:) = sign(R_CMA - abs(y2(i))^2);
+                yc1(:) = complex(sign(real(y1(i))), -sign(imag(y1(i))));
+                yc2(:) = complex(sign(real(y2(i))), -sign(imag(y2(i))));
+            else
+                err1(:) = (R_CMA - abs(y1(i))^2);
+                err2(:) = (R_CMA - abs(y2(i))^2);
+                yc1(:) = conj(y1(i));
+                yc2(:) = conj(y2(i));
+            end
+
+            % --- Accumulate per-tap gradient over the lanes (T.grad) ---
+            for k = 1:NTaps
+                g1V(k) = g1V(k) + xv_i(k) * err1 * yc1;
+                g1H(k) = g1H(k) + xh_i(k) * err1 * yc1;
+                g2V(k) = g2V(k) + xv_i(k) * err2 * yc2;
+                g2H(k) = g2H(k) + xh_i(k) * err2 * yc2;
+            end
+
+            % Flag the block in which the y-pol reinitialisation falls
+            if i == N1 && SingleSpike
+                doReinit = true;
             end
         end
 
-        % --- Reinitialisation for SingleSpike ---
-        if i == N1 && SingleSpike
+        % --- Single CMA weight update for the block (gated by UpdateStep) ---
+        %  Gradient summed over the block lanes in T.grad, then scaled by
+        %  mu_dbl in double to avoid small mu rounding to zero in fxp.
+        %  Gating on iEnd reproduces the serial mod(i,UpdateStep) behaviour
+        %  when PLanes == 1.
+        if mod(iEnd, UpdateStep) == 0
+            for k = 1:NTaps
+                w1V(k) = w1V(k) + cast(mu_dbl * double(g1V(k)), 'like', T.w);
+                w1H(k) = w1H(k) + cast(mu_dbl * double(g1H(k)), 'like', T.w);
+                w2V(k) = w2V(k) + cast(mu_dbl * double(g2V(k)), 'like', T.w);
+                w2H(k) = w2H(k) + cast(mu_dbl * double(g2H(k)), 'like', T.w);
+            end
+        end
+
+        % --- Reinitialisation for SingleSpike (after the block update) ---
+        if doReinit
             w2H(:) = conj(w1V(end:-1:1, 1));
             w2V(:) = -conj(w1H(end:-1:1, 1));
         end

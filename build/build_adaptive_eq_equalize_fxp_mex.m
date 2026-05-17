@@ -35,7 +35,8 @@ function build_adaptive_eq_equalize_fxp_mex(P, cfg)
         double(P.AEQ_NOut), ...             % NOut
         logical(P.AEQ_SignOnly), ...        % SignOnly
         double(P.AEQ_UpdateStep), ...       % UpdateStep
-        T_aeq};                             % T
+        T_aeq, ...                          % T
+        double(P.AEQ_PLanes)};              % PLanes
 
     codegen('-config', cfg, ...
             'adaptive_eq.equalize_fxp', ...

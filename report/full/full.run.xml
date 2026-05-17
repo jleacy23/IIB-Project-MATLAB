@@ -81,6 +81,7 @@
     <requires type="editable">
       <file>../energy/ref.bib</file>
       <file>../frequency_recovery/ref.bib</file>
+      <file>ref.bib</file>
     </requires>
   </external>
 </requests>

@@ -16,5 +16,219 @@
   {}
 \endgroup
 
+
+\refsection{0}
+  \datalist[entry]{nty/global//global/global/global}
+    \entry{Cardenas:14}{inproceedings}{}{}
+      \name{author}{4}{}{%
+        {{hash=0dba2f2fa9762599f45b3681888e8111}{%
+           family={Cardenas},
+           familyi={C\bibinitperiod},
+           given={Daniel},
+           giveni={D\bibinitperiod}}}%
+        {{hash=d553d4a24089c67c830c48a9104189c5}{%
+           family={Lavery},
+           familyi={L\bibinitperiod},
+           given={Domaniç},
+           giveni={D\bibinitperiod}}}%
+        {{hash=621f18c21e2b71f85de47fef52c0d157}{%
+           family={Watts},
+           familyi={W\bibinitperiod},
+           given={Philip},
+           giveni={P\bibinitperiod}}}%
+        {{hash=1a67808fa91d6d24e2d13a047c5adfcc}{%
+           family={Savory},
+           familyi={S\bibinitperiod},
+           given={Seb\bibnamedelima J.},
+           giveni={S\bibinitperiod\bibinitdelim J\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Optica Publishing Group}%
+      }
+      \strng{namehash}{b624aaf94cfa31edddfa5514bd5588ba}
+      \strng{fullhash}{c7639684ae60e523c5bba45bc14f3ddd}
+      \strng{fullhashraw}{c7639684ae60e523c5bba45bc14f3ddd}
+      \strng{bibnamehash}{b624aaf94cfa31edddfa5514bd5588ba}
+      \strng{authorbibnamehash}{b624aaf94cfa31edddfa5514bd5588ba}
+      \strng{authornamehash}{b624aaf94cfa31edddfa5514bd5588ba}
+      \strng{authorfullhash}{c7639684ae60e523c5bba45bc14f3ddd}
+      \strng{authorfullhashraw}{c7639684ae60e523c5bba45bc14f3ddd}
+      \field{sortinit}{C}
+      \field{sortinithash}{4d103a86280481745c9c897c925753c0}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{A reduced complexity multiplier-free CMA equalizer update is proposed and synthesized for a 10 Gb/s receiver using a 45-nm CMOS process. The proposed algorithm allows up to 52\% power consumption reduction without penalty in performance.}
+      \field{booktitle}{Optical Fiber Communication Conference}
+      \field{journaltitle}{Optical Fiber Communication Conference}
+      \field{title}{Reducing the Power Consumption of the CMA Equalizer Update for a Digital Coherent Receiver}
+      \field{year}{2014}
+      \field{pages}{Th4D.5}
+      \range{pages}{-1}
+      \verb{doi}
+      \verb 10.1364/OFC.2014.Th4D.5
+      \endverb
+      \verb{urlraw}
+      \verb https://opg.optica.org/abstract.cfm?URI=OFC-2014-Th4D.5
+      \endverb
+      \verb{url}
+      \verb https://opg.optica.org/abstract.cfm?URI=OFC-2014-Th4D.5
+      \endverb
+      \keyw{Coherent communications; Fiber optics communications; Optical fields; Optical signals; Passive optical networks; Quadrature phase shift keying; Single mode fibers; Wavelength division multiplexing}
+    \endentry
+    \entry{Jiang;26}{article}{}{}
+      \name{author}{7}{}{%
+        {{hash=6614ac0f0de4c4e763a98ba7086c083c}{%
+           family={Jiang},
+           familyi={J\bibinitperiod},
+           given={Wenqing},
+           giveni={W\bibinitperiod}}}%
+        {{hash=5c688a77cae4c53577c60fbf87412945}{%
+           family={Han},
+           familyi={H\bibinitperiod},
+           given={Chenyang},
+           giveni={C\bibinitperiod}}}%
+        {{hash=010c2ad7088d8197af67784358f4d34d}{%
+           family={Xu},
+           familyi={X\bibinitperiod},
+           given={Yongxin},
+           giveni={Y\bibinitperiod}}}%
+        {{hash=ffa1109de62471d5bf1037c7dd832fa2}{%
+           family={Guan},
+           familyi={G\bibinitperiod},
+           given={Xiaokai},
+           giveni={X\bibinitperiod}}}%
+        {{hash=b684c4a1c438165f18a3a7c4f2f86681}{%
+           family={Wang},
+           familyi={W\bibinitperiod},
+           given={Xudong},
+           giveni={X\bibinitperiod}}}%
+        {{hash=b51c2c7e24671235aa4ea9f62d050f37}{%
+           family={Hu},
+           familyi={H\bibinitperiod},
+           given={Weisheng},
+           giveni={W\bibinitperiod}}}%
+        {{hash=7eeca74b0fb6c4dec7f8843234dae49a}{%
+           family={Yi},
+           familyi={Y\bibinitperiod},
+           given={Lilin},
+           giveni={L\bibinitperiod}}}%
+      }
+      \strng{namehash}{8d31231c4c36aaf03e81da150a16afad}
+      \strng{fullhash}{3281eb989c70499392ec4891e2e009f7}
+      \strng{fullhashraw}{3281eb989c70499392ec4891e2e009f7}
+      \strng{bibnamehash}{8d31231c4c36aaf03e81da150a16afad}
+      \strng{authorbibnamehash}{8d31231c4c36aaf03e81da150a16afad}
+      \strng{authornamehash}{8d31231c4c36aaf03e81da150a16afad}
+      \strng{authorfullhash}{3281eb989c70499392ec4891e2e009f7}
+      \strng{authorfullhashraw}{3281eb989c70499392ec4891e2e009f7}
+      \field{sortinit}{J}
+      \field{sortinithash}{b2f54a9081ace9966a7cb9413811edb4}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Journal of Lightwave Technology}
+      \field{number}{6}
+      \field{title}{Low-Complexity Adaptive MIMO Equalizer With Hybrid-Precision Tap Bit-Width Optimization for Hardware-Efficient 200G Coherent PON}
+      \field{volume}{44}
+      \field{year}{2026}
+      \field{pages}{2163\bibrangedash 2172}
+      \range{pages}{10}
+      \verb{doi}
+      \verb 10.1109/JLT.2026.3652741
+      \endverb
+      \keyw{Equalizers;Hardware;Field programmable gate arrays;Quantization (signal);Optimization;Real-time systems;Genetic algorithms;Signal to noise ratio;Power demand;Finite impulse response filters;Field-programmable gate array;fixed-point quantization;genetic algorithm;passive optical network}
+    \endentry
+    \entry{Mantzoukis:11}{article}{}{}
+      \name{author}{5}{}{%
+        {{hash=4f624857b30c34e3cdb3c835650eb3d4}{%
+           family={Mantzoukis},
+           familyi={M\bibinitperiod},
+           given={Nikolaos},
+           giveni={N\bibinitperiod}}}%
+        {{hash=dbdfd2a017587cefc0613085bbb169a6}{%
+           family={Petrou},
+           familyi={P\bibinitperiod},
+           given={Constantinos\bibnamedelima S.},
+           giveni={C\bibinitperiod\bibinitdelim S\bibinitperiod}}}%
+        {{hash=87722d6090a78ef4b469d8e21d150c1d}{%
+           family={Vgenis},
+           familyi={V\bibinitperiod},
+           given={Athanasios},
+           giveni={A\bibinitperiod}}}%
+        {{hash=9223bf2728da41dda365ec0849bfc95b}{%
+           family={Roudas},
+           familyi={R\bibinitperiod},
+           given={Ioannis},
+           giveni={I\bibinitperiod}}}%
+        {{hash=1b10351cfcce3d753921b699ed0b10e7}{%
+           family={Kamalakis},
+           familyi={K\bibinitperiod},
+           given={Thomas},
+           giveni={T\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Optica Publishing Group}%
+      }
+      \strng{namehash}{3b88f8eb4999d04271df91691bbea513}
+      \strng{fullhash}{397afe631487de3ec64267b262554b17}
+      \strng{fullhashraw}{397afe631487de3ec64267b262554b17}
+      \strng{bibnamehash}{3b88f8eb4999d04271df91691bbea513}
+      \strng{authorbibnamehash}{3b88f8eb4999d04271df91691bbea513}
+      \strng{authornamehash}{3b88f8eb4999d04271df91691bbea513}
+      \strng{authorfullhash}{397afe631487de3ec64267b262554b17}
+      \strng{authorfullhashraw}{397afe631487de3ec64267b262554b17}
+      \field{sortinit}{M}
+      \field{sortinithash}{4625c616857f13d17ce56f7d4f97d451}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{J. Lightwave Technol.}
+      \field{month}{6}
+      \field{number}{11}
+      \field{title}{Performance Comparison of Electronic PMD Equalizers for Coherent PDM QPSK Systems}
+      \field{volume}{29}
+      \field{year}{2011}
+      \field{pages}{1721\bibrangedash 1728}
+      \range{pages}{8}
+      \verb{urlraw}
+      \verb https://opg.optica.org/jlt/abstract.cfm?URI=jlt-29-11-1721
+      \endverb
+      \verb{url}
+      \verb https://opg.optica.org/jlt/abstract.cfm?URI=jlt-29-11-1721
+      \endverb
+      \keyw{Coherent systems; Optical systems; Phase recovery; Polarization division multiplexing; Polarization mode dispersion; Quadrature phase shift keying}
+    \endentry
+    \entry{coherent_receivers}{article}{}{}
+      \name{author}{1}{}{%
+        {{hash=1a67808fa91d6d24e2d13a047c5adfcc}{%
+           family={Savory},
+           familyi={S\bibinitperiod},
+           given={Seb\bibnamedelima J.},
+           giveni={S\bibinitperiod\bibinitdelim J\bibinitperiod}}}%
+      }
+      \strng{namehash}{1a67808fa91d6d24e2d13a047c5adfcc}
+      \strng{fullhash}{1a67808fa91d6d24e2d13a047c5adfcc}
+      \strng{fullhashraw}{1a67808fa91d6d24e2d13a047c5adfcc}
+      \strng{bibnamehash}{1a67808fa91d6d24e2d13a047c5adfcc}
+      \strng{authorbibnamehash}{1a67808fa91d6d24e2d13a047c5adfcc}
+      \strng{authornamehash}{1a67808fa91d6d24e2d13a047c5adfcc}
+      \strng{authorfullhash}{1a67808fa91d6d24e2d13a047c5adfcc}
+      \strng{authorfullhashraw}{1a67808fa91d6d24e2d13a047c5adfcc}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{IEEE Journal of Selected Topics in Quantum Electronics}
+      \field{number}{5}
+      \field{title}{Digital Coherent Optical Receivers: Algorithms and Subsystems}
+      \field{volume}{16}
+      \field{year}{2010}
+      \field{pages}{1164\bibrangedash 1179}
+      \range{pages}{16}
+      \verb{doi}
+      \verb 10.1109/JSTQE.2010.2044751
+      \endverb
+      \keyw{Optical receivers;Signal processing algorithms;Optical signal processing;Algorithm design and analysis;Digital signal processing;Optical design;Analog-digital conversion;Decision feedback equalizers;Optical polarization;Quadrature amplitude modulation;Digital communication;polarization}
+    \endentry
+  \enddatalist
+\endrefsection
 \endinput
 

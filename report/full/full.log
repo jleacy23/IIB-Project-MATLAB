@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.4)  15 MAY 2026 14:23
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.4)  17 MAY 2026 21:14
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -590,20 +590,20 @@ File: tikzlibrarypositioning.code.tex 2025-08-29 v3.1.11a (3.1.11a)
  (./full.aux)
 \openout1 = `full.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 27.
-LaTeX Font Info:    ... okay on input line 27.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 27.
-LaTeX Font Info:    ... okay on input line 27.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 27.
-LaTeX Font Info:    ... okay on input line 27.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 27.
-LaTeX Font Info:    ... okay on input line 27.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 27.
-LaTeX Font Info:    ... okay on input line 27.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 27.
-LaTeX Font Info:    ... okay on input line 27.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 27.
-LaTeX Font Info:    ... okay on input line 27.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 28.
+LaTeX Font Info:    ... okay on input line 28.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 28.
+LaTeX Font Info:    ... okay on input line 28.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 28.
+LaTeX Font Info:    ... okay on input line 28.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 28.
+LaTeX Font Info:    ... okay on input line 28.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 28.
+LaTeX Font Info:    ... okay on input line 28.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 28.
+LaTeX Font Info:    ... okay on input line 28.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 28.
+LaTeX Font Info:    ... okay on input line 28.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
@@ -647,14 +647,14 @@ File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Live
 ))
 Package caption Info: Begin \AtBeginDocument code.
 Package caption Info: End \AtBeginDocument code.
-LaTeX Info: Redefining \celsius on input line 27.
-Package gensymb Info: Faking symbols for \degree and \celsius on input line 27.
+LaTeX Info: Redefining \celsius on input line 28.
+Package gensymb Info: Faking symbols for \degree and \celsius on input line 28.
 
 
 Package gensymb Warning: Not defining \perthousand.
 
-LaTeX Info: Redefining \ohm on input line 27.
-Package gensymb Info: Using \Omega for \ohm on input line 27.
+LaTeX Info: Redefining \ohm on input line 28.
+Package gensymb Info: Using \Omega for \ohm on input line 28.
 
 Package gensymb Warning: Not defining \micro.
 
@@ -671,12 +671,12 @@ Package biblatex Info: Automatic encoding selection.
 Package biblatex Info: Trying to load bibliographic data...
 Package biblatex Info: ... file 'full.bbl' found.
  (./full.bbl)
-Package biblatex Info: Reference section=0 on input line 27.
-Package biblatex Info: Reference segment=0 on input line 27.
+Package biblatex Info: Reference section=0 on input line 28.
+Package biblatex Info: Reference segment=0 on input line 28.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <14.4> on input line 29.
+(Font)              <14.4> on input line 30.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <7> on input line 29.
+(Font)              <7> on input line 30.
  [1
 
 {c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map}] (./full.toc
@@ -695,14 +695,19 @@ LaTeX Font Info:    External font `cmex10' loaded for size
  [2]
 Chapter 1.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <10.95> on input line 51.
+(Font)              <10.95> on input line 52.
 [3
 
 ] [4]
 Chapter 2.
 [5
 
-] [6] [7] [8] [9]
+]
+Overfull \hbox (2.56007pt too wide) in paragraph at lines 130--131
+ \OT1/cmr/bx/n/12 Polarisation-Mode Dis-per-sion[] \OT1/cmr/m/n/12 Polarisation-mode dis-per-sion (PMD) re-sults from ran-
+ []
+
+[6] [7] [8] [9]
 Chapter 3.
 [10
 
@@ -710,27 +715,27 @@ Chapter 3.
 <../frequency_recovery/MCRB_fft_data.png, id=55, 534.3162pt x 364.7226pt>
 File: ../frequency_recovery/MCRB_fft_data.png Graphic file (type png)
 <use ../frequency_recovery/MCRB_fft_data.png>
-Package pdftex.def Info: ../frequency_recovery/MCRB_fft_data.png  used on input line 267.
+Package pdftex.def Info: ../frequency_recovery/MCRB_fft_data.png  used on input line 308.
 (pdftex.def)             Requested size: 318.66948pt x 217.52185pt.
  [11]
 <../frequency_recovery/MCRB_fft_blind.png, id=59, 539.616pt x 364.7226pt>
 File: ../frequency_recovery/MCRB_fft_blind.png Graphic file (type png)
 <use ../frequency_recovery/MCRB_fft_blind.png>
-Package pdftex.def Info: ../frequency_recovery/MCRB_fft_blind.png  used on input line 274.
+Package pdftex.def Info: ../frequency_recovery/MCRB_fft_blind.png  used on input line 315.
 (pdftex.def)             Requested size: 318.66948pt x 215.39037pt.
  [12 <../frequency_recovery/MCRB_fft_data.png (PNG copy)> <../frequency_recovery/MCRB_fft_blind.png (PNG copy)>]
 <../frequency_recovery/MCRB_diffkay_data.png, id=64, 534.3162pt x 360.3864pt>
 File: ../frequency_recovery/MCRB_diffkay_data.png Graphic file (type png)
 <use ../frequency_recovery/MCRB_diffkay_data.png>
-Package pdftex.def Info: ../frequency_recovery/MCRB_diffkay_data.png  used on input line 293.
+Package pdftex.def Info: ../frequency_recovery/MCRB_diffkay_data.png  used on input line 334.
 (pdftex.def)             Requested size: 318.66948pt x 214.93573pt.
 <../frequency_recovery/MCRB_diffkay_blind.png, id=65, 539.616pt x 364.7226pt>
 File: ../frequency_recovery/MCRB_diffkay_blind.png Graphic file (type png)
 <use ../frequency_recovery/MCRB_diffkay_blind.png>
-Package pdftex.def Info: ../frequency_recovery/MCRB_diffkay_blind.png  used on input line 300.
+Package pdftex.def Info: ../frequency_recovery/MCRB_diffkay_blind.png  used on input line 341.
 (pdftex.def)             Requested size: 318.66948pt x 215.39037pt.
  [13 <../frequency_recovery/MCRB_diffkay_data.png (PNG copy)>]
-Overfull \hbox (28.60747pt too wide) in paragraph at lines 314--324
+Overfull \hbox (28.60747pt too wide) in paragraph at lines 355--365
  [][] 
  []
 
@@ -738,33 +743,33 @@ Overfull \hbox (28.60747pt too wide) in paragraph at lines 314--324
 <../frequency_recovery/max_cfo.png, id=72, 491.436pt x 343.5234pt>
 File: ../frequency_recovery/max_cfo.png Graphic file (type png)
 <use ../frequency_recovery/max_cfo.png>
-Package pdftex.def Info: ../frequency_recovery/max_cfo.png  used on input line 353.
+Package pdftex.def Info: ../frequency_recovery/max_cfo.png  used on input line 394.
 (pdftex.def)             Requested size: 318.66948pt x 222.76862pt.
  [15] [16 <../frequency_recovery/max_cfo.png (PNG copy)>] [17]
 <../frequency_recovery/vv_vs_pilots.png, id=83, 573.8238pt x 407.6028pt>
 File: ../frequency_recovery/vv_vs_pilots.png Graphic file (type png)
 <use ../frequency_recovery/vv_vs_pilots.png>
-Package pdftex.def Info: ../frequency_recovery/vv_vs_pilots.png  used on input line 442.
+Package pdftex.def Info: ../frequency_recovery/vv_vs_pilots.png  used on input line 462.
 (pdftex.def)             Requested size: 318.66948pt x 226.35905pt.
- [18]
-<../frequency_recovery/blind_data.png, id=88, 489.5088pt x 359.4228pt>
+<../frequency_recovery/blind_data.png, id=84, 489.5088pt x 359.4228pt>
 File: ../frequency_recovery/blind_data.png Graphic file (type png)
 <use ../frequency_recovery/blind_data.png>
-Package pdftex.def Info: ../frequency_recovery/blind_data.png  used on input line 450.
+Package pdftex.def Info: ../frequency_recovery/blind_data.png  used on input line 470.
 (pdftex.def)             Requested size: 318.66948pt x 233.98401pt.
- [19 <../frequency_recovery/vv_vs_pilots.png (PNG copy)> <../frequency_recovery/blind_data.png (PNG copy)>]
-<../frequency_recovery/shot_noise_bar.png, id=92, 562.7424pt x 349.7868pt>
+ [18 <../frequency_recovery/vv_vs_pilots.png (PNG copy)>]
+<../frequency_recovery/shot_noise_bar.png, id=89, 562.7424pt x 349.7868pt>
 File: ../frequency_recovery/shot_noise_bar.png Graphic file (type png)
 <use ../frequency_recovery/shot_noise_bar.png>
-Package pdftex.def Info: ../frequency_recovery/shot_noise_bar.png  used on input line 463.
+Package pdftex.def Info: ../frequency_recovery/shot_noise_bar.png  used on input line 483.
 (pdftex.def)             Requested size: 273.14923pt x 169.78516pt.
-<../frequency_recovery/amp_noise_bar.png, id=93, 562.7424pt x 349.7868pt>
+<../frequency_recovery/amp_noise_bar.png, id=90, 562.7424pt x 349.7868pt>
 File: ../frequency_recovery/amp_noise_bar.png Graphic file (type png)
 <use ../frequency_recovery/amp_noise_bar.png>
-Package pdftex.def Info: ../frequency_recovery/amp_noise_bar.png  used on input line 468.
+Package pdftex.def Info: ../frequency_recovery/amp_noise_bar.png  used on input line 488.
 (pdftex.def)             Requested size: 273.14923pt x 169.78516pt.
+ [19 <../frequency_recovery/blind_data.png (PNG copy)>]
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <5> on input line 486.
+(Font)              <5> on input line 506.
  [20 <../frequency_recovery/shot_noise_bar.png (PNG copy)> <../frequency_recovery/amp_noise_bar.png (PNG copy)>] [21] [22] [23
 
 ] (./full.aux)
@@ -777,15 +782,15 @@ Package logreq Info: Writing requests to 'full.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 25066 strings out of 469515
- 523133 string characters out of 5467663
- 1351672 words of memory out of 5000000
- 53382 multiletter control sequences out of 15000+600000
+ 25074 strings out of 469515
+ 523422 string characters out of 5467663
+ 1351939 words of memory out of 5000000
+ 53390 multiletter control sequences out of 15000+600000
  641981 words of font info for 87 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  84i,12n,104p,1487b,1462s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cmextra/cmbsy6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmcsc10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cmextra/cmmib6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb>
-Output written on full.pdf (24 pages, 969581 bytes).
+Output written on full.pdf (24 pages, 965640 bytes).
 PDF statistics:
  199 PDF objects out of 1000 (max. 8388607)
  120 compressed objects within 2 object streams

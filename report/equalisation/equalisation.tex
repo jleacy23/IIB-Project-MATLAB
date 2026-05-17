@@ -2,12 +2,15 @@
 \usepackage[margin=2.5cm]{geometry}
 \usepackage{graphicx} % Required for inserting images
 \usepackage{float}
+\usepackage{tikz}
+\usetikzlibrary{decorations.pathreplacing,calc}
 \usepackage{subcaption}
 \usepackage{booktabs}
 \usepackage{parskip}
 \usepackage{gensymb}
 \usepackage{biblatex}
 \usepackage{amsmath}
+\usepackage{amssymb}
 \usepackage{cleveref}
 \addbibresource{ref.bib}
 \title{Equalisation}
@@ -20,9 +23,11 @@
 \section{Introduction}
 
 \section{Adaptive Equalisation}
-Tracking fast-varying channel effects like PMD is done with a 2x2 MIMO equaliser that employs 4 finite impulse response (FIR) filters to give outputs
+\subsection{Equalisation Procedure}
+Tracking PMD is done with a 2x2 MIMO equaliser that employs 4 finite impulse response (FIR) filters to give outputs
 \begin{equation}
     x_\mathrm{out} = \mathbf{h}_{xx}^H \mathbf{x}_\mathrm{in} + \mathbf{h}_{xy}^H \mathbf{y}_\mathrm{in}, \quad y_\mathrm{out} = \mathbf{h}_{yx}^H \mathbf{x}_\mathrm{in} + \mathbf{h}_{yy}^H \mathbf{y}_\mathrm{in}.
+    \label{eq:adaptive_output}
 \end{equation}
 The filter weights are updated using an error estimate as
 \begin{equation}
@@ -30,7 +35,59 @@ The filter weights are updated using an error estimate as
     \mathbf{h_{xx}}\leftarrow \mathbf{h_{xx}} + \mu e_x \mathbf{x}_\mathrm{in}x_\mathrm{out}^*, \quad \mathbf{h_{xy}}\leftarrow \mathbf{h_{xy}} + \mu e_x \mathbf{y}_\mathrm{in}x_\mathrm{out}^*, \\
     \mathbf{h_{yx}}\leftarrow \mathbf{h_{yx}} + \mu e_y \mathbf{x}_\mathrm{in}y_\mathrm{out}^*, \quad \mathbf{h_{yy}}\leftarrow \mathbf{h_{yy}} + \mu e_y \mathbf{y}_\mathrm{in}y_\mathrm{out}^*.
     \end{aligned}
+    \label{eq:adaptive_update}
+\end{equation}
+where the convergence parameter $\mu$ is chosen to be a power of 2 for hardware simplicity.The error terms are produced blindly using the constant modulus algorithm (CMA) \cite{coherent_receivers}, which exploits the fact that an ideal QPSK constellation lies on a circle of fixed radius. CMA minimises the cost function $J = \mathbb{E}\!\left[\left(|x_\mathrm{out}|^2 - R\right)^2\right]$, where the dispersion constant $R = \mathbb{E}[|s|^4]/\mathbb{E}[|s|^2]$ is set by the transmitted symbols $s$ and reduces to a constant for QPSK. Taking the stochastic gradient of $J$ yields the error estimates
+\begin{equation}
+    e_x = \left(R - |x_\mathrm{out}|^2\right), \quad e_y = \left(R - |y_\mathrm{out}|^2\right).
+\end{equation}
+The update step from \cref{eq:adaptive_update} can be simplified by only considering the signs of the error and output terms with no performance penalty \cite{Cardenas:14}. The output is a complex number so a complex signum function is defined as
+\begin{equation}
+    csgn(z) = sgn(Re(z)) + jsgn(Im(z)).
 \end{equation}
 
+\subsection{Filter Length}
+There must be sufficient taps in the filter to cover the channel memory introduced by PMD. The mean differential group delay (DGD) \(\langle\Delta \tau\rangle = D\sqrt{L}\) where \(D\) is the DGD parameter and \(L\) is the link length. The instantaneous DGD is modelled by a Maxwellian distribution \cite{Mantzoukis:11}
+\begin{equation}
+    \mathbb{P}[\Delta \tau > x] \approx \frac{4}{\pi}\frac{x}{\langle\Delta \tau \rangle}\exp\left(-\frac{4x^2}{\pi {\langle\Delta\tau\rangle}^2}\right).
+    \label{eq:maxwellian}
+\end{equation}
+The number of taps can be found for a given outage probability from \cref{eq:maxwellian} as
+\begin{equation}
+    N = \lceil\frac{x}{T} + 1\rceil
+\end{equation}
+where $T$ is the sampling period of the receiver. For an access network where $L \approx 20$ km, and a typical DGD parameter $D = 0.1$ ps/$\sqrt{\mathrm{km}}$ then $\langle\Delta\tau\rangle \approx 0.4$ ps. With an oversampling rate of 2, the sampling period $T = 16.4$ ps. Given that an outage probability of $10^{-12}$ only requires $x = 4.81\langle\Delta\tau\rangle = 1.92$ ps, few taps will be needed for reliable performance.
+
+
+\subsection{Computational Complexity}
+The per-sample cost of the weight updates is compared below for the direct and sign-sign implementations with $N$ taps.
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lcc}
+        \toprule
+        Operation & Direct & Sign-Sign \\
+        \midrule
+        Real multiplications & $16N + 4$ & 0\\
+        Real additions & $16N$ & $16N$ \\
+        \bottomrule
+    \end{tabular}
+    \caption{Per-update computational cost of the direct and sign-sign weight updates.}
+    \label{tab:update_cost}
+\end{table}
+The adaptive equaliser must be parallelised to support a 30.5 GBd symbol rate. The input samples are split into $P$ lanes, with the input vector of lane $p$
+\begin{equation}
+    \mathbf{x}_p = \left[\mathbf{x}[mP + p], \mathbf{x}[mP + p - 1], \dots, \mathbf{x}[mP + p - (N - 1)]\right].
+\end{equation}
+The update step for the shared weights is given by
+\begin{equation}
+    \Delta \mathbf{h} = \mu \sum_{p=0}^{P-1}e[p]\mathbf{x}_p x_\mathrm{out}[p].
+\end{equation}
+A natural choice for blocks of 32 symbols is $P=32$, allowing the pilot symbols with a larger modulus to be processed separately. With an oversampling rate of 2, each lane would need to operate with a sampling frequency of $ 2 \cdot 30.5 / 32 = 1.9$ GHz which is reasonable for modern CMOS. This scales the number of operations in \cref{tab:update_cost} by $P$.
+\subsection{Fixed Point Precision}
+The convergence parameter $\mu$ in \cref{eq:adaptive_update} is typically $\approx 10^{-3}$ which would require at least 10 bits of precision to represent. Computing the update term to this precison adds unnecessary computational cost, so it should instead be computed at lower precision and bit-shifted (equivalent to setting $\mu$ to a power of 2) to the least significant bits of the weights before updating. This can lead to the most significant bits being redundant. These bits waste energy when the weights change sign and when forming the outputs in \cref{eq:adaptive_output} if the weights are negative. Jiang et al. \cite{Jiang;26} propose removing these redundant bits with an optimisation over the precision of each weight and demonstrate a decrease in energy consumption with a slight performance loss. The decrease in energy consumption can be estimated directly from the frequency of sign changes in the weights and the proportion of multiplications in \cref{eq:adaptive_output} that use negative weights. For $d$ redundant bits, a sign change is equivalent to the cost of a $d$-bit addition and the additional cost in forming the outputs will be a $d$-bit multiplication.
+
+\section{Methodology}
+
+\printbibliography
 
 \end{document}

@@ -20,6 +20,7 @@
 % duplicate keys (if any) are resolved by biber to the first definition.
 \addbibresource{../energy/ref.bib}
 \addbibresource{../frequency_recovery/ref.bib}
+\addbibresource{ref.bib}
 
 \title{Energy-Efficient 200 Gbit/s Transceivers for Optical Access Networks}
 \author{Joe Leacy}
@@ -34,7 +35,7 @@
 % =====================================================================
 
 \section{Optical Access Networks}
-The access network is the final link between an operator's central exchange and the end user, often called the \emph{last mile}. Exponentially growing bandwidth demands from streaming, cloud services, and 5G backhaul are placing severe pressure on this segment. Traditional intensity-modulation direct-detection (IM-DD) passive optical networks, standardised through the ITU-T and IEEE, are approaching their practical limits at data rates approaching 50\,Gbps per wavelength \cite{CPON_PMD_2025}.
+The access network is the final link between an operator's central exchange and the end user, often called the \emph{last mile}. Exponentially growing bandwidth demands from streaming, cloud services, and 5G backhaul are placing severe pressure on this segment. 
 
 A passive optical network (PON) uses a point-to-multipoint (P2MP) topology in which a single optical line terminal (OLT) at the exchange serves multiple optical network units (ONUs) at the customer premises through a tree of passive optical splitters, as illustrated in \cref{fig:pon_intro}. No active components are required in the distribution plant, keeping operational costs low.
 
@@ -66,12 +67,12 @@ A passive optical network (PON) uses a point-to-multipoint (P2MP) topology in wh
 \end{figure}
 
 \section{Coherent PON}
-Coherent optical technology encodes information in the amplitude, phase, and polarisation of the optical carrier. Mixing the received signal with a local oscillator (LO) laser at the receiver provides coherent gain that dramatically improves receiver sensitivity relative to direct detection, partially recovering the power lost at the splitter. Linear transmission impairments — chromatic dispersion (CD) and polarisation-mode dispersion (PMD) — can be corrected entirely in DSP, removing the need for dispersion-compensating fibre. These properties make coherent optics an attractive basis for the next generation of high-split, long-reach PON.
+Traditional intensity-modulation direct-detection (IM-DD) passive optical networks are approaching their practical limits at data rates approaching 50 Gbps per wavelength. Coherent technology encodes information in the amplitude and phase of the optical signal, allowing modulation formats like QPSK that can carry more bits per symbol. Coherent receivers are also more sensitive, allowing for lower transmit powers. These factors make them a promising alternative to achieve rates of 200 Gbps on an acceptable power budget \cite{Faruk;21}.
 
-The Coherent Passive Optical Network (CPON) specification \cite{CPON_PMD_2025} defines a 100\,Gbps single-wavelength P2MP system. This report focuses on the \emph{downstream} direction (OLT to ONU); the key physical-layer parameters are described in the following sections.
+The Coherent Passive Optical Network (CPON) specification \cite{CPON_PMD_2025} defines a 100 Gbps single-wavelength P2MP system. This report focuses on the \emph{downstream} direction (OLT to ONU) where receiver optimisations can be shared by all ONUs; the key physical-layer parameters are described in the following sections.
 
 \section{Modulation and Symbol Rate}
-The downstream signal uses non-differential DP-QPSK at a symbol rate of $R_s = 30.5$\,GBd ($\pm 20$\,ppm), giving a PMD-layer line rate of $4R_s \approx 122$\,Gbps. Each polarisation carries 2\,bits per symbol by mapping consecutive bit pairs to in-phase and quadrature amplitudes $I,Q\in\{-1,+1\}$, giving QPSK constellation points at $\pm1\pm j$. Training and pilot symbols use the same mapping but at amplitude $\pm 3$, placing them outside the data constellation for unambiguous identification.
+The downstream signal uses non-differential DP-QPSK at a symbol rate of $R_s = 30.5$\,GBd. Each polarisation carries 2\,bits per symbol by mapping consecutive bit pairs to in-phase and quadrature amplitudes $I,Q\in\{-1,+1\}$, giving QPSK constellation points at $\pm1\pm j$. Training and pilot symbols use the same mapping but at amplitude $\pm 3$, placing them outside the data constellation for unambiguous identification.
 
 \section{Downstream Frame Structure}
 \label{sec:cpon_frame}
@@ -81,7 +82,7 @@ The fundamental framing unit is the \emph{DSP subframe} of 3\,712 symbols, organ
 \section{Key System Tolerances}
 \label{sec:cpon_tolerances}
 
-The OLT transmitter laser must be within $\pm1.5$\,GHz of its DWDM channel centre, and the ONU must acquire signals within $\pm1.8$\,GHz of the grid. In the worst case, the combined transmitter and LO offsets yield a carrier frequency offset (CFO) of up to $\approx3$\,GHz that the receiver DSP must correct. Both OLT and ONU lasers must have a linewidth of at most 1\,MHz; the combined linewidth drives the phase noise that the carrier recovery block must track.
+The standard supports a 35 dB loss budget from OLT to ONU, which it states will allow a link length of 80 km with a 1:16 splitting ratio or 20 km with a 1:512 splitting ratio. To account for impairments in the core network, an SNR of 35 dB at the OLT must be supported. The OLT transmitter laser must be within $\pm1.5$\,GHz of its DWDM channel centre, and the ONU must acquire signals within $\pm1.8$\,GHz of the grid. In the worst case, the combined transmitter and LO offsets yield a carrier frequency offset (CFO) of up to $\approx3$\,GHz that the receiver DSP must correct. Both OLT and ONU lasers must have a linewidth of at most 1\,MHz.
 
 The specification requires a pre-FEC bit error ratio of $\leq 2\times10^{-2}$, which the soft-decision LDPC FEC reduces to a post-FEC BER of $\leq10^{-12}$.
 
@@ -90,12 +91,52 @@ The specification requires a pre-FEC bit error ratio of $\leq 2\times10^{-2}$, w
 % =====================================================================
 
 \section{Simulation Framework}
-All DSP algorithms in this report are designed, characterised, and compared through software simulation in MATLAB. The simulated receiver processes DP-QPSK symbols generated at the CPON downstream parameters described in \cref{chapter:cpon}: symbol rate $R_s = 30.5$\,GBd, with pilot and training symbols embedded in the subframe structure of \cref{sec:cpon_frame}. The channel model adds impairments such as chromatic dispersion, polarisation-mode dispersion, AWGN, phase noise, carrier frequency offset to test the performance of the algorithms.
+All DSP algorithms in this report are designed, characterised, and compared through software simulation in MATLAB. The simulated receiver processes DP-QPSK symbols generated at the CPON downstream parameters described in \cref{chapter:cpon}.
 
-\section{Fixed-Point Arithmetic}
-Real hardware DSP implementations operate on fixed-point integers rather than floating-point numbers. Representing a value with $n$ bits limits both the dynamic range and resolution of arithmetic, and the energy cost of addition and multiplication scales with $n$ (see \cref{sec:rx_energy}). Choosing the minimum $n$ that still meets the pre-FEC BER constraint is therefore central to minimising receiver energy.
+\subsection{Network Model}
+The network under investigation assumes a loss of 35 dB and an SNR of 35 dB at the OLT. The two configurations are 80 km with a 1:16 splitting ratio and 20 km with a 1:512 splitting ratio. The fibre and signal parameters assumed for the network are listed in \cref{tab:network_params}. Nyquist pulse-shaping is assumed.
 
-Fixed-point behaviour is modelled using MATLAB's \texttt{fi} (fixed-point) object, which performs bit-accurate integer arithmetic with configurable overflow and rounding modes.
+\begin{table}[H]
+    \centering
+    \caption{System parameters.}
+    \label{tab:network_params}
+    \begin{tabular}{lc}
+        \toprule
+        Parameter & Value \\
+        \midrule
+        Central wavelength ($\lambda$)  & 1550\,nm \\
+        Channel bandwidth ($B$) & 30.5\,GHz \\
+        Chromatic dispersion coefficient ($D$)  & 17\,ps/(nm$\cdot$km) \\
+        PMD coefficient  ($D_\mathrm{DGD}$) & 0.1\,ps/$\sqrt{\mathrm{km}}$ \\
+        Wall-plug efficiency ($\eta$) & 0.1 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Channel Impairments}
+Between the transmitter and receiver, the ideal symbol stream is degraded by the optical channel. Each impairment is applied as a separate stage so that individual DSP blocks can be characterised in isolation or in combination. The relevant models \cite{Mello;21} are described below.
+
+\paragraph{Additive White Gaussian Noise}
+AWGN models the combined effect of shot noise and thermal noise. In simulation, the power of the incoming signal is measured and zero-mean Gaussian noise is added independently to each polarisation at a level set by the target SNR.
+
+\paragraph{Chromatic Dispersion}
+Chromatic dispersion (CD) arises because the group velocity of light in fibre depends on wavelength, so the frequency components of a pulse accumulate a frequency-dependent delay that spreads it over many symbol periods. It is an all-pass effect with a quadratic phase response. It is simulated by transforming the signal to the frequency domain with an FFT, applying the transfer function
+\begin{equation}
+    H(\omega) = \exp\!\left(j\,\frac{D \lambda^2}{4\pi c}\, L\, \omega^2\right),
+\end{equation}
+where \(D\) is the dispersion coefficient, \(\lambda\) the central wavelength, \(L\) the fibre length, and \(c\) the speed of light, then transforming back with an IFFT.
+
+\paragraph{Polarisation-Mode Dispersion}
+Polarisation-mode dispersion (PMD) results from random birefringence in the fibre, which causes the two polarisation modes to travel at slightly different speeds and couple into one another along the link. It is simulated as a concatenation of \(N_\mathrm{pmd}\) birefringent sections, each applying a differential group delay of \(\pm\tau/2\) to its two principal states in the frequency domain, with a random unitary rotation (the singular vectors of a complex Gaussian matrix) modelling the mode coupling between sections. The mean DGD scales as \(\tau \propto D_\mathrm{PMD}\sqrt{L}\), with \(D_\mathrm{PMD}\) the fibre PMD coefficient.
+
+\paragraph{Carrier Frequency Offset}
+A carrier frequency offset (CFO) occurs because the transmitter and local-oscillator lasers are free-running and never exactly aligned in centre frequency, as discussed in \cref{sec:cpon_tolerances}. The resulting beat appears as a linear phase ramp on the received samples. It is simulated by multiplying the signal by \(\exp(j\,2\pi\,\Delta f\, T\, k)\), where \(\Delta f\) is the frequency offset, \(T\) the sample period, and \(k\) the sample index.
+
+\paragraph{Phase Noise}
+Phase noise originates from the finite linewidth of the transmitter and LO lasers, whose phases follow a random walk. It is modelled as a Wiener process: independent Gaussian phase increments with variance \(\sigma^2 = 2\pi\,\Delta\nu / R_s\), where \(\Delta\nu\) is the combined laser linewidth, are accumulated and applied as a multiplicative phase \(\exp(j\phi[k])\).
+
+\subsection{Fixed-Point Arithmetic}
+Real hardware DSP implementations operate on fixed-point integers rather than floating-point numbers. Representing a value with $n$ bits limits both the dynamic range and resolution of arithmetic, and the energy cost of addition and multiplication scales with $n$ (see \cref{sec:rx_energy}). All receiver modules are implemented using MATLAB's \texttt{fi} (fixed-point) object, which performs bit-accurate fixed-point arithmetic with configurable overflow and rounding modes.
 
 \section{Energy Estimation}
 The energy efficiency of a DSP technique used in a coherent receiver cannot be judged from the receiver alone: a simpler implementation that saves receiver energy typically requires a higher SNR, which the transmitter must compensate for with extra launch power. A like-for-like comparison between architectures must therefore account for both contributions.
@@ -174,47 +215,47 @@ The downstream link considered here consists of a single OLT transmitting throug
 The CPON standard specifies a maximum pre-FEC bit-error rate (BER) of \(10^{-2}\) that must not be exceeded for the forward error-correction (FEC) scheme to function correctly. Each receiver implementation therefore has a minimum required SNR to meet this FEC threshold. This SNR, together with the noise characteristics of the optical network, determines the minimum transmitter power.
 
 \subsection{Noise}
-\subsubsection{Shot Noise}
-The relationship between SNR and transmitter power \(P_\mathrm{tx}\) depends on the dominant source of noise in the network. Optical access networks typically operate over short lengths at low power, so amplifiers can be omitted and non-linear noise neglected, leaving shot noise as the dominant impairment. The shot noise power at the receiver is \(2h\nu B_\mathrm{eff}\), where \(B_\mathrm{eff}\) is the bandwidth of the photodetector; this can be matched to the bandwidth of the received signal after the 1:\(K\) splitter in \cref{fig:pon} with a bandpass filter. The received power after attenuation and the splitter (assuming equal power per channel) is \(P_\mathrm{tx}\exp(-\alpha L)/K\), giving a per-ONU SNR of
+% \subsubsection{Shot Noise}
+The relationship between SNR and transmitter power \(P_\mathrm{tx}\) depends on the dominant source of noise in the network. Optical access networks typically operate over short lengths at low power, so amplifiers can be omitted and non-linear noise neglected, leaving shot noise as the dominant impairment. The shot noise power at the receiver is \(2h\nu B_\mathrm{eff}\), where \(B_\mathrm{eff}\) is the bandwidth of the photodetector; this can be matched to the bandwidth of the received signal after the 1:\(K\) splitter in \cref{fig:pon} with a bandpass filter.  The power received by each ONU is \(P_\mathrm{tx}/\Gamma\), where $\Gamma$ is the loss from OLT to ONU. This gives a per-ONU NSR of
 \begin{equation}
-    \mathrm{SNR} = \frac{P_\mathrm{tx} \exp(-\alpha L)}{2Kh\nu B_\mathrm{eff}},
+    \mathrm{NSR} = \frac{2\Gamma h\nu B_\mathrm{eff}}{P_\mathrm{tx}} + \mathrm{NSR}_0,
     \label{eq:snr_shot}
 \end{equation}
-where \(\alpha\) is the fibre loss in nepers/km , and \(L\) is the fibre length in km. Rearranging gives the transmitted power as
+where NSR = 1/SNR  and $\mathrm{NSR}_0$ is the NSR at the OLT. Rearranging gives the transmitted power as
 \begin{equation}
-    P_\mathrm{tx} = 2Kh\nu B_\mathrm{eff}\exp(\alpha L)\cdot \mathrm{SNR},
+    P_\mathrm{tx} = \frac{2\Gamma h\nu B_\mathrm{eff}}{\mathrm{NSR} - \mathrm{NSR}_0}.
 \end{equation}
-which is proportional to \(K\) when channels transmit equal power. The energy per bit transmitted is then
+The energy per bit transmitted is then
 \begin{equation}
     E_\mathrm{tx} = \frac{P_\mathrm{tx}}{KR_s \log_2(M)}.
     \label{eq:tx_bit_energy}
 \end{equation}
 
-\subsubsection{Amplifier and Non-Linear Noise}
-Long-reach access networks require EDFAs in the trunk fibre, in which case amplifier and non-linear noise can no longer be neglected. Each EDFA with gain \(G\) and noise figure \(\mathrm{NF}\) (dB) operating over a full WDM bandwidth \(B\) contributes an ASE noise power
-\begin{equation}
-    P_\mathrm{ASE} = N_\mathrm{ASE}B = 10^{\mathrm{NF}/10}h\nu (G-1)B,
-\end{equation}
-and assuming each amplifier exactly compensates the loss of its preceding span, every span re-launches with the same input power \(P_\mathrm{tx}\). The Gaussian Noise model \cite{poggiolini2012gn} then gives the per-span non-linear interference (NLI) power as
-\begin{equation}
-    P_\mathrm{NLI} = \frac{C_\mathrm{NLI} P_\mathrm{tx}^3}{B^2},
-\end{equation}
-where \(C_\mathrm{NLI} = \frac{8 \gamma^2 L_\mathrm{eff}^2 \alpha}{27\pi|\beta_2|}\ln(\frac{|\beta_2|}{\alpha}\pi^2B^2)\) depends on the fibre and link parameters.
+% \subsubsection{Amplifier and Non-Linear Noise}
+% Long-reach access networks require EDFAs in the trunk fibre, in which case amplifier and non-linear noise can no longer be neglected. Each EDFA with gain \(G\) and noise figure \(\mathrm{NF}\) (dB) operating over a full WDM bandwidth \(B\) contributes an ASE noise power
+% \begin{equation}
+%     P_\mathrm{ASE} = N_\mathrm{ASE}B = 10^{\mathrm{NF}/10}h\nu (G-1)B,
+% \end{equation}
+% and assuming each amplifier exactly compensates the loss of its preceding span, every span re-launches with the same input power \(P_\mathrm{tx}\). The Gaussian Noise model \cite{poggiolini2012gn} then gives the per-span non-linear interference (NLI) power as
+% \begin{equation}
+%     P_\mathrm{NLI} = \frac{C_\mathrm{NLI} P_\mathrm{tx}^3}{B^2},
+% \end{equation}
+% where \(C_\mathrm{NLI} = \frac{8 \gamma^2 L_\mathrm{eff}^2 \alpha}{27\pi|\beta_2|}\ln(\frac{|\beta_2|}{\alpha}\pi^2B^2)\) depends on the fibre and link parameters.
 
-For a link of \(n\) identical spans, the ASE and NLI contributions from each span accumulate, giving a total noise power \(n(P_\mathrm{ASE} + P_\mathrm{NLI})\). With the 1:\(K\) passive splitter placed at the end of the trunk, both signal and accumulated noise are attenuated equally between the OLT and each ONU, so the splitter ratio cancels in the per-ONU SNR:
-\begin{equation}
-    \mathrm{SNR} = \frac{P_\mathrm{tx}}{n\left(N_\mathrm{ASE}B + \frac{C_\mathrm{NLI} P_\mathrm{tx}^3}{B^2}\right)},
-    \label{eq:snr_nl}
-\end{equation}
-where \(P_\mathrm{tx}\) is both the OLT transmit power and (under the equal-compensation assumption) the launch power into each span. The required transmit powers for each implementation are solved for numerically from \cref{eq:snr_nl}, with the transmitter energies following from \cref{eq:tx_bit_energy}. Here the transmitted power is not proportional to \(K\) for a given SNR even if channels transmit equal power due to the dependence of \(C_\mathrm{NLI}\) on the bandwidth.
+% For a link of \(n\) identical spans, the ASE and NLI contributions from each span accumulate, giving a total noise power \(n(P_\mathrm{ASE} + P_\mathrm{NLI})\). With the 1:\(K\) passive splitter placed at the end of the trunk, both signal and accumulated noise are attenuated equally between the OLT and each ONU, so the splitter ratio cancels in the per-ONU SNR:
+% \begin{equation}
+%     \mathrm{SNR} = \frac{P_\mathrm{tx}}{n\left(N_\mathrm{ASE}B + \frac{C_\mathrm{NLI} P_\mathrm{tx}^3}{B^2}\right)},
+%     \label{eq:snr_nl}
+% \end{equation}
+% where \(P_\mathrm{tx}\) is both the OLT transmit power and (under the equal-compensation assumption) the launch power into each span. The required transmit powers for each implementation are solved for numerically from \cref{eq:snr_nl}, with the transmitter energies following from \cref{eq:tx_bit_energy}. Here the transmitted power is not proportional to \(K\) for a given SNR even if channels transmit equal power due to the dependence of \(C_\mathrm{NLI}\) on the bandwidth.
 
 \section{System Energy}
-The total energy consumed per bit for network is given by
+The total energy consumed per bit for the network is given by
 \begin{equation}
     E_\mathrm{sys} = \frac{1}{\eta}E_\mathrm{tx} + E_\mathrm{rx},
     \label{eq:sys_energy}
 \end{equation}
-where \(\eta\) is the wall-plug efficiency of the OLT laser. In the shot noise regime, \(E_\mathrm{sys}\) is independent of \(K\), but will vary when amplifier and non-linear noise dominate.
+where \(\eta\) is the wall-plug efficiency of the OLT laser.
 
 % =====================================================================
 \chapter{Carrier Recovery}\label{chapter:carrier_recovery}
@@ -405,34 +446,13 @@ Only phases are needed, so the entire estimation can be performed with CORDIC. T
 The two phase recovery algorithms are compared in isolation by simulating an AWGN channel with additive Wiener phase noise, without chromatic dispersion, PMD, or fibre nonlinearity, so that any performance difference is attributable solely to the phase estimation stage. BER is estimated by Monte Carlo simulation over independent realisations for each combination of laser linewidth and SNR, with the phase ambiguity inherent to QPSK resolved by exhaustive search over the four \(\pi/2\) rotations before symbol decisions are made.
 
 \subsection{System Energy Comparison}
-The energy framework of \cref{chapter:energy} is applied to compare all combinations of frequency and phase recovery algorithm. All simulations target the CPON specification: DP-QPSK at \(R_s = 30.5\) GBd with a pre-FEC BER limit of \(2\times10^{-2}\) and a laser wall-plug efficiency \(\eta = 0.1\). Two link scenarios are considered, with parameters given in \cref{tab:link_params}, for splitting ratios \(K \in \{1, 10, 20\}\).
+The energy framework of \cref{chapter:energy} is applied to compare all combinations of frequency and phase recovery algorithm. All simulations target the CPON specification.
 
-\begin{table}[H]
-    \centering
-    \caption{Link parameters for the two noise regimes.}
-    \label{tab:link_params}
-    \begin{tabular}{llc}
-        \toprule
-        Parameter & Symbol & Value \\
-        \midrule
-        \multicolumn{3}{l}{\emph{Shot-noise limited (10\,km passive-split PON)}} \\
-        Fibre attenuation & $\alpha$ & 0.2\,dB/km \\
-        Link length & $L$ & 10\,km \\
-        \midrule
-        \multicolumn{3}{l}{\emph{Amplified (3\,$\times$\,80\,km EDFA spans)}} \\
-        Number of spans & $n$ & 3 \\
-        Span length & $L_\mathrm{span}$ & 80\,km \\
-        Fibre attenuation & $\alpha$ & 0.2\,dB/km \\
-        Group velocity dispersion & $|\beta_2|$ & $20\times10^{-24}$\,s$^2$/km \\
-        Nonlinear coefficient & $\gamma$ & 1.3\,W$^{-1}$\,km$^{-1}$ \\
-        EDFA noise figure & NF & 5\,dB \\
-        \bottomrule
-    \end{tabular}
-\end{table}
 
-For each algorithm combination, the fixed-point word lengths of the frequency recovery (\(n_\mathrm{FR}\)) and phase recovery (\(n_\mathrm{PR}\)) stages are varied independently over a grid. At each grid point, Monte Carlo simulation over multiple independent realisations estimates the minimum SNR at which the pre-FEC BER falls below the CPON threshold; this FEC SNR threshold determines the required transmitter power via \cref{eq:snr_shot,eq:snr_nl}. The receiver DSP energy at that precision is computed from the operation counts of the preceding sections via \cref{eq:rx_energy}, and the transmitter energy follows from \cref{eq:tx_bit_energy}. The precision combination that minimises the mean system energy of \cref{eq:sys_energy} is then selected for each algorithm pair and splitting ratio.
 
-The reported energies should be interpreted as a \emph{comparative} metric. The 45\,nm CMOS reference values of \cref{tab:energy} provide a consistent basis for ranking implementations, but do not constitute absolute power predictions for a real device. Additionally, the energy cost of applying the estimated corrections to each received symbol — CORDIC rotations shared by all implementations — is excluded, as this contribution is implementation-independent and does not affect relative comparisons.
+For each algorithm combination, the fixed-point word lengths of the frequency recovery (\(n_\mathrm{FR}\)) and phase recovery (\(n_\mathrm{PR}\)) stages are varied independently over a grid. At each grid point, Monte Carlo simulation over multiple independent realisations estimates the FEC SNR which determines the required transmitter power via \cref{eq:snr_shot}. The receiver DSP energy at that precision is computed from the operation counts of the preceding sections via \cref{eq:rx_energy}, and the transmitter energy follows from \cref{eq:tx_bit_energy}. The precision combination that minimises the mean system energy of \cref{eq:sys_energy} is then selected for each algorithm pair and splitting ratio.
+
+The reported energies should be interpreted as a \emph{comparative} metric. The 45\,nm CMOS reference values of \cref{tab:energy} provide a consistent basis for ranking implementations, but do not constitute absolute power predictions for a real device. Additionally, the energy cost of applying the estimated corrections to each received symbol is excluded, as this contribution is implementation-independent and does not affect relative comparisons.
 
 \section{Results \& Discussion}
 \subsection{Phase Recovery Performance}

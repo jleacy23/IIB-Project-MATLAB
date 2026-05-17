@@ -160,6 +160,63 @@
       \verb 10.1109/TCOMM.1994.580247
       \endverb
     \endentry
+    \entry{Faruk;21}{article}{}{}
+      \name{author}{6}{}{%
+        {{hash=daf16bdb226d0e1746bb056a99ebd461}{%
+           family={Faruk},
+           familyi={F\bibinitperiod},
+           given={Md\bibnamedelima Saifuddin},
+           giveni={M\bibinitperiod\bibinitdelim S\bibinitperiod}}}%
+        {{hash=09e1a64c667557dd7866bc4e66d193ce}{%
+           family={Li},
+           familyi={L\bibinitperiod},
+           given={Xiang},
+           giveni={X\bibinitperiod}}}%
+        {{hash=8b5aa73f11de1f90383345f59e62992c}{%
+           family={Nesset},
+           familyi={N\bibinitperiod},
+           given={Derek},
+           giveni={D\bibinitperiod}}}%
+        {{hash=8fef1b356f8f7c666badaf1b6f716e2f}{%
+           family={Cano},
+           familyi={C\bibinitperiod},
+           given={Iván\bibnamedelima N.},
+           giveni={I\bibinitperiod\bibinitdelim N\bibinitperiod}}}%
+        {{hash=4e98060b790d7642a7bc8b2fe313ebf1}{%
+           family={Rafel},
+           familyi={R\bibinitperiod},
+           given={Albert},
+           giveni={A\bibinitperiod}}}%
+        {{hash=1a67808fa91d6d24e2d13a047c5adfcc}{%
+           family={Savory},
+           familyi={S\bibinitperiod},
+           given={Seb\bibnamedelima J.},
+           giveni={S\bibinitperiod\bibinitdelim J\bibinitperiod}}}%
+      }
+      \strng{namehash}{a4e550e4853fcf0397aa5298ec8a6624}
+      \strng{fullhash}{77b77ef7963518ef26c0e573e798507c}
+      \strng{fullhashraw}{77b77ef7963518ef26c0e573e798507c}
+      \strng{bibnamehash}{a4e550e4853fcf0397aa5298ec8a6624}
+      \strng{authorbibnamehash}{a4e550e4853fcf0397aa5298ec8a6624}
+      \strng{authornamehash}{a4e550e4853fcf0397aa5298ec8a6624}
+      \strng{authorfullhash}{77b77ef7963518ef26c0e573e798507c}
+      \strng{authorfullhashraw}{77b77ef7963518ef26c0e573e798507c}
+      \field{sortinit}{F}
+      \field{sortinithash}{2638baaa20439f1b5a8f80c6c08a13b4}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{IEEE Communications Magazine}
+      \field{number}{12}
+      \field{title}{Coherent Passive Optical Networks: Why, When, and How}
+      \field{volume}{59}
+      \field{year}{2021}
+      \field{pages}{112\bibrangedash 117}
+      \range{pages}{6}
+      \verb{doi}
+      \verb 10.1109/MCOM.010.2100503
+      \endverb
+      \keyw{Physical layer;Optics;Passive optical networks;Next generation networking}
+    \endentry
     \entry{horowitz2014computing}{inproceedings}{}{}
       \name{author}{1}{}{%
         {{hash=2c9d1aa766759ce8abffd16d2a35689e}{%
@@ -226,55 +283,37 @@
       \verb 10.1109/MSP.2007.361611
       \endverb
     \endentry
-    \entry{poggiolini2012gn}{article}{}{}
-      \name{author}{5}{}{%
-        {{hash=1acbf11c39309f0d73c9e5d61498dae1}{%
-           family={Poggiolini},
-           familyi={P\bibinitperiod},
-           given={Pierluigi},
-           giveni={P\bibinitperiod}}}%
-        {{hash=c00b0aaea6d68eadef87884e73a26ff4}{%
-           family={Carena},
-           familyi={C\bibinitperiod},
-           given={Andrea},
-           giveni={A\bibinitperiod}}}%
-        {{hash=44a0a9e61d8aa6680ee74480d81d74c6}{%
-           family={Curri},
-           familyi={C\bibinitperiod},
-           given={Vittorio},
-           giveni={V\bibinitperiod}}}%
-        {{hash=3997957683d96e8edf1bc44d3b8e6b12}{%
-           family={Bosco},
+    \entry{Mello;21}{book}{}{}
+      \name{author}{2}{}{%
+        {{hash=4da493d26fd47cf8b99c01b8baf20681}{%
+           family={Mello},
+           familyi={M\bibinitperiod},
+           given={Darli},
+           giveni={D\bibinitperiod}}}%
+        {{hash=7a1c6ab006a2fcc274933e281bebeb40}{%
+           family={Barbosa},
            familyi={B\bibinitperiod},
-           given={Gabriella},
-           giveni={G\bibinitperiod}}}%
-        {{hash=1c34c2209165d68ce64ad6a2661a6b6d}{%
-           family={Forghieri},
-           familyi={F\bibinitperiod},
-           given={Fabrizio},
+           given={Fabio},
            giveni={F\bibinitperiod}}}%
       }
-      \strng{namehash}{1a09e972d55e8452466573c57d52819e}
-      \strng{fullhash}{4ae0e9a7a7b508c0bf42250e7ef21b2f}
-      \strng{fullhashraw}{4ae0e9a7a7b508c0bf42250e7ef21b2f}
-      \strng{bibnamehash}{1a09e972d55e8452466573c57d52819e}
-      \strng{authorbibnamehash}{1a09e972d55e8452466573c57d52819e}
-      \strng{authornamehash}{1a09e972d55e8452466573c57d52819e}
-      \strng{authorfullhash}{4ae0e9a7a7b508c0bf42250e7ef21b2f}
-      \strng{authorfullhashraw}{4ae0e9a7a7b508c0bf42250e7ef21b2f}
-      \field{sortinit}{P}
-      \field{sortinithash}{ff3bcf24f47321b42cb156c2cc8a8422}
+      \strng{namehash}{3077c9828fa80c9d0f3fb745fbfd173f}
+      \strng{fullhash}{3077c9828fa80c9d0f3fb745fbfd173f}
+      \strng{fullhashraw}{3077c9828fa80c9d0f3fb745fbfd173f}
+      \strng{bibnamehash}{3077c9828fa80c9d0f3fb745fbfd173f}
+      \strng{authorbibnamehash}{3077c9828fa80c9d0f3fb745fbfd173f}
+      \strng{authornamehash}{3077c9828fa80c9d0f3fb745fbfd173f}
+      \strng{authorfullhash}{3077c9828fa80c9d0f3fb745fbfd173f}
+      \strng{authorfullhashraw}{3077c9828fa80c9d0f3fb745fbfd173f}
+      \field{sortinit}{M}
+      \field{sortinithash}{4625c616857f13d17ce56f7d4f97d451}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{journaltitle}{IEEE Photonics Technology Letters}
-      \field{number}{11}
-      \field{title}{Analytical Modeling of Nonlinear Propagation in Uncompensated Optical Transmission Links}
-      \field{volume}{23}
-      \field{year}{2011}
-      \field{pages}{742\bibrangedash 744}
-      \range{pages}{3}
+      \field{isbn}{978-3-030-66540-1}
+      \field{month}{01}
+      \field{title}{Digital Coherent Optical Systems: Architecture and Algorithms}
+      \field{year}{2021}
       \verb{doi}
-      \verb 10.1109/LPT.2011.2131125
+      \verb 10.1007/978-3-030-66541-8
       \endverb
     \endentry
   \enddatalist

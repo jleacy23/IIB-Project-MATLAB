@@ -1,4 +1,4 @@
-function E = system(E_tx, E_rx, K)
+function E = system(E_tx, E_rx)
     % System energy per bit [J/bit] for a 1:K downstream PON, summing the
     % wall-plug transmitter energy and the receiver energy across all K
     % ONUs.  Implements eq:sys_energy of report/energy/energy.tex.
@@ -9,5 +9,5 @@ function E = system(E_tx, E_rx, K)
     %        energy.receiver)
     % K    : number of ONUs (= passive splitter ratio)
 
-    E = E_tx / K + E_rx;
+    E = E_tx + E_rx;
 end

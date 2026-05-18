@@ -21,7 +21,7 @@
 \contentsline {subsection}{\numberline {2.3.3}Total Energy and Power}{8}{}%
 \contentsline {section}{\numberline {2.4}Transmitter Energy}{8}{}%
 \contentsline {subsection}{\numberline {2.4.1}Minimum Required SNR}{8}{}%
-\contentsline {subsection}{\numberline {2.4.2}Noise}{9}{}%
+\contentsline {subsection}{\numberline {2.4.2}Noise}{8}{}%
 \contentsline {section}{\numberline {2.5}System Energy}{9}{}%
 \contentsline {chapter}{\numberline {3}Carrier Recovery}{10}{}%
 \contentsline {section}{\numberline {3.1}Introduction}{10}{}%
@@ -48,4 +48,4 @@
 \contentsline {subsection}{\numberline {3.5.1}Phase Recovery Performance}{18}{}%
 \contentsline {subsection}{\numberline {3.5.2}Blind vs Data-Aided Operation}{19}{}%
 \contentsline {subsection}{\numberline {3.5.3}Combined Performance}{19}{}%
-\contentsline {section}{\numberline {3.6}Conclusions}{22}{}%
+\contentsline {section}{\numberline {3.6}Conclusions}{21}{}%

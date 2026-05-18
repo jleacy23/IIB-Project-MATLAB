@@ -186,50 +186,28 @@ and converting to energy per bit allows fair comparison across modulation scheme
 where \(M\) is the modulation order. Complex multiplications and additions are needed in many DSP algorithms. 4 real multiplications and 2 real additions are assumed for each complex multiplication, and 2 real additions for complex addition.
 
 \section{Transmitter Energy}
-The downstream link considered here consists of a single OLT transmitting through a 1:\(K\) passive splitter to \(K\) ONUs, as shown in \cref{fig:pon}. The OLT power is divided equally between branches, so each ONU receives a \(1/K\) share. This is a simplification of a typical PON where there may be several stages of passive splitters placed at different locations along the fibre, in which case the noise characteristics of the fibre between splitter stages must be analysed independently.
-
-\begin{figure}[H]
-    \centering
-    \begin{tikzpicture}[
-        box/.style={draw, rectangle, minimum width=2cm, minimum height=0.75cm, align=center},
-        node distance=0pt
-    ]
-        \node[box] (olt) {OLT (Tx)};
-        \node[draw, circle, minimum size=0.85cm, right=2.5cm of olt] (split) {\small 1:$K$};
-        \draw[-{Stealth}] (olt) -- node[above]{\small fibre} (split);
-
-        \node[box, right=2.5cm of split, yshift= 1.6cm] (onu1) {ONU 1 (Rx)};
-        \node[box, right=2.5cm of split, yshift= 0.0cm] (onu2) {ONU 2 (Rx)};
-        \node[right=2.5cm of split, yshift=-0.9cm] (dots) {$\vdots$};
-        \node[box, right=2.5cm of split, yshift=-1.6cm] (onuk) {ONU $K$ (Rx)};
-
-        \draw[-{Stealth}] (split) -- (onu1.west);
-        \draw[-{Stealth}] (split) -- (onu2.west);
-        \draw[-{Stealth}] (split) -- (onuk.west);
-    \end{tikzpicture}
-    \caption{Downstream PON link: one OLT transmitting to \(K\) ONUs.}
-    \label{fig:pon}
-\end{figure}
+The downstream link considered here consists of a single OLT transmitting through a 1:\(K\) passive splitter to \(K\) ONUs, as shown in \cref{fig:pon_intro}. The OLT power is divided equally between branches, so each ONU receives a \(1/K\) share.
 
 \subsection{Minimum Required SNR}
 The CPON standard specifies a maximum pre-FEC bit-error rate (BER) of \(10^{-2}\) that must not be exceeded for the forward error-correction (FEC) scheme to function correctly. Each receiver implementation therefore has a minimum required SNR to meet this FEC threshold. This SNR, together with the noise characteristics of the optical network, determines the minimum transmitter power.
 
 \subsection{Noise}
 % \subsubsection{Shot Noise}
-The relationship between SNR and transmitter power \(P_\mathrm{tx}\) depends on the dominant source of noise in the network. Optical access networks typically operate over short lengths at low power, so amplifiers can be omitted and non-linear noise neglected, leaving shot noise as the dominant impairment. The shot noise power at the receiver is \(2h\nu B_\mathrm{eff}\), where \(B_\mathrm{eff}\) is the bandwidth of the photodetector; this can be matched to the bandwidth of the received signal after the 1:\(K\) splitter in \cref{fig:pon} with a bandpass filter.  The power received by each ONU is \(P_\mathrm{tx}/\Gamma\), where $\Gamma$ is the loss from OLT to ONU. This gives a per-ONU NSR of
+The relationship between SNR and transmitter power \(P_\mathrm{tx}\) depends on the dominant source of noise in the network. Optical access networks typically operate over short lengths at low power, so amplifiers can be omitted and non-linear noise neglected, leaving shot noise as the dominant impairment. The shot noise power at the receiver is \(2h\nu B_\mathrm{eff}\), where \(B_\mathrm{eff}\) is the bandwidth of the photodetector; this can be matched to the bandwidth of the received signal after the 1:\(K\) splitter in \cref{fig:pon} with a bandpass filter.  The power received by each ONU is \(P_\mathrm{tx}/K\Gamma\), where $\Gamma$ is the loss from OLT to ONU. This gives a per-ONU NSR of
 \begin{equation}
-    \mathrm{NSR} = \frac{2\Gamma h\nu B_\mathrm{eff}}{P_\mathrm{tx}} + \mathrm{NSR}_0,
+    \mathrm{NSR} = \frac{2K\Gamma h\nu B_\mathrm{eff}}{P_\mathrm{tx}} + \mathrm{NSR}_0,
     \label{eq:snr_shot}
 \end{equation}
 where NSR = 1/SNR  and $\mathrm{NSR}_0$ is the NSR at the OLT. Rearranging gives the transmitted power as
 \begin{equation}
-    P_\mathrm{tx} = \frac{2\Gamma h\nu B_\mathrm{eff}}{\mathrm{NSR} - \mathrm{NSR}_0}.
+    P_\mathrm{tx} = \frac{2K\Gamma h\nu B_\mathrm{eff}}{\mathrm{NSR} - \mathrm{NSR}_0}.
 \end{equation}
 The energy per bit transmitted is then
 \begin{equation}
-    E_\mathrm{tx} = \frac{P_\mathrm{tx}}{KR_s \log_2(M)}.
+    E_\mathrm{tx} = \frac{P_\mathrm{tx}}{KR_s \log_2(M)} = \frac{2\Gamma h\nu}{(\mathrm{NSR} - \mathrm{NSR}_0)\log_2(M)}.
     \label{eq:tx_bit_energy}
 \end{equation}
+when $B_\mathrm{eff} = R_s$ with Nyquist pulse shaping and bandpass filtering at the receiver.
 
 % \subsubsection{Amplifier and Non-Linear Noise}
 % Long-reach access networks require EDFAs in the trunk fibre, in which case amplifier and non-linear noise can no longer be neglected. Each EDFA with gain \(G\) and noise figure \(\mathrm{NF}\) (dB) operating over a full WDM bandwidth \(B\) contributes an ASE noise power
@@ -474,180 +452,73 @@ The decrease in threshold SNR for longer observation lengths suggests that the p
 
 
 \subsection{Combined Performance}
-The lowest energy consumption required to achieve the FEC limit for each combination of frequency and phase recovery algorithm is compared in \cref{fig:energy_split}. The choice of phase recovery algorithm dominates the change in total energy, with Viterbi \& Viterbi consuming approximately 300\,fJ/bit more than Pilots-Only correction. Amortisation over more symbols means that frequency recovery is less significant, with blind R\&B only contributing approximately 40\,fJ/bit more than DK. Transmitter energy is negligible in the shot-noise regime, and is only significant for \(K = 1\) under amplifier and nonlinear noise. The exact energy consumption of each implementation and the corresponding FEC SNR are shown in \cref{tab:energy_sys}. The high contribution from receiver energy is reflected in the low number of bits used for fixed-point arithmetic, where the increase in computational cost from higher precision outweighs any gains in transmitter efficiency from a reduced FEC SNR. The DK estimator with Pilots-Only phase correction offers the lowest combined energy at a comparatively low FEC SNR. However, if the CFO remains constant over a much longer period, then the estimate can be applied over more symbols and the per-symbol energy can be neglected. This favours the high performance offered by blind R\&B, making it more efficient than DK as shown in \cref{tab:energy_sys_no_fr}.
+The best performance achieved by each carrier recovery combination is shown in \cref{tab:min_fec_snr}. The most computationally expensive combination of blind R\&B and Viterbi \& Viterbi achieves the lowest FEC SNR. DK and data-aided R\&B exhibit almost identical best-case performance.
+\begin{table}[H]
+    \centering
+    \small
+    \caption{Minimum mean FEC SNR achievable by each frequency/phase recovery pair over the fixed-point precision grid (energy cost disregarded), with the precision combo at which the minimum occurs.}
+    \label{tab:min_fec_snr}
+    \begin{tabular}{llcc}
+        \toprule
+        FR & PR & Min FEC SNR \(\pm\,\sigma\) (dB) & \((n_\mathrm{FR}, n_\mathrm{PR})\)  \\
+        \midrule
+        DK                & Pilots & \(7.94 \pm 0.40\)  & \((14, 8)\)  \\
+        DK                & V\&V   & \(7.64 \pm 0.25\)  & \((14, 8)\)  \\
+        R\&B              & Pilots & \(7.93 \pm 0.40\)  & \((12, 14)\) \\
+        R\&B              & V\&V   & \(7.64 \pm 0.27\)  & \((10, 8)\)  \\
+        R\&B blind (D=512)       & Pilots & \(7.50 \pm 0.08\)  & \((12, 10)\) \\
+        R\&B blind (D=256)       & V\&V   & \(\bm{7.39 \pm 0.08}\) & \((14, 10)\) \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+The best-case performance is not of interest in an energy-efficient design. Instead we wish to find the implementation that uses the least system energy to achieve acceptable performance. \Cref{fig:cr_energy_breakdown} shows the minimum combined energy required to reach the pre-FEC threshold for each frequency/phase recovery pair, with the energy-optimal fixed-point precision and the corresponding energy breakdown listed in \cref{tab:energy_sys}. Amortisation means phase recovery dominates the receiver energy. The high complexity of Viterbi \& Viterbi means that the optimal implementation uses few bits of precision to reduce the receiver energy at the cost of a high FEC SNR. Viterbi \& Viterbi evidently suffers more from this reduced precision than pilots-only as quantisation error accumulates over multiple operations, resulting in greater energy consumption by the transmitter and receiver. The choice of frequency recovery algorithm is less significant, with DK saving $\approx 30$ fJ/bit over R\&B when a CFO estimate is applied to each subframe (3712 symbols). 
 
 \begin{figure}[H]
     \centering
-    \begin{subfigure}{\textwidth}
-        \centering
-        \includegraphics[width=0.6\textwidth]{shot_noise_bar.png}
-        \caption{Shot-noise limited (10\,km passive-split PON).}
-    \end{subfigure}
-    \begin{subfigure}{\textwidth}
-        \centering
-        \includegraphics[width=0.6\textwidth]{amp_noise_bar.png}
-        \caption{Amplified link (3\,$\times$\,80\,km EDFA spans).}
-    \end{subfigure}
-    \caption{System energy split by component for each FR/PR algorithm combination and splitting ratio $K$ (left: \(K = 1\), middle: \(K = 10\), right: \(K = 20\)).}
-    \label{fig:energy_split}
+    \includegraphics[width=0.6\textwidth]{shot_noise_bar.png}
+    \caption{Energy breakdown for carrier recovery. Left: (20 km, 1:512). Right: (80 km, 1:16).}
+    \label{fig:cr_energy_breakdown}
 \end{figure}
 
-
 \begin{table}[H]
     \centering
-    \tiny
-    \caption{Minimum combined per-bit energy for the transmitter and carrier recovery, in fJ/bit, for the two link regimes.}
+    \small
+    \caption{Energy-optimal fixed-point configuration for each frequency/phase recovery pair under the 35\,dB flat-loss shot-noise model. Energies in fJ/bit; results are independent of the splitting ratio \(K\).}
     \label{tab:energy_sys}
-
-    \begin{subtable}{\textwidth}
-        \centering
-        \caption{10\,km passive-split PON (shot-noise limited).}
-        \label{tab:energy_shot}
-        \begin{tabular}{llrccc}
-            \toprule
-            FR & PR & $K$ & $E_\mathrm{sys} \pm \sigma$ (fJ/bit) & FEC SNR (dB) & $(n_\mathrm{FR}, n_\mathrm{PR})$ \\
-            \midrule
-            \multirow{6}{*}{DK}
-                & \multirow{3}{*}{Pilots}
-                    &   1 & $\bm{0.922 \pm 0.0044}$ & $9.76 \pm 0.89$ & $(2, 2)$ \\
-                & &  10 & $\bm{0.922 \pm 0.0044}$ & $9.76 \pm 0.89$ & $(2, 2)$ \\
-                & &  20 & $\bm{0.922 \pm 0.0044}$ & $9.76 \pm 0.89$ & $(2, 2)$ \\
-            \cmidrule(lr){2-6}
-                & \multirow{3}{*}{V\&V}
-                    &   1 & $284   \pm 0.64$   & $23.2 \pm 5.4$ & $(2, 2)$ \\
-                & &  10 & $284   \pm 0.64$   & $23.2 \pm 5.4$ & $(2, 2)$ \\
-                & &  20 & $284   \pm 0.64$   & $23.2 \pm 5.4$ & $(2, 2)$ \\
-            \midrule
-            \multirow{6}{*}{R\&B}
-                & \multirow{3}{*}{Pilots}
-                    &   1 & $27.2  \pm 0.0026$ & $9.30 \pm 0.61$ & $(2, 2)$ \\
-                & &  10 & $27.2  \pm 0.0026$ & $9.30 \pm 0.61$ & $(2, 2)$ \\
-                & &  20 & $27.2  \pm 0.0026$ & $9.30 \pm 0.61$ & $(2, 2)$ \\
-            \cmidrule(lr){2-6}
-                & \multirow{3}{*}{V\&V}
-                    &   1 & $310   \pm 0.55$   & $23.6 \pm 4.2$ & $(2, 2)$ \\
-                & &  10 & $310   \pm 0.55$   & $23.6 \pm 4.2$ & $(2, 2)$ \\
-                & &  20 & $310   \pm 0.55$   & $23.6 \pm 4.2$ & $(2, 2)$ \\
-            \midrule
-            \multirow{6}{*}{R\&B blind (D = 32)}
-                & \multirow{3}{*}{Pilots}
-                    &   1 & $38.7  \pm 0.0028$ & $9.40 \pm 0.63$ & $(2, 2)$ \\
-                & &  10 & $38.7  \pm 0.0028$ & $9.40 \pm 0.63$ & $(2, 2)$ \\
-                & &  20 & $38.7  \pm 0.0028$ & $9.40 \pm 0.63$ & $(2, 2)$ \\
-            \cmidrule(lr){2-6}
-                & \multirow{3}{*}{V\&V}
-                    &   1 & $321   \pm 0.48$   & $22.1 \pm 4.4$ & $(2, 2)$ \\
-                & &  10 & $321   \pm 0.48$   & $22.1 \pm 4.4$ & $(2, 2)$ \\
-                & &  20 & $321   \pm 0.48$   & $22.1 \pm 4.4$ & $(2, 2)$ \\
-            \bottomrule
-        \end{tabular}
-    \end{subtable}
-
-    \vspace{1em}
-
-    \begin{subtable}{\textwidth}
-        \centering
-        \caption{3\,$\times$\,80\,km amplified link (ASE\,+\,NLI limited).}
-        \label{tab:energy_amp}
-        \begin{tabular}{llrccc}
-            \toprule
-            FR & PR & $K$ & $E_\mathrm{sys} \pm \sigma$ (fJ/bit) & FEC SNR (dB) & $(n_\mathrm{FR}, n_\mathrm{PR})$ \\
-            \midrule
-            \multirow{6}{*}{DK}
-                & \multirow{3}{*}{Pilots}
-                    &   1 & $\bm{3.19  \pm 0.51}$   & $9.76 \pm 0.89$ & $(2, 2)$ \\
-                & &  10 & $\bm{1.13  \pm 0.051}$  & $9.76 \pm 0.89$ & $(2, 2)$ \\
-                & &  20 & $\bm{1.02  \pm 0.026}$  & $9.76 \pm 0.89$ & $(2, 2)$ \\
-            \cmidrule(lr){2-6}
-                & \multirow{3}{*}{V\&V}
-                    &   1 & $321   \pm 29$     & $20.2 \pm 3.9$ & $(6, 2)$ \\
-                & &  10 & $285   \pm 1.8$    & $18.6 \pm 3.3$ & $(2, 2)$ \\
-                & &  20 & $284   \pm 0.94$   & $18.6 \pm 3.3$ & $(2, 2)$ \\
-            \midrule
-            \multirow{6}{*}{R\&B}
-                & \multirow{3}{*}{Pilots}
-                    &   1 & $29.2  \pm 0.31$   & $9.30 \pm 0.61$ & $(2, 2)$ \\
-                & &  10 & $27.4  \pm 0.031$  & $9.30 \pm 0.61$ & $(2, 2)$ \\
-                & &  20 & $27.3  \pm 0.015$  & $9.30 \pm 0.61$ & $(2, 2)$ \\
-            \cmidrule(lr){2-6}
-                & \multirow{3}{*}{V\&V}
-                    &   1 & $354   \pm 28$     & $21.7 \pm 3.3$ & $(2, 2)$ \\
-                & &  10 & $313   \pm 2.1$    & $20.6 \pm 3.0$ & $(2, 2)$ \\
-                & &  20 & $311   \pm 1.1$    & $20.6 \pm 3.0$ & $(2, 2)$ \\
-            \midrule
-            \multirow{6}{*}{R\&B blind (D = 32)}
-                & \multirow{3}{*}{Pilots}
-                    &   1 & $40.8  \pm 0.33$   & $9.40 \pm 0.63$ & $(2, 2)$ \\
-                & &  10 & $38.9  \pm 0.033$  & $9.40 \pm 0.63$ & $(2, 2)$ \\
-                & &  20 & $38.8  \pm 0.016$  & $9.40 \pm 0.63$ & $(2, 2)$ \\
-            \cmidrule(lr){2-6}
-                & \multirow{3}{*}{V\&V}
-                    &   1 & $351   \pm 19$     & $18.4 \pm 3.5$ & $(2, 2)$ \\
-                & &  10 & $323   \pm 2.0$    & $19.3 \pm 3.0$ & $(2, 2)$ \\
-                & &  20 & $322   \pm 1.0$    & $19.3 \pm 3.0$ & $(2, 2)$ \\
-            \bottomrule
-        \end{tabular}
-    \end{subtable}
+    \begin{tabular}{llcccc}
+        \toprule
+        FR & PR & \((n_\mathrm{FR}, n_\mathrm{PR})\) & \(E_\mathrm{tx}\) / \(E_\mathrm{rx}\) & \(E_\mathrm{sys} \pm \sigma\) & FEC SNR \(\pm\,\sigma\) (dB) \\
+        \midrule
+        DK                       & Pilots & \((4,4)\) & \(26.5\) / \(3.07\) & \(\bm{29.5 \pm 3.4}\)  & \(\bm{8.11 \pm 0.50}\) \\
+        DK                       & V\&V   & \((6,4)\) & \(225\) / \(956\)   & \(1181 \pm 40\)        & \(17.2 \pm 1.3\) \\
+        R\&B                     & Pilots & \((2,4)\) & \(32.6\) / \(28.5\) & \(61.1 \pm 4.3\)       & \(9.01 \pm 0.54\) \\
+        R\&B                     & V\&V   & \((2,4)\) & \(238\) / \(980\)   & \(1218 \pm 25\)        & \(17.6 \pm 0.71\) \\
+        R\&B blind (\(D{=}32\))  & Pilots & \((2,4)\) & \(33.0\) / \(40.0\) & \(73.0 \pm 4.0\)       & \(9.06 \pm 0.51\) \\
+        R\&B blind (\(D{=}64\))  & V\&V   & \((2,2)\) & \(748\) / \(329\)   & \(1077 \pm 987\)       & \(19.7 \pm 4.6\) \\
+        \bottomrule
+    \end{tabular}
 \end{table}
-
+If the CFO remains constant over a longer period, the energy contribution from CFO estimation becomes negligible. With the frequency recovery energy amortised away, the energy-optimal pilots-only configurations are listed in \cref{tab:energy_sys_no_fr}. Blind R\&B now becomes the most efficient frequency recovery algorithm, since its high observation length lowers the FEC SNR at no per-symbol cost, narrowly beating DK.
 
 \begin{table}[H]
     \centering
-    \tiny
-    \caption{Minimum combined per-bit energy when the frequency recovery energy is amortised away.}
+    \small
+    \caption{Energy-optimal configuration when the frequency recovery energy is amortised away (CFO constant over many symbols). Energies in fJ/bit; results are independent of the splitting ratio \(K\).}
     \label{tab:energy_sys_no_fr}
-
-    \begin{subtable}{\textwidth}
-        \centering
-        \caption{10\,km passive-split PON (shot-noise limited).}
-        \label{tab:energy_shot_no_fr}
-        \begin{tabular}{llrccc}
-            \toprule
-            FR & PR & $K$ & $E_\mathrm{sys} \pm \sigma$ (fJ/bit) & FEC SNR (dB) & $(n_\mathrm{FR}, n_\mathrm{PR})$ \\
-            \midrule
-            \multirow{3}{*}{DK}
-                & \multirow{3}{*}{Pilots}
-                    &   1 & $0.592 \pm 0.0022$   & $8.84 \pm 0.59$ & $(14, 2)$ \\
-                & &  10 & $0.592 \pm 0.0022$   & $8.84 \pm 0.59$ & $(14, 2)$ \\
-                & &  20 & $0.592 \pm 0.0022$   & $8.84 \pm 0.59$ & $(14, 2)$ \\
-            \midrule
-            \multirow{3}{*}{R\&B blind (D = 512)}
-                & \multirow{3}{*}{Pilots}
-                    &   1 & $\bm{0.590 \pm 0.00049}$  & $8.39 \pm 0.15$ & $(12, 2)$ \\
-                & &  10 & $\bm{0.590 \pm 0.00049}$  & $8.39 \pm 0.15$ & $(12, 2)$ \\
-                & &  20 & $\bm{0.590 \pm 0.00049}$  & $8.39 \pm 0.15$ & $(12, 2)$ \\
-            \bottomrule
-        \end{tabular}
-    \end{subtable}
-
-    \vspace{1em}
-
-    \begin{subtable}{\textwidth}
-        \centering
-        \caption{3\,$\times$\,80\,km amplified link (ASE\,+\,NLI limited).}
-        \label{tab:energy_amp_no_fr}
-        \begin{tabular}{llrccc}
-            \toprule
-            FR & PR & $K$ & $E_\mathrm{sys} \pm \sigma$ (fJ/bit) & FEC SNR (dB) & $(n_\mathrm{FR}, n_\mathrm{PR})$\\
-            \midrule
-            \multirow{3}{*}{DK}
-                & \multirow{3}{*}{Pilots}
-                    &   1 & $2.40  \pm 0.26$    & $8.84 \pm 0.59$ & $(14, 2)$ \\
-                & &  10 & $0.759 \pm 0.026$   & $8.84 \pm 0.59$ & $(14, 2)$ \\
-                & &  20 & $0.667 \pm 0.013$   & $8.84 \pm 0.59$ & $(14, 2)$ \\
-            \midrule
-            \multirow{3}{*}{R\&B blind (D = 512)}
-                & \multirow{3}{*}{Pilots}
-                    &   1 & $\bm{2.21  \pm 0.057}$   & $8.39 \pm 0.15$ & $(12, 2)$ \\
-                & &  10 & $\bm{0.739 \pm 0.0057}$  & $8.39 \pm 0.15$ & $(12, 2)$ \\
-                & &  20 & $\bm{0.658 \pm 0.0029}$  & $8.39 \pm 0.15$ & $(12, 2)$ \\
-            \bottomrule
-        \end{tabular}
-    \end{subtable}
+    \begin{tabular}{llcccc}
+        \toprule
+        FR & PR & \((n_\mathrm{FR}, n_\mathrm{PR})\) & \(E_\mathrm{tx}\) / \(E_\mathrm{rx}\) & \(E_\mathrm{sys} \pm \sigma\) & FEC SNR \(\pm\,\sigma\) (dB) \\
+        \midrule
+        DK                       & Pilots & \((8,4)\)  & \(25.8\) / \(1.91\) & \(27.7 \pm 2.8\)        & \(8.01 \pm 0.44\) \\
+        R\&B blind (\(D{=}256\)) & Pilots & \((12,4)\) & \(23.1\) / \(1.91\) & \(\bm{25.0 \pm 0.39}\)  & \(\bm{7.55 \pm 0.07}\) \\
+        \bottomrule
+    \end{tabular}
 \end{table}
+
+   
 
 \section{Conclusions}
-The robustness to both additive and phase noise of QPSK allows the phase recovery block of a coherent receiver to be dramatically simplified by just using pilot symbols with no noticeable drop in performance, resulting in considerable energy savings. Frequency recovery can also be implemented with simple algorithms to save energy; however, the efficacy of doing so depends on how often the CFO must be estimated. The difference in energy consumption between different carrier recovery implementations is dominated by the receiver, and the optimal implementation does not seem to depend on the noise regime of the network.
+The robustness to both additive and phase noise of QPSK allows the phase recovery block of a coherent receiver to be dramatically simplified by just using pilot symbols with no noticeable drop in performance, resulting in considerable energy savings. Frequency recovery can also be implemented with simple algorithms to save energy; however, the efficacy of doing so depends on how often the CFO must be estimated. For access networks dominated by shot noise where dispersive effects have been compensated, carrier recovery performance is independent of the length and splitting ratio when constrained to a given loss from OLT to ONU.
 
 \printbibliography
 

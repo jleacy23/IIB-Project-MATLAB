@@ -30,14 +30,17 @@ classdef grad_precision_fec < matlab.unittest.TestCase
 %                       decimated update of N uses N*Mu to keep the mean
 %                       per-sample step size constant)
 %     NTaps_vec      = [3 5 7]
+%     L_km_vec       = [80 20]   (network configs: 80 km/1:16,
+%                                 20 km/1:512 — see K_vec)
 %
 %   Output  ->  grad_precision_fec_sweep.mat
-%     fecSNR  - [NGradFL x NUpdateStep x 2 x 2 x NNTaps x NTrials]
+%     fecSNR  - [NGradFL x NUpdateStep x 2 x 2 x NNTaps x NL x NTrials]
 %               FEC SNR [dB]  (3rd dim: 1 = SignOnly false,
 %               2 = SignOnly true; 4th dim: 1 = fixed Mu,
-%               2 = Mu scaled by UpdateStep; 5th dim: NTaps_vec).
+%               2 = Mu scaled by UpdateStep; 5th dim: NTaps_vec;
+%               6th dim: L_km_vec).
 %               NaN where the BER curve never crosses the FEC limit.
-%     berAll  - [NGradFL x NUpdateStep x 2 x 2 x NNTaps x NTrials x NSNR]
+%     berAll  - [NGradFL x NUpdateStep x 2 x 2 x NNTaps x NL x NTrials x NSNR]
 %               raw BER.
 %     params  - struct of the sweep parameter vectors.
 %
@@ -94,10 +97,11 @@ classdef grad_precision_fec < matlab.unittest.TestCase
         NOut        = 8000
         PLanes      = 32            % parallel lanes for equalize_fxp
 
-        % Channel
-        L_km    = 20            % fibre length [km]
-        DGDSpec = 0.1           % PMD coeff [ps/sqrt(km)]
-        N_pmd   = 1
+        % Channel — two network configs (fibre length / splitting ratio)
+        L_km_vec = [80, 20]     % fibre lengths [km] (80 km / 20 km)
+        K_vec    = [16, 512]    % 1:K split per L (1:16 / 1:512)
+        DGDSpec  = 0.1          % PMD coeff [ps/sqrt(km)]
+        N_pmd    = 1
 
         % High-precision Viterbi-Viterbi carrier recovery
         VV_NTaps       = 5
@@ -144,11 +148,12 @@ classdef grad_precision_fec < matlab.unittest.TestCase
             NSO = 2;
             NMS = 2;                 % 1 = fixed Mu, 2 = Mu * UpdateStep
             NNT = numel(P.NTaps_vec);
+            NL  = numel(P.L_km_vec);
             NTR = P.NTrials;
             NSN = numel(P.SNR_dB_vec);
 
-            fecSNR = nan(NFL, NUS, NSO, NMS, NNT, NTR);
-            berAll = nan(NFL, NUS, NSO, NMS, NNT, NTR, NSN);
+            fecSNR = nan(NFL, NUS, NSO, NMS, NNT, NL, NTR);
+            berAll = nan(NFL, NUS, NSO, NMS, NNT, NL, NTR, NSN);
             signOnlyVals = [false, true];
 
             T_vv = carrier_recovery.fxp_types(P.VV_FxpConfig);
@@ -187,14 +192,18 @@ classdef grad_precision_fec < matlab.unittest.TestCase
                                     gradFL, SignOnly, UpdateStep, muVal, ...
                                     ntapsVal, so, NSO, us, NUS, ...
                                     ms, NMS, nt, NNT);
-                                for tr = 1:NTR
-                                    ber = grad_precision_fec.snrSweep( ...
-                                        P, T_eq, T_vv, UpdateStep, ...
-                                        SignOnly, muVal, ntapsVal, tr);
-                                    berAll(fl, us, so, ms, nt, tr, :) = ber;
-                                    fecSNR(fl, us, so, ms, nt, tr) = ...
-                                        grad_precision_fec.fecCrossing( ...
-                                            P.SNR_dB_vec, ber, P.FEC_BER);
+                                for nl = 1:NL
+                                    lVal = P.L_km_vec(nl);
+                                    for tr = 1:NTR
+                                        ber = grad_precision_fec.snrSweep( ...
+                                            P, T_eq, T_vv, UpdateStep, ...
+                                            SignOnly, muVal, ntapsVal, ...
+                                            lVal, tr);
+                                        berAll(fl, us, so, ms, nt, nl, tr, :) = ber;
+                                        fecSNR(fl, us, so, ms, nt, nl, tr) = ...
+                                            grad_precision_fec.fecCrossing( ...
+                                                P.SNR_dB_vec, ber, P.FEC_BER);
+                                    end
                                 end
                             end
                         end
@@ -209,6 +218,8 @@ classdef grad_precision_fec < matlab.unittest.TestCase
                 'SignOnly_dim',   {{'false', 'true'}}, ...
                 'MuScaling_dim',  {{'fixed', 'scaled_by_UpdateStep'}}, ...
                 'NTaps_vec',      P.NTaps_vec, ...
+                'L_km_vec',       P.L_km_vec, ...
+                'K_vec',          P.K_vec, ...
                 'Mu',             P.Mu, ...
                 'FEC_BER',        P.FEC_BER);             %#ok<NASGU>
 
@@ -299,7 +310,7 @@ classdef grad_precision_fec < matlab.unittest.TestCase
         end
 
         % ---- One SNR sweep for a given grid point / trial ------------
-        function ber = snrSweep(P, T_eq, T_vv, UpdateStep, SignOnly, muVal, ntapsVal, trial)
+        function ber = snrSweep(P, T_eq, T_vv, UpdateStep, SignOnly, muVal, ntapsVal, lVal, trial)
             NSN = numel(P.SNR_dB_vec);
             ber = nan(1, NSN);
 
@@ -311,7 +322,7 @@ classdef grad_precision_fec < matlab.unittest.TestCase
             for si = 1:NSN
                 % --- Constant PMD realisation for every run ---
                 rng(P.PmdSeed);
-                rxSig = channel.add_pmd(txSig, P.L_km, P.SpS, ...
+                rxSig = channel.add_pmd(txSig, lVal, P.SpS, ...
                     P.Rs, P.DGDSpec, P.N_pmd);
 
                 % --- Per-trial / per-SNR AWGN ---

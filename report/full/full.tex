@@ -5,6 +5,8 @@
 \usepackage{subcaption}
 \usepackage{booktabs}
 \usepackage{parskip}
+\usepackage{amsmath}
+\usepackage{amssymb}
 \usepackage{cleveref}
 \usepackage{gensymb}
 \usepackage{biblatex}
@@ -234,6 +236,158 @@ The total energy consumed per bit for the network is given by
     \label{eq:sys_energy}
 \end{equation}
 where \(\eta\) is the wall-plug efficiency of the OLT laser.
+
+\chapter{Equalisation}\label{chapter:carrier_recovery}
+
+\section{Introduction}
+\section{Static Equalisation}
+\subsection{Equalisation Procedure}
+Chromatic dispersion is a static, all-pass impairment and is removed by an equaliser that applies the inverse of the channel response. From the channel model of \cref{chapter:energy}, the compensating transfer function is
+\begin{equation}
+    H_\mathrm{eq}(\omega) = \exp\!\left(-j\,\frac{D\lambda^2}{4\pi c}\,L\,\omega^2\right),
+    \label{eq:cd_tf}
+\end{equation}
+whose inverse Fourier transform gives the continuous-time impulse response
+\begin{equation}
+    h(t) = \sqrt{\frac{c}{j D \lambda^2 L}}\;\exp\!\left(j\,\frac{\pi c\,t^2}{D\lambda^2 L}\right).
+    \label{eq:cd_ir}
+\end{equation}
+In the time domain the equaliser is a single FIR filter per polarisation whose taps are \cref{eq:cd_ir} sampled at the receiver period \(T\) and truncated to \(N_\mathrm{CD}\) coefficients. Alternatively, \cref{eq:cd_tf} can be applied directly in the frequency domain. As the data stream is continuous, the filter is applied block-by-block by overlap-save: each block of \(N\) samples is transformed with an FFT, multiplied by the precomputed samples of \(H_\mathrm{eq}\), and inverse transformed, discarding the first \(N_\mathrm{CD}-1\) samples of every block to remove the circular-convolution wrap-around. This leaves \(N - N_\mathrm{CD} + 1\) valid output samples per block.
+
+\subsection{Filter Length}
+The equaliser must span the channel memory introduced by dispersion. The pulse spread across the signal bandwidth is \(\Delta\tau = D\,\Delta\lambda\,L\), so the number of taps required is
+\begin{equation}
+    N_\mathrm{CD} = \frac{\Delta\tau}{T} + 1,
+    \label{eq:cd_len}
+\end{equation}
+where \(T\) is the receiver sampling period. With an oversampling rate of 2, \cref{tab:cd_taps} lists the taps needed for the two networks of \cref{chapter:energy}.
+
+\begin{table}[H]
+    \centering
+    \caption{Taps to compensate chromatic dispersion for both network models.}
+    \label{tab:cd_taps}
+    \begin{tabular}{lcc}
+        \toprule
+        $L$ (km) & $\Delta\tau$ (ps) & $N_\mathrm{CD}$ \\
+        \midrule
+        20 & 83  & 6 \\
+        80 & 332 & 21 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Computational Complexity}
+A radix-2 FFT of size \(N\) decomposes into \(\log_2 N\) stages, each containing \(N/2\) butterflies. Each butterfly applies one twiddle-factor complex multiplication followed by a complex addition and a complex subtraction. With 4 real multiplications and 2 real additions per complex multiplication, and 2 real additions per complex addition, a butterfly costs 4 real multiplications and \(2 + 2\times 2 = 6\) real additions. The full transform therefore requires
+\begin{equation}
+    N_M^\mathrm{FFT} = 2N\log_2 N, \qquad N_A^\mathrm{FFT} = 3N\log_2 N.
+\end{equation}
+Each overlap-save block needs a forward FFT, an inverse FFT of equal cost, and \(N\) complex multiplications by the precomputed filter spectrum (the filter FFT is computed once offline as the channel is static). This is \(2N_M^\mathrm{FFT} + 4N\) real multiplications and \(2N_A^\mathrm{FFT} + 2N\) real additions per block, shared over the \(N - N_\mathrm{CD} + 1\) valid outputs. Scaling by the oversampling ratio \(S = f/R_s\) to express the cost per symbol gives
+\begin{equation}
+\begin{aligned}
+    N_{M,\mathrm{OS}} &= S\,\frac{4N\log_2 N + 4N}{N - N_\mathrm{CD} + 1}, \\[2pt]
+    N_{A,\mathrm{OS}} &= S\,\frac{6N\log_2 N + 2N}{N - N_\mathrm{CD} + 1}.
+\end{aligned}
+\end{equation}
+In the time domain, direct convolution with the \(N_\mathrm{CD}\)-tap complex filter costs \(N_\mathrm{CD}\) complex multiplications and \(N_\mathrm{CD}-1\) complex additions per output sample. Converting to real operations and scaling by \(S\), the per-symbol cost is
+\begin{equation}
+    N_{M,\mathrm{TD}} = 4 S N_\mathrm{CD}, \qquad N_{A,\mathrm{TD}} = S\left(4N_\mathrm{CD} - 2\right).
+\end{equation}
+The FFT can be simplified by rounding all twiddle-factors to a power of 2. This eliminates all real multiplications in performing the FFT/IFFT, replacing them with bit-shifts of negligible cost.
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lccc}
+        \toprule
+        Operation & Time-domain & Overlap-save & Overlap-save (\(2^k\) twiddle) \\
+        \midrule
+        Real multiplications & \(4 S N_\mathrm{CD}\)        & \(S\dfrac{4N\log_2 N + 4N}{N - N_\mathrm{CD} + 1}\) & \(S\dfrac{4N}{N - N_\mathrm{CD} + 1}\) \\[8pt]
+        Real additions       & \(S\left(4N_\mathrm{CD}-2\right)\) & \(S\dfrac{6N\log_2 N + 2N}{N - N_\mathrm{CD} + 1}\) & \(S\dfrac{6N\log_2 N + 2N}{N - N_\mathrm{CD} + 1}\) \\
+        \bottomrule
+    \end{tabular}
+    \caption{Per-symbol computational cost of the time-domain and overlap-save chromatic dispersion equalisers, including overlap-save with twiddle factors rounded to a power of 2.}
+    \label{tab:cd_cost}
+\end{table}
+Evaluating these expressions with the \(N_\mathrm{CD}\) of \cref{tab:cd_taps} gives the per-symbol operation counts for each network in \cref{tab:cd_cost_eval}.
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lcccccc}
+        \toprule
+        & \multicolumn{2}{c}{Time-domain} & \multicolumn{2}{c}{Overlap-save} & \multicolumn{2}{c}{Overlap-save (\(2^k\) twiddle)} \\
+        \cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+        \(L\) (km) & RM & RA & RM & RA & RM & RA \\
+        \midrule
+        20 &  &  &  &  &  &  \\
+        80 &  &  &  &  &  &  \\
+        \bottomrule
+    \end{tabular}
+    \caption{Real multiplications (RM) and real additions (RA) per symbol for each chromatic dispersion equaliser implementation, evaluated with the \(N_\mathrm{CD}\) and \(N\) of \cref{tab:cd_taps}.}
+    \label{tab:cd_cost_eval}
+\end{table}
+
+\section{Adaptive Equalisation}
+\subsection{Equalisation Procedure}
+Tracking PMD is done with a 2x2 MIMO equaliser that employs 4 finite impulse response (FIR) filters to give outputs
+\begin{equation}
+    x_\mathrm{out} = \mathbf{h}_{xx}^H \mathbf{x}_\mathrm{in} + \mathbf{h}_{xy}^H \mathbf{y}_\mathrm{in}, \quad y_\mathrm{out} = \mathbf{h}_{yx}^H \mathbf{x}_\mathrm{in} + \mathbf{h}_{yy}^H \mathbf{y}_\mathrm{in}.
+    \label{eq:adaptive_output}
+\end{equation}
+The filter weights are updated using an error estimate as
+\begin{equation}
+    \begin{aligned}
+    \mathbf{h_{xx}}\leftarrow \mathbf{h_{xx}} + \mu e_x \mathbf{x}_\mathrm{in}x_\mathrm{out}^*, \quad \mathbf{h_{xy}}\leftarrow \mathbf{h_{xy}} + \mu e_x \mathbf{y}_\mathrm{in}x_\mathrm{out}^*, \\
+    \mathbf{h_{yx}}\leftarrow \mathbf{h_{yx}} + \mu e_y \mathbf{x}_\mathrm{in}y_\mathrm{out}^*, \quad \mathbf{h_{yy}}\leftarrow \mathbf{h_{yy}} + \mu e_y \mathbf{y}_\mathrm{in}y_\mathrm{out}^*.
+    \end{aligned}
+    \label{eq:adaptive_update}
+\end{equation}
+where the convergence parameter $\mu$ is chosen to be a power of 2 for hardware simplicity.The error terms are produced blindly using the constant modulus algorithm (CMA) \cite{coherent_receivers}, which exploits the fact that an ideal QPSK constellation lies on a circle of fixed radius. CMA minimises the cost function $J = \mathbb{E}\!\left[\left(|x_\mathrm{out}|^2 - R\right)^2\right]$, where the dispersion constant $R = \mathbb{E}[|s|^4]/\mathbb{E}[|s|^2]$ is set by the transmitted symbols $s$ and reduces to a constant for QPSK. Taking the stochastic gradient of $J$ yields the error estimates
+\begin{equation}
+    e_x = \left(R - |x_\mathrm{out}|^2\right), \quad e_y = \left(R - |y_\mathrm{out}|^2\right).
+\end{equation}
+The update step from \cref{eq:adaptive_update} can be simplified by only considering the signs of the error and output terms with no performance penalty \cite{Cardenas:14}. The output is a complex number so a complex signum function is defined as
+\begin{equation}
+    csgn(z) = sgn(Re(z)) + jsgn(Im(z)).
+\end{equation}
+
+\subsection{Filter Length}
+There must be sufficient taps in the filter to cover the channel memory introduced by PMD. The mean differential group delay (DGD) \(\langle\Delta \tau\rangle = D\sqrt{L}\) where \(D\) is the DGD parameter and \(L\) is the link length. The instantaneous DGD is modelled by a Maxwellian distribution \cite{Mantzoukis:11}
+\begin{equation}
+    \mathbb{P}[\Delta \tau > x] \approx \frac{4}{\pi}\frac{x}{\langle\Delta \tau \rangle}\exp\left(-\frac{4x^2}{\pi {\langle\Delta\tau\rangle}^2}\right).
+    \label{eq:maxwellian}
+\end{equation}
+The number of taps can be found for a given outage probability from \cref{eq:maxwellian} as
+\begin{equation}
+    N = \frac{x}{T} + 1\
+\end{equation}
+where $T$ is the sampling period of the receiver. For an access network where $L \leq 80$ km, and a typical DGD parameter $D = 0.1$ ps/$\sqrt{\mathrm{km}}$ then $\langle\Delta\tau\rangle \leq 0.9$ ps. With an oversampling rate of 2, the sampling period $T = 16.4$ ps. Given that an outage probability of $10^{-12}$ only requires $x = 4.81\langle\Delta\tau\rangle = 4.3$ ps, few taps will be needed for reliable performance.
+
+
+\subsection{Computational Complexity}
+The per-sample cost of the weight updates is compared below for the direct and sign-sign implementations with $N$ taps.
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lcc}
+        \toprule
+        Operation & Direct & Sign-Sign \\
+        \midrule
+        Real multiplications & $16N + 4$ & 0\\
+        Real additions & $16N$ & $16N$ \\
+        \bottomrule
+    \end{tabular}
+    \caption{Per-symbol computational cost of the direct and sign-sign weight updates.}
+    \label{tab:update_cost}
+\end{table}
+The adaptive equaliser must be parallelised to support a 30.5 GBd symbol rate. The input samples are split into $P$ lanes, with the input vector of lane $p$
+\begin{equation}
+    \mathbf{x}_p = \left[\mathbf{x}[mP + p], \mathbf{x}[mP + p - 1], \dots, \mathbf{x}[mP + p - (N - 1)]\right].
+\end{equation}
+The update step for the shared weights is given by
+\begin{equation}
+    \Delta \mathbf{h} = \mu \sum_{p=0}^{P-1}e[p]\mathbf{x}_p x_\mathrm{out}[p].
+\end{equation}
+A natural choice for blocks of 32 symbols is $P=32$, allowing the pilot symbols with a larger modulus to be processed separately. With an oversampling rate of 2, each lane would need to operate with a sampling frequency of $ 2 \cdot 30.5 / 32 = 1.9$ GHz which is reasonable for modern CMOS. This scales the number of operations in \cref{tab:update_cost} by $P$.
+\subsection{Fixed Point Precision}
+The convergence parameter $\mu$ in \cref{eq:adaptive_update} is typically $\approx 10^{-3}$ which would require at least 10 bits of precision to represent. Computing the update term to this precison adds unnecessary computational cost, so it should instead be computed at lower precision and bit-shifted (equivalent to setting $\mu$ to a power of 2) to the least significant bits of the weights before updating. This can lead to the most significant bits being redundant. These bits waste energy when the weights change sign and when forming the outputs in \cref{eq:adaptive_output} if the weights are negative. Jiang et al. \cite{Jiang;26} propose removing these redundant bits with an optimisation over the precision of each weight and demonstrate a decrease in energy consumption with a slight performance loss. The decrease in energy consumption can be estimated directly from the frequency of sign changes in the weights and the proportion of multiplications in \cref{eq:adaptive_output} that use negative weights. For $d$ redundant bits, a sign change is equivalent to the cost of a $d$-bit addition and the additional cost in forming the outputs will be a $d$-bit multiplication.
+
+\section{Methodology}
 
 % =====================================================================
 \chapter{Carrier Recovery}\label{chapter:carrier_recovery}

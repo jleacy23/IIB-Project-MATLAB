@@ -69,100 +69,149 @@
 \@writefile{toc}{\contentsline {section}{\numberline {2.5}System Energy}{9}{}\protected@file@percent }
 \newlabel{eq:sys_energy}{{2.9}{9}{}{equation.2.9}{}}
 \newlabel{eq:sys_energy@cref}{{[equation][9][2]2.9}{[1][9][]9}{}{}{}}
-\@writefile{toc}{\contentsline {chapter}{\numberline {3}Carrier Recovery}{10}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {3}Equalisation}{10}{}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
 \newlabel{chapter:carrier_recovery}{{3}{10}{}{chapter.3}{}}
 \newlabel{chapter:carrier_recovery@cref}{{[chapter][3][]3}{[1][10][]10}{}{}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {3.1}Introduction}{10}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {3.2}Frequency Recovery}{10}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.1}Isolating CFO}{10}{}\protected@file@percent }
-\newlabel{eq:blind_noise}{{3.1}{10}{}{equation.3.1}{}}
-\newlabel{eq:blind_noise@cref}{{[equation][1][3]3.1}{[1][10][]10}{}{}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.2}Static Equalisation}{10}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.1}Equalisation Procedure}{10}{}\protected@file@percent }
+\newlabel{eq:cd_tf}{{3.1}{10}{}{equation.3.1}{}}
+\newlabel{eq:cd_tf@cref}{{[equation][1][3]3.1}{[1][10][]10}{}{}{}}
+\newlabel{eq:cd_ir}{{3.2}{10}{}{equation.3.2}{}}
+\newlabel{eq:cd_ir@cref}{{[equation][2][3]3.2}{[1][10][]10}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.2}Filter Length}{10}{}\protected@file@percent }
+\newlabel{eq:cd_len}{{3.3}{10}{}{equation.3.3}{}}
+\newlabel{eq:cd_len@cref}{{[equation][3][3]3.3}{[1][10][]10}{}{}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3.1}{\ignorespaces Taps to compensate chromatic dispersion for both network models.}}{11}{}\protected@file@percent }
+\newlabel{tab:cd_taps}{{3.1}{11}{}{table.3.1}{}}
+\newlabel{tab:cd_taps@cref}{{[table][1][3]3.1}{[1][10][]11}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.3}Computational Complexity}{11}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3.2}{\ignorespaces Per-symbol computational cost of the time-domain and overlap-save chromatic dispersion equalisers, including overlap-save with twiddle factors rounded to a power of 2.}}{11}{}\protected@file@percent }
+\newlabel{tab:cd_cost}{{3.2}{11}{}{table.3.2}{}}
+\newlabel{tab:cd_cost@cref}{{[table][2][3]3.2}{[1][11][]11}{}{}{}}
+\abx@aux@cite{0}{coherent_receivers}
+\abx@aux@segm{0}{0}{coherent_receivers}
+\abx@aux@cite{0}{Cardenas:14}
+\abx@aux@segm{0}{0}{Cardenas:14}
+\abx@aux@cite{0}{Mantzoukis:11}
+\abx@aux@segm{0}{0}{Mantzoukis:11}
+\@writefile{lot}{\contentsline {table}{\numberline {3.3}{\ignorespaces Real multiplications (RM) and real additions (RA) per symbol for each chromatic dispersion equaliser implementation, evaluated with the \(N_\mathrm  {CD}\) and \(N\) of \cref  {tab:cd_taps}.}}{12}{}\protected@file@percent }
+\newlabel{tab:cd_cost_eval}{{3.3}{12}{}{table.3.3}{}}
+\newlabel{tab:cd_cost_eval@cref}{{[table][3][3]3.3}{[1][11][]12}{}{}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.3}Adaptive Equalisation}{12}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3.1}Equalisation Procedure}{12}{}\protected@file@percent }
+\newlabel{eq:adaptive_output}{{3.7}{12}{}{equation.3.7}{}}
+\newlabel{eq:adaptive_output@cref}{{[equation][7][3]3.7}{[1][12][]12}{}{}{}}
+\newlabel{eq:adaptive_update}{{3.8}{12}{}{equation.3.8}{}}
+\newlabel{eq:adaptive_update@cref}{{[equation][8][3]3.8}{[1][12][]12}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3.2}Filter Length}{12}{}\protected@file@percent }
+\newlabel{eq:maxwellian}{{3.11}{12}{}{equation.3.11}{}}
+\newlabel{eq:maxwellian@cref}{{[equation][11][3]3.11}{[1][12][]12}{}{}{}}
+\abx@aux@cite{0}{Jiang;26}
+\abx@aux@segm{0}{0}{Jiang;26}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3.3}Computational Complexity}{13}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3.4}{\ignorespaces Per-symbol computational cost of the direct and sign-sign weight updates.}}{13}{}\protected@file@percent }
+\newlabel{tab:update_cost}{{3.4}{13}{}{table.3.4}{}}
+\newlabel{tab:update_cost@cref}{{[table][4][3]3.4}{[1][13][]13}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3.4}Fixed Point Precision}{13}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3.4}Methodology}{13}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {4}Carrier Recovery}{14}{}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{chapter:carrier_recovery}{{4}{14}{}{chapter.4}{}}
+\newlabel{chapter:carrier_recovery@cref}{{[chapter][4][]4}{[1][14][]14}{}{}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.1}Introduction}{14}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4.2}Frequency Recovery}{14}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2.1}Isolating CFO}{14}{}\protected@file@percent }
+\newlabel{eq:blind_noise}{{4.1}{14}{}{equation.4.1}{}}
+\newlabel{eq:blind_noise@cref}{{[equation][1][4]4.1}{[1][14][]14}{}{}{}}
 \abx@aux@cite{0}{Jacobsen2007}
 \abx@aux@segm{0}{0}{Jacobsen2007}
 \abx@aux@cite{0}{Andrea1994}
 \abx@aux@segm{0}{0}{Andrea1994}
-\newlabel{eq:data_noise}{{3.2}{11}{}{equation.3.2}{}}
-\newlabel{eq:data_noise@cref}{{[equation][2][3]3.2}{[1][11][]11}{}{}{}}
-\newlabel{eq:phase_blind}{{3.3}{11}{}{equation.3.3}{}}
-\newlabel{eq:phase_blind@cref}{{[equation][3][3]3.3}{[1][11][]11}{}{}{}}
-\newlabel{eq:phase_data}{{3.4}{11}{}{equation.3.4}{}}
-\newlabel{eq:phase_data@cref}{{[equation][4][3]3.4}{[1][11][]11}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.2}Rife and Boorstyn}{11}{}\protected@file@percent }
-\newlabel{eq:fft_refined}{{3.5}{11}{}{equation.3.5}{}}
-\newlabel{eq:fft_refined@cref}{{[equation][5][3]3.5}{[1][11][]11}{}{}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3.1}{\ignorespaces Normalised MSE of the R\&B algorithm with FFT size \(N_{FFT} = 512\) compared to the MCRB for \(L=11\) training symbols.}}{12}{}\protected@file@percent }
-\newlabel{fig:fft_mcrb_data}{{3.1}{12}{}{figure.3.1}{}}
-\newlabel{fig:fft_mcrb_data@cref}{{[figure][1][3]3.1}{[1][11][]12}{}{}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3.2}{\ignorespaces Normalised MSE of the R\&B algorithm for non-data-aided operation and different observation lengths.}}{12}{}\protected@file@percent }
-\newlabel{fig:fft_mcrb_blind}{{3.2}{12}{}{figure.3.2}{}}
-\newlabel{fig:fft_mcrb_blind@cref}{{[figure][2][3]3.2}{[1][12][]12}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.3}Differential Phase + Kay Estimator}{12}{}\protected@file@percent }
-\newlabel{eq:phase_diff}{{3.7}{13}{}{equation.3.7}{}}
-\newlabel{eq:phase_diff@cref}{{[equation][7][3]3.7}{[1][12][]13}{}{}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3.3}{\ignorespaces Normalised MSE of frequency estimation with the DK estimator for \(L = 11\) training symbols.}}{13}{}\protected@file@percent }
-\newlabel{fig:diffkay_data}{{3.3}{13}{}{figure.3.3}{}}
-\newlabel{fig:diffkay_data@cref}{{[figure][3][3]3.3}{[1][13][]13}{}{}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3.4}{\ignorespaces Normalised MSE of the DK estimator with blind operation for different observation lengths.}}{14}{}\protected@file@percent }
-\newlabel{fig:diffkay_blind}{{3.4}{14}{}{figure.3.4}{}}
-\newlabel{fig:diffkay_blind@cref}{{[figure][4][3]3.4}{[1][13][]14}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.4}Computational Complexity}{14}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{R\&B}{14}{}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {3.1}{\ignorespaces Computational complexity of estimating CFO with the R\&B algorithm.}}{14}{}\protected@file@percent }
-\newlabel{tab:fft_cost}{{3.1}{14}{}{table.3.1}{}}
-\newlabel{tab:fft_cost@cref}{{[table][1][3]3.1}{[1][14][]14}{}{}{}}
-\@writefile{toc}{\contentsline {paragraph}{DK}{15}{}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {3.2}{\ignorespaces Computational complexity of estimating CFO with the DK estimator.}}{15}{}\protected@file@percent }
-\newlabel{tab:diffkay_cost}{{3.2}{15}{}{table.3.2}{}}
-\newlabel{tab:diffkay_cost@cref}{{[table][2][3]3.2}{[1][14][]15}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.5}Optimising Bit Width}{15}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.6}Maximum CFO}{15}{}\protected@file@percent }
+\newlabel{eq:data_noise}{{4.2}{15}{}{equation.4.2}{}}
+\newlabel{eq:data_noise@cref}{{[equation][2][4]4.2}{[1][15][]15}{}{}{}}
+\newlabel{eq:phase_blind}{{4.3}{15}{}{equation.4.3}{}}
+\newlabel{eq:phase_blind@cref}{{[equation][3][4]4.3}{[1][15][]15}{}{}{}}
+\newlabel{eq:phase_data}{{4.4}{15}{}{equation.4.4}{}}
+\newlabel{eq:phase_data@cref}{{[equation][4][4]4.4}{[1][15][]15}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2.2}Rife and Boorstyn}{15}{}\protected@file@percent }
+\newlabel{eq:fft_refined}{{4.5}{15}{}{equation.4.5}{}}
+\newlabel{eq:fft_refined@cref}{{[equation][5][4]4.5}{[1][15][]15}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.1}{\ignorespaces Normalised MSE of the R\&B algorithm with FFT size \(N_{FFT} = 512\) compared to the MCRB for \(L=11\) training symbols.}}{16}{}\protected@file@percent }
+\newlabel{fig:fft_mcrb_data}{{4.1}{16}{}{figure.4.1}{}}
+\newlabel{fig:fft_mcrb_data@cref}{{[figure][1][4]4.1}{[1][15][]16}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.2}{\ignorespaces Normalised MSE of the R\&B algorithm for non-data-aided operation and different observation lengths.}}{16}{}\protected@file@percent }
+\newlabel{fig:fft_mcrb_blind}{{4.2}{16}{}{figure.4.2}{}}
+\newlabel{fig:fft_mcrb_blind@cref}{{[figure][2][4]4.2}{[1][16][]16}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2.3}Differential Phase + Kay Estimator}{16}{}\protected@file@percent }
+\newlabel{eq:phase_diff}{{4.7}{17}{}{equation.4.7}{}}
+\newlabel{eq:phase_diff@cref}{{[equation][7][4]4.7}{[1][16][]17}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.3}{\ignorespaces Normalised MSE of frequency estimation with the DK estimator for \(L = 11\) training symbols.}}{17}{}\protected@file@percent }
+\newlabel{fig:diffkay_data}{{4.3}{17}{}{figure.4.3}{}}
+\newlabel{fig:diffkay_data@cref}{{[figure][3][4]4.3}{[1][17][]17}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.4}{\ignorespaces Normalised MSE of the DK estimator with blind operation for different observation lengths.}}{18}{}\protected@file@percent }
+\newlabel{fig:diffkay_blind}{{4.4}{18}{}{figure.4.4}{}}
+\newlabel{fig:diffkay_blind@cref}{{[figure][4][4]4.4}{[1][17][]18}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2.4}Computational Complexity}{18}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{R\&B}{18}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4.1}{\ignorespaces Computational complexity of estimating CFO with the R\&B algorithm.}}{18}{}\protected@file@percent }
+\newlabel{tab:fft_cost}{{4.1}{18}{}{table.4.1}{}}
+\newlabel{tab:fft_cost@cref}{{[table][1][4]4.1}{[1][18][]18}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{DK}{19}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4.2}{\ignorespaces Computational complexity of estimating CFO with the DK estimator.}}{19}{}\protected@file@percent }
+\newlabel{tab:diffkay_cost}{{4.2}{19}{}{table.4.2}{}}
+\newlabel{tab:diffkay_cost@cref}{{[table][2][4]4.2}{[1][18][]19}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2.5}Optimising Bit Width}{19}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2.6}Maximum CFO}{19}{}\protected@file@percent }
 \abx@aux@cite{0}{Cheng2013PilotCycleSlip}
 \abx@aux@segm{0}{0}{Cheng2013PilotCycleSlip}
-\@writefile{lof}{\contentsline {figure}{\numberline {3.5}{\ignorespaces Normalised MSE in CFO estimate (\(\mathrm  {MSE}^2/R_s^2\)) vs Normalised CFO (\(f/R_s\))}}{16}{}\protected@file@percent }
-\newlabel{fig:max_cfo}{{3.5}{16}{}{figure.3.5}{}}
-\newlabel{fig:max_cfo@cref}{{[figure][5][3]3.5}{[1][15][]16}{}{}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {3.3}Phase Recovery}{16}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.3.1}Feed-Forward vs PLL Algorithms}{16}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.3.2}Viterbi \& Viterbi}{16}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.3.3}Pilots-Only Correction}{17}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.3.4}Computational Complexity}{17}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Viterbi \& Viterbi}{17}{}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {3.3}{\ignorespaces Computational complexity of block-based Viterbi \& Viterbi.}}{17}{}\protected@file@percent }
-\newlabel{tab:viterbi_cost}{{3.3}{17}{}{table.3.3}{}}
-\newlabel{tab:viterbi_cost@cref}{{[table][3][3]3.3}{[1][17][]17}{}{}{}}
-\@writefile{toc}{\contentsline {paragraph}{Pilots-Only}{17}{}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {3.4}{\ignorespaces Computational complexity of Pilots-Only correction.}}{17}{}\protected@file@percent }
-\newlabel{tab:pilot_cost}{{3.4}{17}{}{table.3.4}{}}
-\newlabel{tab:pilot_cost@cref}{{[table][4][3]3.4}{[1][17][]17}{}{}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {3.4}Methodology}{17}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.4.1}Phase Recovery Comparison}{17}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.4.2}System Energy Comparison}{18}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {3.5}Results \& Discussion}{18}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.1}Phase Recovery Performance}{18}{}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {3.6}{\ignorespaces Performance comparison of V\&V and Pilots-Only phase correction}}{18}{}\protected@file@percent }
-\newlabel{fig:vv_vs_pilots}{{3.6}{18}{}{figure.3.6}{}}
-\newlabel{fig:vv_vs_pilots@cref}{{[figure][6][3]3.6}{[1][18][]18}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.2}Blind vs Data-Aided Operation}{19}{}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {3.7}{\ignorespaces FEC SNR vs blind observation length for the R\&B and DK estimators. CFO = 2 GHz, laser linewidth = 1 MHz.}}{19}{}\protected@file@percent }
-\newlabel{fig:observation_length}{{3.7}{19}{}{figure.3.7}{}}
-\newlabel{fig:observation_length@cref}{{[figure][7][3]3.7}{[1][18][]19}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.3}Combined Performance}{19}{}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {3.5}{\ignorespaces Minimum mean FEC SNR achievable by each frequency/phase recovery pair over the fixed-point precision grid (energy cost disregarded), with the precision combo at which the minimum occurs.}}{19}{}\protected@file@percent }
-\newlabel{tab:min_fec_snr}{{3.5}{19}{}{table.3.5}{}}
-\newlabel{tab:min_fec_snr@cref}{{[table][5][3]3.5}{[1][19][]19}{}{}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3.8}{\ignorespaces Energy breakdown for carrier recovery. Left: (20 km, 1:512). Right: (80 km, 1:16).}}{20}{}\protected@file@percent }
-\newlabel{fig:cr_energy_breakdown}{{3.8}{20}{}{figure.3.8}{}}
-\newlabel{fig:cr_energy_breakdown@cref}{{[figure][8][3]3.8}{[1][20][]20}{}{}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {3.6}{\ignorespaces Energy-optimal fixed-point configuration for each frequency/phase recovery pair under the 35\,dB flat-loss shot-noise model. Energies in fJ/bit; results are independent of the splitting ratio \(K\).}}{20}{}\protected@file@percent }
-\newlabel{tab:energy_sys}{{3.6}{20}{}{table.3.6}{}}
-\newlabel{tab:energy_sys@cref}{{[table][6][3]3.6}{[1][20][]20}{}{}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {3.7}{\ignorespaces Energy-optimal configuration when the frequency recovery energy is amortised away (CFO constant over many symbols). Energies in fJ/bit; results are independent of the splitting ratio \(K\).}}{21}{}\protected@file@percent }
-\newlabel{tab:energy_sys_no_fr}{{3.7}{21}{}{table.3.7}{}}
-\newlabel{tab:energy_sys_no_fr@cref}{{[table][7][3]3.7}{[1][20][]21}{}{}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {3.6}Conclusions}{21}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4.5}{\ignorespaces Normalised MSE in CFO estimate (\(\mathrm  {MSE}^2/R_s^2\)) vs Normalised CFO (\(f/R_s\))}}{20}{}\protected@file@percent }
+\newlabel{fig:max_cfo}{{4.5}{20}{}{figure.4.5}{}}
+\newlabel{fig:max_cfo@cref}{{[figure][5][4]4.5}{[1][19][]20}{}{}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.3}Phase Recovery}{20}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3.1}Feed-Forward vs PLL Algorithms}{20}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3.2}Viterbi \& Viterbi}{20}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3.3}Pilots-Only Correction}{21}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3.4}Computational Complexity}{21}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Viterbi \& Viterbi}{21}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4.3}{\ignorespaces Computational complexity of block-based Viterbi \& Viterbi.}}{21}{}\protected@file@percent }
+\newlabel{tab:viterbi_cost}{{4.3}{21}{}{table.4.3}{}}
+\newlabel{tab:viterbi_cost@cref}{{[table][3][4]4.3}{[1][21][]21}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{Pilots-Only}{21}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4.4}{\ignorespaces Computational complexity of Pilots-Only correction.}}{21}{}\protected@file@percent }
+\newlabel{tab:pilot_cost}{{4.4}{21}{}{table.4.4}{}}
+\newlabel{tab:pilot_cost@cref}{{[table][4][4]4.4}{[1][21][]21}{}{}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.4}Methodology}{21}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4.1}Phase Recovery Comparison}{21}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4.2}System Energy Comparison}{22}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4.5}Results \& Discussion}{22}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5.1}Phase Recovery Performance}{22}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4.6}{\ignorespaces Performance comparison of V\&V and Pilots-Only phase correction}}{22}{}\protected@file@percent }
+\newlabel{fig:vv_vs_pilots}{{4.6}{22}{}{figure.4.6}{}}
+\newlabel{fig:vv_vs_pilots@cref}{{[figure][6][4]4.6}{[1][22][]22}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5.2}Blind vs Data-Aided Operation}{23}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4.7}{\ignorespaces FEC SNR vs blind observation length for the R\&B and DK estimators. CFO = 2 GHz, laser linewidth = 1 MHz.}}{23}{}\protected@file@percent }
+\newlabel{fig:observation_length}{{4.7}{23}{}{figure.4.7}{}}
+\newlabel{fig:observation_length@cref}{{[figure][7][4]4.7}{[1][22][]23}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5.3}Combined Performance}{23}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4.5}{\ignorespaces Minimum mean FEC SNR achievable by each frequency/phase recovery pair over the fixed-point precision grid (energy cost disregarded), with the precision combo at which the minimum occurs.}}{23}{}\protected@file@percent }
+\newlabel{tab:min_fec_snr}{{4.5}{23}{}{table.4.5}{}}
+\newlabel{tab:min_fec_snr@cref}{{[table][5][4]4.5}{[1][23][]23}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.8}{\ignorespaces Energy breakdown for carrier recovery. Left: (20 km, 1:512). Right: (80 km, 1:16).}}{24}{}\protected@file@percent }
+\newlabel{fig:cr_energy_breakdown}{{4.8}{24}{}{figure.4.8}{}}
+\newlabel{fig:cr_energy_breakdown@cref}{{[figure][8][4]4.8}{[1][24][]24}{}{}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4.6}{\ignorespaces Energy-optimal fixed-point configuration for each frequency/phase recovery pair under the 35\,dB flat-loss shot-noise model. Energies in fJ/bit; results are independent of the splitting ratio \(K\).}}{24}{}\protected@file@percent }
+\newlabel{tab:energy_sys}{{4.6}{24}{}{table.4.6}{}}
+\newlabel{tab:energy_sys@cref}{{[table][6][4]4.6}{[1][24][]24}{}{}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4.7}{\ignorespaces Energy-optimal configuration when the frequency recovery energy is amortised away (CFO constant over many symbols). Energies in fJ/bit; results are independent of the splitting ratio \(K\).}}{25}{}\protected@file@percent }
+\newlabel{tab:energy_sys_no_fr}{{4.7}{25}{}{table.4.7}{}}
+\newlabel{tab:energy_sys_no_fr@cref}{{[table][7][4]4.7}{[1][24][]25}{}{}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.6}Conclusions}{25}{}\protected@file@percent }
 \abx@aux@read@bbl@mdfivesum{D34E78B7EFC686CB7ECA308212A41F53}
+\abx@aux@read@bblrerun
 \abx@aux@defaultrefcontext{0}{CPON_PMD_2025}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{Cheng2013PilotCycleSlip}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{Andrea1994}{nty/global//global/global/global}
@@ -170,4 +219,4 @@
 \abx@aux@defaultrefcontext{0}{horowitz2014computing}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{Jacobsen2007}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{Mello;21}{nty/global//global/global/global}
-\gdef \@abspage@last{23}
+\gdef \@abspage@last{27}

@@ -1,63 +1,66 @@
 \contentsline {chapter}{\numberline {1}Access Networks and Coherent PON}{3}{}%
 \contentsline {section}{\numberline {1.1}Optical Access Networks}{3}{}%
 \contentsline {section}{\numberline {1.2}Coherent PON}{3}{}%
-\contentsline {section}{\numberline {1.3}Modulation and Symbol Rate}{4}{}%
-\contentsline {section}{\numberline {1.4}Downstream Frame Structure}{4}{}%
-\contentsline {section}{\numberline {1.5}Key System Tolerances}{4}{}%
-\contentsline {chapter}{\numberline {2}Experimental Setup and Methodology}{5}{}%
+\contentsline {section}{\numberline {1.3}Specification}{4}{}%
+\contentsline {subsection}{\numberline {1.3.1}Modulation and Symbol Rate}{4}{}%
+\contentsline {subsection}{\numberline {1.3.2}Downstream Frame Structure}{4}{}%
+\contentsline {subsection}{\numberline {1.3.3}Key System Tolerances}{4}{}%
+\contentsline {chapter}{\numberline {2}Network and Receiver Models}{5}{}%
 \contentsline {section}{\numberline {2.1}Simulation Framework}{5}{}%
-\contentsline {subsection}{\numberline {2.1.1}Network Model}{5}{}%
-\contentsline {subsection}{\numberline {2.1.2}Channel Impairments}{5}{}%
-\contentsline {paragraph}{Additive White Gaussian Noise}{5}{}%
+\contentsline {subsection}{\numberline {2.1.1}Fixed-Point Arithmetic}{5}{}%
+\contentsline {paragraph}{Quantisation Error}{5}{}%
+\contentsline {paragraph}{CORDIC}{5}{}%
+\contentsline {subsection}{\numberline {2.1.2}System Parameters}{6}{}%
+\contentsline {subsection}{\numberline {2.1.3}Channel Impairments}{6}{}%
+\contentsline {paragraph}{Additive White Gaussian Noise}{6}{}%
 \contentsline {paragraph}{Chromatic Dispersion}{6}{}%
 \contentsline {paragraph}{Polarisation-Mode Dispersion}{6}{}%
-\contentsline {paragraph}{Carrier Frequency Offset}{6}{}%
-\contentsline {paragraph}{Phase Noise}{6}{}%
-\contentsline {subsection}{\numberline {2.1.3}Fixed-Point Arithmetic}{6}{}%
-\contentsline {section}{\numberline {2.2}Energy Estimation}{6}{}%
+\contentsline {paragraph}{Carrier Frequency Offset}{7}{}%
+\contentsline {paragraph}{Phase Noise}{7}{}%
+\contentsline {section}{\numberline {2.2}Energy Estimation}{7}{}%
 \contentsline {section}{\numberline {2.3}Receiver Energy}{7}{}%
 \contentsline {subsection}{\numberline {2.3.1}Dependence on Word Length}{7}{}%
-\contentsline {subsection}{\numberline {2.3.2}Amortisation}{7}{}%
+\contentsline {subsection}{\numberline {2.3.2}Amortisation}{8}{}%
 \contentsline {subsection}{\numberline {2.3.3}Total Energy and Power}{8}{}%
 \contentsline {section}{\numberline {2.4}Transmitter Energy}{8}{}%
-\contentsline {subsection}{\numberline {2.4.1}Minimum Required SNR}{8}{}%
-\contentsline {subsection}{\numberline {2.4.2}Noise}{8}{}%
+\contentsline {subsection}{\numberline {2.4.1}Minimum Required SNR}{9}{}%
+\contentsline {subsection}{\numberline {2.4.2}Noise}{9}{}%
 \contentsline {section}{\numberline {2.5}System Energy}{9}{}%
-\contentsline {chapter}{\numberline {3}Equalisation}{10}{}%
-\contentsline {section}{\numberline {3.1}Introduction}{10}{}%
-\contentsline {section}{\numberline {3.2}Static Equalisation}{10}{}%
-\contentsline {subsection}{\numberline {3.2.1}Equalisation Procedure}{10}{}%
-\contentsline {subsection}{\numberline {3.2.2}Filter Length}{10}{}%
-\contentsline {subsection}{\numberline {3.2.3}Computational Complexity}{11}{}%
-\contentsline {section}{\numberline {3.3}Adaptive Equalisation}{12}{}%
-\contentsline {subsection}{\numberline {3.3.1}Equalisation Procedure}{12}{}%
-\contentsline {subsection}{\numberline {3.3.2}Filter Length}{12}{}%
-\contentsline {subsection}{\numberline {3.3.3}Computational Complexity}{13}{}%
-\contentsline {subsection}{\numberline {3.3.4}Fixed Point Precision}{13}{}%
-\contentsline {section}{\numberline {3.4}Methodology}{13}{}%
-\contentsline {chapter}{\numberline {4}Carrier Recovery}{14}{}%
-\contentsline {section}{\numberline {4.1}Introduction}{14}{}%
-\contentsline {section}{\numberline {4.2}Frequency Recovery}{14}{}%
-\contentsline {subsection}{\numberline {4.2.1}Isolating CFO}{14}{}%
-\contentsline {subsection}{\numberline {4.2.2}Rife and Boorstyn}{15}{}%
-\contentsline {subsection}{\numberline {4.2.3}Differential Phase + Kay Estimator}{16}{}%
-\contentsline {subsection}{\numberline {4.2.4}Computational Complexity}{18}{}%
-\contentsline {paragraph}{R\&B}{18}{}%
-\contentsline {paragraph}{DK}{19}{}%
-\contentsline {subsection}{\numberline {4.2.5}Optimising Bit Width}{19}{}%
-\contentsline {subsection}{\numberline {4.2.6}Maximum CFO}{19}{}%
-\contentsline {section}{\numberline {4.3}Phase Recovery}{20}{}%
-\contentsline {subsection}{\numberline {4.3.1}Feed-Forward vs PLL Algorithms}{20}{}%
-\contentsline {subsection}{\numberline {4.3.2}Viterbi \& Viterbi}{20}{}%
-\contentsline {subsection}{\numberline {4.3.3}Pilots-Only Correction}{21}{}%
-\contentsline {subsection}{\numberline {4.3.4}Computational Complexity}{21}{}%
-\contentsline {paragraph}{Viterbi \& Viterbi}{21}{}%
-\contentsline {paragraph}{Pilots-Only}{21}{}%
-\contentsline {section}{\numberline {4.4}Methodology}{21}{}%
-\contentsline {subsection}{\numberline {4.4.1}Phase Recovery Comparison}{21}{}%
-\contentsline {subsection}{\numberline {4.4.2}System Energy Comparison}{22}{}%
-\contentsline {section}{\numberline {4.5}Results \& Discussion}{22}{}%
-\contentsline {subsection}{\numberline {4.5.1}Phase Recovery Performance}{22}{}%
-\contentsline {subsection}{\numberline {4.5.2}Blind vs Data-Aided Operation}{23}{}%
-\contentsline {subsection}{\numberline {4.5.3}Combined Performance}{23}{}%
-\contentsline {section}{\numberline {4.6}Conclusions}{25}{}%
+\contentsline {chapter}{\numberline {3}Equalisation}{11}{}%
+\contentsline {section}{\numberline {3.1}Introduction}{11}{}%
+\contentsline {section}{\numberline {3.2}Static Equalisation}{11}{}%
+\contentsline {subsection}{\numberline {3.2.1}Equalisation Procedure}{11}{}%
+\contentsline {subsection}{\numberline {3.2.2}Filter Length}{11}{}%
+\contentsline {subsection}{\numberline {3.2.3}Computational Complexity}{12}{}%
+\contentsline {section}{\numberline {3.3}Adaptive Equalisation}{13}{}%
+\contentsline {subsection}{\numberline {3.3.1}Equalisation Procedure}{13}{}%
+\contentsline {subsection}{\numberline {3.3.2}Filter Length}{13}{}%
+\contentsline {subsection}{\numberline {3.3.3}Computational Complexity}{14}{}%
+\contentsline {subsection}{\numberline {3.3.4}Fixed Point Precision}{14}{}%
+\contentsline {section}{\numberline {3.4}Methodology}{14}{}%
+\contentsline {chapter}{\numberline {4}Carrier Recovery}{15}{}%
+\contentsline {section}{\numberline {4.1}Introduction}{15}{}%
+\contentsline {section}{\numberline {4.2}Frequency Recovery}{15}{}%
+\contentsline {subsection}{\numberline {4.2.1}Isolating CFO}{15}{}%
+\contentsline {subsection}{\numberline {4.2.2}Rife and Boorstyn}{16}{}%
+\contentsline {subsection}{\numberline {4.2.3}Differential Phase + Kay Estimator}{17}{}%
+\contentsline {subsection}{\numberline {4.2.4}Computational Complexity}{19}{}%
+\contentsline {paragraph}{R\&B}{19}{}%
+\contentsline {paragraph}{DK}{20}{}%
+\contentsline {subsection}{\numberline {4.2.5}Optimising Bit Width}{20}{}%
+\contentsline {subsection}{\numberline {4.2.6}Maximum CFO}{20}{}%
+\contentsline {section}{\numberline {4.3}Phase Recovery}{21}{}%
+\contentsline {subsection}{\numberline {4.3.1}Feed-Forward vs PLL Algorithms}{21}{}%
+\contentsline {subsection}{\numberline {4.3.2}Viterbi \& Viterbi}{21}{}%
+\contentsline {subsection}{\numberline {4.3.3}Pilots-Only Correction}{22}{}%
+\contentsline {subsection}{\numberline {4.3.4}Computational Complexity}{22}{}%
+\contentsline {paragraph}{Viterbi \& Viterbi}{22}{}%
+\contentsline {paragraph}{Pilots-Only}{22}{}%
+\contentsline {section}{\numberline {4.4}Methodology}{22}{}%
+\contentsline {subsection}{\numberline {4.4.1}Phase Recovery Comparison}{22}{}%
+\contentsline {subsection}{\numberline {4.4.2}System Energy Comparison}{23}{}%
+\contentsline {section}{\numberline {4.5}Results \& Discussion}{23}{}%
+\contentsline {subsection}{\numberline {4.5.1}Phase Recovery Performance}{23}{}%
+\contentsline {subsection}{\numberline {4.5.2}Blind vs Data-Aided Operation}{24}{}%
+\contentsline {subsection}{\numberline {4.5.3}Combined Performance}{24}{}%
+\contentsline {section}{\numberline {4.6}Conclusions}{26}{}%

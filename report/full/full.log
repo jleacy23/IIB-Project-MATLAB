@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.4)  18 MAY 2026 16:54
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.4)  19 MAY 2026 21:18
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -752,7 +752,36 @@ Package biblatex Info: Automatic encoding selection.
 
 Package biblatex Info: Trying to load bibliographic data...
 Package biblatex Info: ... file 'full.bbl' found.
- (./full.bbl)
+ (./full.bbl
+
+Package biblatex Warning: The following entry could not be found
+(biblatex)                in the database:
+(biblatex)                Cardenas:14
+(biblatex)                Please verify the spelling and rerun
+(biblatex)                LaTeX afterwards.
+
+
+Package biblatex Warning: The following entry could not be found
+(biblatex)                in the database:
+(biblatex)                Jiang;26
+(biblatex)                Please verify the spelling and rerun
+(biblatex)                LaTeX afterwards.
+
+
+Package biblatex Warning: The following entry could not be found
+(biblatex)                in the database:
+(biblatex)                Mantzoukis:11
+(biblatex)                Please verify the spelling and rerun
+(biblatex)                LaTeX afterwards.
+
+
+Package biblatex Warning: The following entry could not be found
+(biblatex)                in the database:
+(biblatex)                coherent_receivers
+(biblatex)                Please verify the spelling and rerun
+(biblatex)                LaTeX afterwards.
+
+)
 Package biblatex Info: Reference section=0 on input line 30.
 Package biblatex Info: Reference segment=0 on input line 30.
 LaTeX Font Info:    Trying to load font information for U+msa on input line 32.
@@ -779,93 +808,98 @@ Chapter 2.
 [5
 
 ]
-Overfull \hbox (2.56007pt too wide) in paragraph at lines 132--133
+Overfull \hbox (2.56007pt too wide) in paragraph at lines 150--151
  \OT1/cmr/bx/n/12 Polarisation-Mode Dis-per-sion[] \OT1/cmr/m/n/12 Polarisation-mode dis-per-sion (PMD) re-sults from ran-
  []
 
-[6] [7]
-
-LaTeX Warning: Reference `fig:pon' on page 1 undefined on input line 198.
-
-[8] [9]
+[6] [7] [8]
+<MZM.jpeg, id=47, 834.11626pt x 430.60875pt>
+File: MZM.jpeg Graphic file (type jpg)
+<use MZM.jpeg>
+Package pdftex.def Info: MZM.jpeg  used on input line 250.
+(pdftex.def)             Requested size: 318.66948pt x 164.51347pt.
+ [9] [10 <./MZM.jpeg>]
 Chapter 3.
-[10
+[11
 
-] [11]
+] [12]
 
-LaTeX Warning: Citation 'coherent_receivers' on page 12 undefined on input line 341.
-
-
-LaTeX Warning: Citation 'Cardenas:14' on page 12 undefined on input line 345.
+LaTeX Warning: Citation 'coherent_receivers' on page 13 undefined on input line 357.
 
 
-LaTeX Warning: Citation 'Mantzoukis:11' on page 12 undefined on input line 351.
+LaTeX Warning: Citation 'Cardenas:14' on page 13 undefined on input line 361.
 
-[12]
 
-LaTeX Warning: Citation 'Jiang;26' on page 13 undefined on input line 388.
+LaTeX Warning: Citation 'Mantzoukis:11' on page 13 undefined on input line 367.
 
 [13]
+
+LaTeX Warning: Citation 'Jiang;26' on page 14 undefined on input line 404.
+
+[14]
 Chapter 4.
-[14
+[15
 
 ]
-<../frequency_recovery/MCRB_fft_data.png, id=70, 534.3162pt x 364.7226pt>
+<../frequency_recovery/MCRB_fft_data.png, id=73, 534.3162pt x 364.7226pt>
 File: ../frequency_recovery/MCRB_fft_data.png Graphic file (type png)
 <use ../frequency_recovery/MCRB_fft_data.png>
-Package pdftex.def Info: ../frequency_recovery/MCRB_fft_data.png  used on input line 440.
+Package pdftex.def Info: ../frequency_recovery/MCRB_fft_data.png  used on input line 457.
 (pdftex.def)             Requested size: 318.66948pt x 217.52185pt.
- [15]
-<../frequency_recovery/MCRB_fft_blind.png, id=74, 539.616pt x 364.7226pt>
+ [16]
+<../frequency_recovery/MCRB_fft_blind.png, id=77, 539.616pt x 364.7226pt>
 File: ../frequency_recovery/MCRB_fft_blind.png Graphic file (type png)
 <use ../frequency_recovery/MCRB_fft_blind.png>
-Package pdftex.def Info: ../frequency_recovery/MCRB_fft_blind.png  used on input line 447.
+Package pdftex.def Info: ../frequency_recovery/MCRB_fft_blind.png  used on input line 464.
 (pdftex.def)             Requested size: 318.66948pt x 215.39037pt.
- [16 <../frequency_recovery/MCRB_fft_data.png (PNG copy)> <../frequency_recovery/MCRB_fft_blind.png (PNG copy)>]
-<../frequency_recovery/MCRB_diffkay_data.png, id=78, 534.3162pt x 360.3864pt>
+ [17 <../frequency_recovery/MCRB_fft_data.png (PNG copy)> <../frequency_recovery/MCRB_fft_blind.png (PNG copy)>]
+<../frequency_recovery/MCRB_diffkay_data.png, id=81, 534.3162pt x 360.3864pt>
 File: ../frequency_recovery/MCRB_diffkay_data.png Graphic file (type png)
 <use ../frequency_recovery/MCRB_diffkay_data.png>
-Package pdftex.def Info: ../frequency_recovery/MCRB_diffkay_data.png  used on input line 466.
+Package pdftex.def Info: ../frequency_recovery/MCRB_diffkay_data.png  used on input line 483.
 (pdftex.def)             Requested size: 318.66948pt x 214.93573pt.
-<../frequency_recovery/MCRB_diffkay_blind.png, id=79, 539.616pt x 364.7226pt>
+<../frequency_recovery/MCRB_diffkay_blind.png, id=82, 539.616pt x 364.7226pt>
 File: ../frequency_recovery/MCRB_diffkay_blind.png Graphic file (type png)
 <use ../frequency_recovery/MCRB_diffkay_blind.png>
-Package pdftex.def Info: ../frequency_recovery/MCRB_diffkay_blind.png  used on input line 473.
+Package pdftex.def Info: ../frequency_recovery/MCRB_diffkay_blind.png  used on input line 490.
 (pdftex.def)             Requested size: 318.66948pt x 215.39037pt.
- [17 <../frequency_recovery/MCRB_diffkay_data.png (PNG copy)>]
-Overfull \hbox (28.60747pt too wide) in paragraph at lines 487--497
+ [18 <../frequency_recovery/MCRB_diffkay_data.png (PNG copy)>]
+Overfull \hbox (28.60747pt too wide) in paragraph at lines 504--514
  [][] 
  []
 
-[18 <../frequency_recovery/MCRB_diffkay_blind.png (PNG copy)>]
-<../frequency_recovery/max_cfo.png, id=87, 491.436pt x 343.5234pt>
+[19 <../frequency_recovery/MCRB_diffkay_blind.png (PNG copy)>]
+<../frequency_recovery/max_cfo.png, id=90, 491.436pt x 343.5234pt>
 File: ../frequency_recovery/max_cfo.png Graphic file (type png)
 <use ../frequency_recovery/max_cfo.png>
-Package pdftex.def Info: ../frequency_recovery/max_cfo.png  used on input line 526.
+Package pdftex.def Info: ../frequency_recovery/max_cfo.png  used on input line 543.
 (pdftex.def)             Requested size: 318.66948pt x 222.76862pt.
- [19] [20 <../frequency_recovery/max_cfo.png (PNG copy)>] [21]
-<../frequency_recovery/vv_vs_pilots.png, id=98, 573.8238pt x 407.6028pt>
+ [20] [21 <../frequency_recovery/max_cfo.png (PNG copy)>] [22]
+
+LaTeX Warning: Reference `eq:sys_energy' on page 1 undefined on input line 602.
+
+<../frequency_recovery/vv_vs_pilots.png, id=101, 573.8238pt x 407.6028pt>
 File: ../frequency_recovery/vv_vs_pilots.png Graphic file (type png)
 <use ../frequency_recovery/vv_vs_pilots.png>
-Package pdftex.def Info: ../frequency_recovery/vv_vs_pilots.png  used on input line 594.
+Package pdftex.def Info: ../frequency_recovery/vv_vs_pilots.png  used on input line 611.
 (pdftex.def)             Requested size: 318.66948pt x 226.35905pt.
-<../frequency_recovery/blind_data.png, id=99, 489.5088pt x 359.4228pt>
+<../frequency_recovery/blind_data.png, id=102, 489.5088pt x 359.4228pt>
 File: ../frequency_recovery/blind_data.png Graphic file (type png)
 <use ../frequency_recovery/blind_data.png>
-Package pdftex.def Info: ../frequency_recovery/blind_data.png  used on input line 602.
+Package pdftex.def Info: ../frequency_recovery/blind_data.png  used on input line 619.
 (pdftex.def)             Requested size: 318.66948pt x 233.98401pt.
- [22 <../frequency_recovery/vv_vs_pilots.png (PNG copy)>] [23 <../frequency_recovery/blind_data.png (PNG copy)>]
-<../frequency_recovery/shot_noise_bar.png, id=109, 568.524pt x 349.7868pt>
+[23 <../frequency_recovery/vv_vs_pilots.png (PNG copy)>] [24 <../frequency_recovery/blind_data.png (PNG copy)>]
+<../frequency_recovery/shot_noise_bar.png, id=113, 568.524pt x 349.7868pt>
 File: ../frequency_recovery/shot_noise_bar.png Graphic file (type png)
 <use ../frequency_recovery/shot_noise_bar.png>
-Package pdftex.def Info: ../frequency_recovery/shot_noise_bar.png  used on input line 632.
+Package pdftex.def Info: ../frequency_recovery/shot_noise_bar.png  used on input line 649.
 (pdftex.def)             Requested size: 273.14923pt x 168.0612pt.
 
-Overfull \hbox (0.80281pt too wide) in paragraph at lines 662--670
+Overfull \hbox (0.80281pt too wide) in paragraph at lines 679--687
  [][] 
  []
 
-[24 <../frequency_recovery/shot_noise_bar.png (PNG copy)>] [25] [26
+[25 <../frequency_recovery/shot_noise_bar.png (PNG copy)>] [26] [27
 
 ] (./full.aux)
  ***********
@@ -879,28 +913,23 @@ LaTeX Warning: There were undefined references.
 
 LaTeX Warning: There were multiply-defined labels.
 
-
-Package biblatex Warning: Please (re)run Biber on the file:
-(biblatex)                full
-(biblatex)                and rerun LaTeX afterwards.
-
 Package logreq Info: Writing requests to 'full.run.xml'.
 \openout1 = `full.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 26203 strings out of 469515
- 537301 string characters out of 5467663
- 1336786 words of memory out of 5000000
- 54487 multiletter control sequences out of 15000+600000
+ 26231 strings out of 469515
+ 538178 string characters out of 5467663
+ 1337142 words of memory out of 5000000
+ 54515 multiletter control sequences out of 15000+600000
  645292 words of font info for 104 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  84i,13n,104p,1299b,1472s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbsy10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmcsc10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmib10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb>
-Output written on full.pdf (27 pages, 937956 bytes).
+Output written on full.pdf (28 pages, 1004842 bytes).
 PDF statistics:
- 213 PDF objects out of 1000 (max. 8388607)
- 130 compressed objects within 2 object streams
+ 217 PDF objects out of 1000 (max. 8388607)
+ 132 compressed objects within 2 object streams
  0 named destinations out of 1000 (max. 500000)
- 53 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 58 words of extra memory for PDF output out of 10000 (max. 10000000)
 

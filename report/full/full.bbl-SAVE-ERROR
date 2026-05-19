@@ -160,6 +160,69 @@
       \verb 10.1109/TCOMM.1994.580247
       \endverb
     \endentry
+    \entry{Esmaeilzadeh;11}{inproceedings}{}{}
+      \name{author}{5}{}{%
+        {{hash=add999a8fb3dbbaa8c7d8ff09a5249c6}{%
+           family={Esmaeilzadeh},
+           familyi={E\bibinitperiod},
+           given={Hadi},
+           giveni={H\bibinitperiod}}}%
+        {{hash=6b2afdf7733bdcd1a5c393d648201373}{%
+           family={Blem},
+           familyi={B\bibinitperiod},
+           given={Emily},
+           giveni={E\bibinitperiod}}}%
+        {{hash=a6e7036f041cfe56b9d9db3f3c4c5156}{%
+           family={St.\bibnamedelimi Amant},
+           familyi={S\bibinitperiod\bibinitdelim A\bibinitperiod},
+           given={Renee},
+           giveni={R\bibinitperiod}}}%
+        {{hash=70ec2d78b77b3d58344b20b1446be108}{%
+           family={Sankaralingam},
+           familyi={S\bibinitperiod},
+           given={Karthikeyan},
+           giveni={K\bibinitperiod}}}%
+        {{hash=aa76ebd83aa8c795c67769c23f359cdb}{%
+           family={Burger},
+           familyi={B\bibinitperiod},
+           given={Doug},
+           giveni={D\bibinitperiod}}}%
+      }
+      \list{location}{1}{%
+        {San Jose, California, USA}%
+      }
+      \list{publisher}{1}{%
+        {Association for Computing Machinery}%
+      }
+      \strng{namehash}{8d750009a61d1f452ae74e0c8ce8d3db}
+      \strng{fullhash}{c6431e4f5f2bd59687b19343f5ef836f}
+      \strng{fullhashraw}{c6431e4f5f2bd59687b19343f5ef836f}
+      \strng{bibnamehash}{8d750009a61d1f452ae74e0c8ce8d3db}
+      \strng{authorbibnamehash}{8d750009a61d1f452ae74e0c8ce8d3db}
+      \strng{authornamehash}{8d750009a61d1f452ae74e0c8ce8d3db}
+      \strng{authorfullhash}{c6431e4f5f2bd59687b19343f5ef836f}
+      \strng{authorfullhashraw}{c6431e4f5f2bd59687b19343f5ef836f}
+      \field{sortinit}{E}
+      \field{sortinithash}{8da8a182d344d5b9047633dfc0cc9131}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{isbn}{9781450304726}
+      \field{series}{ISCA '11}
+      \field{title}{Dark silicon and the end of multicore scaling}
+      \field{year}{2011}
+      \field{pages}{365\bibrangedash 376}
+      \range{pages}{12}
+      \verb{doi}
+      \verb 10.1145/2000064.2000108
+      \endverb
+      \verb{urlraw}
+      \verb https://doi.org/10.1145/2000064.2000108
+      \endverb
+      \verb{url}
+      \verb https://doi.org/10.1145/2000064.2000108
+      \endverb
+      \keyw{dark silicon,modeling,multicore,power,technology scaling}
+    \endentry
     \entry{Faruk;21}{article}{}{}
       \name{author}{6}{}{%
         {{hash=daf16bdb226d0e1746bb056a99ebd461}{%
@@ -316,7 +379,42 @@
       \verb 10.1007/978-3-030-66541-8
       \endverb
     \endentry
+    \entry{Shahidi;19}{article}{}{}
+      \name{author}{1}{}{%
+        {{hash=31a075a5262d160217c40c9be9731915}{%
+           family={Shahidi},
+           familyi={S\bibinitperiod},
+           given={Ghavam\bibnamedelima G.},
+           giveni={G\bibinitperiod\bibinitdelim G\bibinitperiod}}}%
+      }
+      \strng{namehash}{31a075a5262d160217c40c9be9731915}
+      \strng{fullhash}{31a075a5262d160217c40c9be9731915}
+      \strng{fullhashraw}{31a075a5262d160217c40c9be9731915}
+      \strng{bibnamehash}{31a075a5262d160217c40c9be9731915}
+      \strng{authorbibnamehash}{31a075a5262d160217c40c9be9731915}
+      \strng{authornamehash}{31a075a5262d160217c40c9be9731915}
+      \strng{authorfullhash}{31a075a5262d160217c40c9be9731915}
+      \strng{authorfullhashraw}{31a075a5262d160217c40c9be9731915}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{IEEE Access}
+      \field{title}{Chip Power Scaling in Recent CMOS Technology Nodes}
+      \field{volume}{7}
+      \field{year}{2019}
+      \field{pages}{851\bibrangedash 856}
+      \range{pages}{6}
+      \verb{doi}
+      \verb 10.1109/ACCESS.2018.2885895
+      \endverb
+      \keyw{Bridge circuits;Frequency measurement;CMOS technology;Microprocessors;Benchmark testing;Capacitance;High frequency;Computer performance;CMOS scaling;FinFET;Moore’s law;MOSFET;power dissipation;scaling;technology node}
+    \endentry
   \enddatalist
+  \missing{Cardenas:14}
+  \missing{Jiang;26}
+  \missing{Mantzoukis:11}
+  \missing{coherent_receivers}
 \endrefsection
 \endinput
 

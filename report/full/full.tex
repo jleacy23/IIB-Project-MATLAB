@@ -98,23 +98,23 @@ The specification requires a pre-FEC bit error ratio of $\leq 2\times10^{-2}$, w
 All DSP algorithms in this report are designed, characterised, and compared through software simulation in MATLAB. The simulated receiver processes DP-QPSK symbols generated at the CPON downstream parameters described in \cref{chapter:cpon}.
 
 \subsection{Fixed-Point Arithmetic}
-The focus of this project is to evaluate all receiver implementations with fixed-point arithmetic, as is used in ASIC designs. This includes the effects of quantisation error on the performance of each implementation and extends the estimation of energy consumption beyond algorithmic complexity to a bit-accurate model of operations performed by the receiver. All fixed-point modelling was performed with the MATLAB Fixed-Point Designer toolkit.
+The receiver is evaluated with fixed-point arithmetic, as used in ASIC designs. This captures the effect of quantisation error on each implementation's performance, and underpins a bit-accurate energy model that goes beyond algorithmic complexity. All fixed-point modelling uses the MATLAB Fixed-Point Designer toolkit.
 \paragraph{Quantisation Error}
-Representing a real value with a finite word length introduces a rounding error. With \(b\) fractional bits the quantisation step is \(\Delta = 2^{-b}\), and round-to-nearest maps a value to its closest representable level, producing an error \(e\) bounded by \(|e|\le\Delta/2\). \(e\) is modelled as a zero-mean uniform random variable on \([-\Delta/2,\,\Delta/2]\) with variance
+With \(b\) fractional bits the quantisation step is \(\Delta = 2^{-b}\); round-to-nearest produces an error \(e\) modelled as a zero-mean uniform random variable on \([-\Delta/2,\,\Delta/2]\) with variance
 \begin{equation}
     \sigma_q^2 = \frac{1}{\Delta}\int_{-\Delta/2}^{\Delta/2} e^2\,\mathrm{d}e = \frac{\Delta^2}{12} = \frac{2^{-2b}}{12}.
     \label{eq:quant_var}
 \end{equation}
-For a signal taking values over $[-A,A]$, $\Delta = \frac{2A}{2^{b}}$ and the signal-to-noise ratio in dB with signal energy $E_s$ is
+For a signal taking values over $[-A,A]$, $\Delta = \frac{2A}{2^{b}}$ and the signal-to-quantisation-noise ratio in dB with signal energy $E_s$ is
 \begin{equation}
-    \mathrm{SNR} = 10\log_{10}\left(\frac{E_s}{\sigma^2_q}\right) = 6.02b + 10\log_{10}\left(\frac{3E_s}{A^2}\right).
+    \mathrm{SQNR} = 10\log_{10}\left(\frac{E_s}{\sigma^2_q}\right) = 6.02b + 10\log_{10}\left(\frac{3E_s}{A^2}\right).
 \end{equation}
 
 \paragraph{CORDIC}
-Coherent receivers perform phase estimates and rotations on complex-valued data in several DSP blocks. This is done efficiently in fixed-point hardware with the CORDIC algorithm, which evaluates these operations using only shifts and additions. CORDIC iteratively rotates a vector by the fixed angles \(\arctan(2^{-i})\), each implemented as a bit-shift and an add/subtract. $n$ bits of precision require $n$ cordic iterations, so CORDIC is roughly equivalent to an $n$-bit real multiplication.
+Coherent receivers perform phase estimates and rotations on complex-valued data in several DSP blocks. This is done efficiently in fixed-point hardware with the CORDIC algorithm, which evaluates these operations using only shifts and additions. CORDIC iteratively rotates a vector by the fixed angles \(\arctan(2^{-i})\), each implemented as a bit-shift and an add/subtract. Each iteration adds roughly one bit of angular resolution, so $n$ bits of precision require $n$ CORDIC iterations and the cost is taken to be equivalent to an $n$-bit real multiplication.
 
 \subsection{System Parameters}
-The network under investigation assumes a loss of 35 dB and an SNR of 35 dB at the OLT. The two configurations are 80 km with a 1:16 splitting ratio and 20 km with a 1:512 splitting ratio. The fibre and signal parameters assumed for the network are listed in \cref{tab:network_params}. Nyquist pulse-shaping is assumed.
+The network under investigation assumes an end-to-end OLT-to-ONU loss budget of 35\,dB and a back-to-back transmitter SNR of 35\,dB, both taken from the CPON downstream specification of \cref{chapter:cpon}. The two configurations are 80\,km with a 1:16 splitting ratio and 20\,km with a 1:512 splitting ratio. The fibre and signal parameters assumed for the network are listed in \cref{tab:network_params}. Nyquist pulse-shaping is assumed throughout.
 
 \begin{table}[H]
     \centering
@@ -128,13 +128,12 @@ The network under investigation assumes a loss of 35 dB and an SNR of 35 dB at t
         Channel bandwidth ($B$) & 30.5\,GHz \\
         Chromatic dispersion coefficient ($D$)  & 17\,ps/(nm$\cdot$km) \\
         PMD coefficient  ($D_\mathrm{DGD}$) & 0.1\,ps/$\sqrt{\mathrm{km}}$ \\
-        Wall-plug efficiency ($\eta$) & 0.1 \\
         \bottomrule
     \end{tabular}
 \end{table}
 
 \subsection{Channel Impairments}
-Between the transmitter and receiver, the ideal symbol stream is degraded by the optical channel. Each impairment is applied as a separate stage so that individual DSP blocks can be characterised in isolation or in combination. The relevant models \cite{Mello;21} are described below.
+Between the transmitter and receiver, the ideal symbol stream is degraded by the optical channel. Each impairment is applied as a separate stage so that individual DSP blocks can be characterised in isolation or in combination. The models used \cite{Mello;21} are described below.
 
 \paragraph{Additive White Gaussian Noise}
 AWGN models the combined effect of shot noise and thermal noise. In simulation, the power of the incoming signal is measured and zero-mean Gaussian noise is added independently to each polarisation at a level set by the target SNR.
@@ -153,12 +152,10 @@ Polarisation-mode dispersion (PMD) results from random birefringence in the fibr
 A carrier frequency offset (CFO) occurs because the transmitter and local-oscillator lasers are free-running and never exactly aligned in centre frequency, as discussed in \cref{sec:cpon_tolerances}. The resulting beat appears as a linear phase ramp on the received samples. It is simulated by multiplying the signal by \(\exp(j\,2\pi\,\Delta f\, T\, k)\), where \(\Delta f\) is the frequency offset, \(T\) the sample period, and \(k\) the sample index.
 
 \paragraph{Phase Noise}
-Phase noise originates from the finite linewidth of the transmitter and LO lasers, whose phases follow a random walk. It is modelled as a Wiener process: independent Gaussian phase increments with variance \(\sigma^2 = 2\pi\,\Delta\nu / R_s\), where \(\Delta\nu\) is the combined laser linewidth, are accumulated and applied as a multiplicative phase \(\exp(j\phi[k])\).
+Phase noise originates from the finite linewidth of the transmitter and LO lasers, whose phases follow a random walk. It is modelled as a Wiener process: independent Gaussian per-symbol phase increments with variance \(\sigma^2 = 2\pi\,\Delta\nu / R_s\), where \(\Delta\nu\) is the combined laser linewidth, are accumulated and applied as a multiplicative phase \(\exp(j\phi[k])\).
 
 \section{Energy Estimation}
-The energy efficiency of a DSP technique used in a coherent receiver cannot be judged from the receiver alone: a simpler implementation that saves receiver energy typically requires a higher SNR, which the transmitter must compensate for with extra launch power. A like-for-like comparison between architectures must therefore account for both contributions.
-
-The receiver contribution is modelled from operation counts of real additions and multiplications, with per-operation energies that depend on the fixed-point word length, allowing implementations to be compared without a hardware build. The transmitter contribution is derived from the minimum SNR each implementation requires to meet the pre-FEC BER threshold defined in the CPON standard \cite{CPON_PMD_2025}. The two are combined for a downstream PON to give the per-bit system energy.
+A DSP technique's energy efficiency cannot be judged from the receiver alone: a simpler implementation typically requires a higher SNR, which the transmitter must compensate for with extra launch power. The receiver contribution is modelled from fixed-point operation counts, and the transmitter contribution from the minimum SNR needed to meet the pre-FEC BER threshold in the CPON standard \cite{CPON_PMD_2025}. The two are combined to give a per-bit system energy.
 
 \section{Receiver Energy}\label{sec:rx_energy}
 The energy consumption of the receiver can be estimated from the number of real multiplications \(N_M\) and real additions \(N_A\) it performs to process each symbol. The true cost of these operations depends on the hardware implementation. The reference values shown in \cref{tab:energy} provide a useful estimate to compare DSP algorithms but a more accurate estimate would require power simulations for an ASIC implementation.
@@ -178,25 +175,25 @@ The energy consumption of the receiver can be estimated from the number of real 
 \end{table}
 
 \subsection{Dependence on Word Length}
-A straightforward adder implementation performs \(n\) bit-wise additions on words of length \(n\), so its energy scales linearly with \(n\). Multiplication accumulates \(n\) partial products of length \(n\) and so scales as \(n^2\). These physical scaling laws are imposed \emph{a priori} and the proportionality constants calibrated by least-squares fit through the origin to the two data points of \cref{tab:energy}, giving
+A ripple-carry adder performs \(n\) bit-wise additions on words of length \(n\), so its energy scales linearly with \(n\). A shift-and-add multiplier accumulates \(n\) partial products of length \(n\) and so scales as \(n^2\). Modern adders and multipliers (e.g.\ carry-lookahead, Booth/Wallace) reduce these costs by a constant factor or to $n\log n$, so the scalings used here are upper bounds; comparisons between algorithms remain valid because all are penalised equally. The proportionality constants are calibrated by a least-squares fit through the origin to the two data points of \cref{tab:energy}, giving
 \begin{equation}
     E_A(n) = 3.16\,n \mathrm{\ fJ}, \qquad E_M(n) = 3.03\,n^2 \mathrm{\ fJ}.
-    \label{eq:arithemtic_45}
+    \label{eq:arithmetic_45}
 \end{equation}
-Energy consumption for arithmetic operations in modern process nodes is not widely reported and Dennard scaling (the rule that the power density of transistors remained constant as they were scaled down) \cite{Esmaeilzadeh;11} can no longer be applied to extrapolate from the values in \cref{tab:energy}. A reasonable energy scaling factor can be estimated from the decrease in total power dissipation at constant frequency of $\approx 75\%$ of an Intel core moving from 45 nm to 14 nm CMOS \cite{Shahidi;19}. Applying this reduction to the 45 nm estimate gives
+Energy consumption for arithmetic operations in modern process nodes is not widely reported, and Dennard scaling (the rule that transistor power density remained constant as they were scaled down) \cite{Esmaeilzadeh;11} can no longer be applied to extrapolate from the values in \cref{tab:energy}. As an approximation, the $\approx 75\%$ reduction in total power dissipation at constant frequency reported for an Intel core moving from 45\,nm to 14\,nm CMOS \cite{Shahidi;19} is taken as a proxy for the per-operation energy scaling. This conflates contributions from leakage, clocks, caches and I/O with the arithmetic energy of interest, so the resulting numbers should be read as an estimate rather than a calibrated figure. Applying this reduction to the 45\,nm fit gives
 \begin{equation}
     E_A(n) = 0.79\,n \mathrm{\ fJ}, \qquad E_M(n) = 0.76\,n^2 \mathrm{\ fJ}.
-    \label{eq:arithemtic_14}
+    \label{eq:arithmetic_14}
 \end{equation}
 \subsection{Amortisation}
 Some DSP algorithms perform computations that are reused over multiple symbols. For example, carrier frequency offset (CFO) varies much slower than the symbol rate so can be estimated less frequently. For a computation that requires \(N_M\) multiplications and \(N_A\) additions and is used by \(S\) symbols, the operations per symbol would be \(N_M / S\) and \(N_A / S\).
 
 \subsection{Total Energy and Power}
-The energy per symbol for the entire receiver is given by
+Many DSP blocks operate on complex-valued data; each complex multiplication is counted as 4 real multiplications and 2 real additions, and each complex addition as 2 real additions. The energy per symbol for the entire receiver is then
 \begin{equation}
     E_{\mathrm{rx},s} = \sum_{k=1}^{L} 2 \left[ N_{A,k}E_A(n_k) + N_{M,k}E_M(n_k) \right],
 \end{equation}
-where the receiver is decomposed into \(L\) blocks that use different word lengths \(n_k\) according to their required precision, and \(N_{A,k}\), \(N_{M,k}\) are the addition and multiplication counts per symbol. The factor of 2 is for both polarizations. Blocks operating on the oversampled signal at rate \(f > R_s\) have their per-sample operation counts scaled by the oversampling ratio \(f/R_s\). The receiver power is then
+where the receiver is decomposed into \(L\) blocks that use different word lengths \(n_k\) according to their required precision, and \(N_{A,k}\), \(N_{M,k}\) are the addition and multiplication counts per symbol. The factor of 2 is for both polarisations. Blocks operating on the oversampled signal at rate \(f > R_s\) have their per-sample operation counts scaled by the oversampling ratio \(f/R_s\). The receiver power is then
 \begin{equation}
     P_\mathrm{rx} = R_s E_{\mathrm{rx},s},
 \end{equation}
@@ -205,7 +202,7 @@ and converting to energy per bit allows fair comparison across modulation scheme
     E_\mathrm{rx} = \frac{E_{\mathrm{rx},s}}{\log_2(M)},
     \label{eq:rx_energy}
 \end{equation}
-where \(M\) is the modulation order. Complex multiplications and additions are needed in many DSP algorithms. 4 real multiplications and 2 real additions are assumed for each complex multiplication, and 2 real additions for complex addition.
+where \(M\) is the modulation order.
 
 \section{Transmitter Energy}
 The downstream link considered here consists of a single OLT transmitting through a 1:\(K\) passive splitter to \(K\) ONUs, as shown in \cref{fig:pon_intro}. The OLT power is divided equally between branches, so each ONU receives a \(1/K\) share.
@@ -215,43 +212,53 @@ The CPON standard specifies a maximum pre-FEC bit-error rate (BER) of \(10^{-2}\
 
 \subsection{Noise}
 % \subsubsection{Shot Noise}
-The relationship between SNR and transmitter power \(P_\mathrm{tx}\) depends on the dominant source of noise in the network. Optical access networks typically operate over short lengths at low power, so amplifiers can be omitted and non-linear noise neglected, leaving shot noise as the dominant impairment. The shot noise power at the receiver is \(2h\nu B_\mathrm{eff}\), where \(B_\mathrm{eff}\) is the bandwidth of the photodetector; this can be matched to the bandwidth of the received signal after the 1:\(K\) splitter in \cref{fig:pon_intro} with a bandpass filter.  The power per polarisation received by each ONU is \(P_\mathrm{tx}/2\Gamma K\), where $\Gamma$ is the loss from OLT to ONU. This gives a per-ONU NSR of
+The relationship between SNR and transmitter power \(P_\mathrm{tx}\) depends on the dominant source of noise in the network. Optical access networks typically operate over short lengths at low power, so amplifiers can be omitted and non-linear noise neglected, leaving shot noise as the dominant impairment. The shot noise power referred to the optical input of a balanced coherent receiver is \(2h\nu B_\mathrm{eff}\), where the factor of 2 captures the contributions from the signal and LO arms of the balanced detector summed in quadrature, and \(B_\mathrm{eff}\) is the receiver electrical bandwidth, set equal to the symbol rate by a matched bandpass filter after the 1:\(K\) splitter in \cref{fig:pon_intro}. The power per polarisation received by each ONU is \(P_\mathrm{tx}/2\Gamma K\), where $\Gamma$ is the loss from OLT to ONU. This gives a per-ONU NSR of
 \begin{equation}
     \mathrm{NSR} = \frac{4\Gamma K h\nu B_\mathrm{eff}}{P_\mathrm{tx}} + \mathrm{NSR}_0,
     \label{eq:snr_shot}
 \end{equation}
-where NSR = 1/SNR  and $\mathrm{NSR}_0$ is the NSR at the OLT. Rearranging gives the transmitted power as
+where $\mathrm{NSR} = 1/\mathrm{SNR}$ and $\mathrm{NSR}_0$ is the back-to-back NSR at the OLT. Rearranging gives the transmitted power as
 \begin{equation}
     P_\mathrm{tx} = \frac{4\Gamma Kh\nu B_\mathrm{eff}}{\mathrm{NSR} - \mathrm{NSR}_0}.
 \end{equation}
-The energy per bit transmitted is then
+Assuming Nyquist pulse-shaping and matched bandpass filtering at the receiver ($B_\mathrm{eff} = R_s$), the energy per bit transmitted is
 \begin{equation}
     E_\mathrm{tx} = \frac{P_\mathrm{tx}}{2KR_s \log_2(M)} = \frac{2\Gamma h\nu}{(\mathrm{NSR} - \mathrm{NSR}_0)\log_2(M)}.
     \label{eq:tx_bit_energy}
 \end{equation}
-when $B_\mathrm{eff} = R_s$ with Nyquist pulse shaping and bandpass filtering at the receiver.
 
 
-\section{System Energy}
-In order to estimate the total energy consumed by the transmitter and receiver. The transmitted energy of the modulated signal in \cref{eq:tx_bit_energy} must be converted into an energy drawn from the power supply by estimating the combined efficiency of the transmitting laser and the modulator. The transfer function of an IQM is given by \cite{Mello;21}
+\section{Combined Energy}
+Before calculating a combined energy contribution, the transmitted optical energy in \cref{eq:tx_bit_energy} must be converted into an energy drawn from the electrical power supply by estimating the efficiencies of the transmitting laser and the modulator. The dual-polarisation modulator (\cref{fig:mzm}) consists of two nested-Mach-Zehnder IQ modulators sharing a common laser through a polarisation beam splitter, with their outputs recombined by a polarisation beam combiner. Each IQ modulator has the transfer function \cite{Mello;21}
 \begin{equation}
     \frac{E_\mathrm{output}(t)}{E_\mathrm{input}(t)} = \frac{1}{2}\cos\left[\frac{v_I(t)\pi}{2V_\pi}\right] + \frac{j}{2}\cos\left[\frac{v_Q(t)\pi}{2V_\pi}\right].
 \end{equation}
-QPSK modulation sets $v_I(t), v_Q(t) \in \{0, 2V_\pi\}$, so
-\begin{equation}
-    \frac{E_\mathrm{output}(t)}{E_\mathrm{input}(t)} = \pm\frac{1}{2} \pm \frac{j}{2}
-\end{equation}
-and $P_\mathrm{out} = P_\mathrm{in}/2$, where the loss comes from power coupled to unused ports in a 2x2 coupler. An ideal polarisation beam splitter/combiner does not introduce any loss so the \emph{marginal} efficiency of the dual-polarisation modulator is
-\begin{equation}
-    \eta_\mathrm{IQM} = \frac{dP_\mathrm{tx}}{dP_\mathrm{in}} = 0.5.
- \end{equation}
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.7\textwidth]{MZM.jpeg}
     \caption{Dual-polarisation coherent modulator using MZMs.}
     \label{fig:mzm}
 \end{figure}
-The overall efficiency would include the power dissipated in the drive electronics but this will not change with transmit power so can be ignored. The marginal efficiency of the transmit laser $\eta_\mathrm{laser}$.
+With null biasing, QPSK is generated by driving each MZM between transmission minima, $v_I(t), v_Q(t) \in \{0, 2V_\pi\}$, so
+\begin{equation}
+    \frac{E_\mathrm{output}(t)}{E_\mathrm{input}(t)} = \pm\frac{1}{2} \pm \frac{j}{2}
+\end{equation}
+and $P_\mathrm{out} = P_\mathrm{in}/2$, where the loss comes from power coupled to unused ports in the 2$\times$2 couplers. An ideal polarisation beam splitter and combiner introduce no further loss, so the \emph{marginal} efficiency of the dual-polarisation modulator is
+\begin{equation}
+    \eta_\mathrm{DPM} = \frac{dP_\mathrm{tx}}{dP_\mathrm{in}} = 0.5.
+ \end{equation}
+The overall efficiency would also include the power dissipated in the drive electronics, but this is independent of transmit power and so cancels in a comparison of receiver implementations. Combining with the marginal laser efficiency $\eta_\mathrm{laser} = dP_\mathrm{opt}/dP_\mathrm{elec}$ gives a marginal wall-plug efficiency
+\begin{equation}
+    \eta_\mathrm{WPE} = \eta_\mathrm{laser}\eta_\mathrm{DPM} = 0.5\eta_\mathrm{laser}.
+\end{equation}
+$\eta_\mathrm{laser}$ will depend on the laser assembly and includes the increase in electrical power to supply the transmit laser and cooling apparatus. The combined energy contribution can now be estimated as
+\begin{equation}
+    E_\mathrm{sys} = \frac{1}{\eta_\mathrm{WPE}}E_\mathrm{tx} + E_\mathrm{rx}.
+\end{equation}
+This does not give the total energy consumed by the optical network, but a difference in $E_\mathrm{sys}$ shows the energy savings across receiver implementations.
+
+
+
 
 \chapter{Equalisation}\label{chapter:carrier_recovery}
 
@@ -415,7 +422,7 @@ A coherent receiver recovers the transmitted symbols by mixing the incoming opti
 
 Carrier recovery is divided into two sequential stages. Frequency recovery performs a coarse estimate of the CFO and corrects it so that only slow residual phase variations remain. Phase recovery then tracks and removes these residual phase errors on a block-by-block basis. The algorithm chosen for each stage determines both the minimum achievable SNR and the receiver DSP energy, making algorithm selection central to the system-level energy comparison of \cref{chapter:energy}.
 
-This chapter describes the Rife and Boorstyn (R\&B) and Differential Kay (DK) frequency recovery algorithms and the Viterbi \& Viterbi (V\&V) and pilots-only phase recovery algorithms, analysing their estimation accuracy and computational complexity. The optimal fixed-point word length for each combination is then found, and the resulting system energies are compared across shot-noise and amplified link scenarios.
+This chapter describes the Rife and Boorstyn (Rife \& Boorstyn) and Differential Kay (differential phase and Kay) frequency recovery algorithms and the Viterbi \& Viterbi (V\&V) and pilots-only phase recovery algorithms, analysing their estimation accuracy and computational complexity. The optimal fixed-point word length for each combination is then found, and the resulting system energies are compared across shot-noise and amplified link scenarios.
 
 \section{Frequency Recovery}
 \subsection{Isolating CFO}
@@ -442,32 +449,32 @@ for blind operation or
 for data-aided operation, where the wrap operation can be done with no additional cost by aligning the wrap range to the overflow range of the fixed-point value used to store the phase.
 
 \subsection{Rife and Boorstyn}
-The value of the CFO will appear as the strongest peak in the frequency spectrum of \(z[i], z[i+1], \dots, z[i+L]\) where \(L\) is the observation length. The Rife and Boorstyn (R\&B) algorithm first performs an FFT on the observed sequence and finds the index \(k\) corresponding to the strongest peak. This coarse estimation is refined with a parabolic interpolation on the complex FFT values \(X_{k-1}, X_k, X_{k+1}\) \cite{Jacobsen2007} to give
+The value of the CFO will appear as the strongest peak in the frequency spectrum of \(z[i], z[i+1], \dots, z[i+L]\) where \(L\) is the observation length. The Rife and Boorstyn algorithm first performs an FFT on the observed sequence and finds the index \(k\) corresponding to the strongest peak. This coarse estimation is refined with a parabolic interpolation on the complex FFT values \(X_{k-1}, X_k, X_{k+1}\) to give \cite{Jacobsen2007}
 \begin{equation}
     \delta = -\Re\left[\frac{X_{k+1} - X_{k-1}}{2X_k - X_{k-1} - X_{k+1}}\right].
     \label{eq:fft_refined}
 \end{equation}
-The updated index \(k' = k + \delta\) is then scaled by the sampling rate to find the true CFO. The resolution in \(k\) is \(\epsilon(k) = 1/2N_{FFT}\). The CPON specification provides only \(L = 11\) training symbols, so data-aided operation without zero-padding gives \(\epsilon(\hat{f}_d) \approx 0.05\,R_s\) — too coarse for the downstream phase recovery to correct. Zero-padding the training sequence to a larger \(N_{FFT}\) improves the resolution without requiring additional training data. The normalised mean squared-error (MSE) in the estimated CFO is shown in \cref{fig:fft_mcrb_data} for data-aided operation with 11 training symbols. A CFO estimate is computed for both polarizations and averaged to reduce the MSE. The modified Cramer-Rao bound (MCRB) \cite{Andrea1994} provides a lower bound on the achievable MSE and is given by
+The updated index \(k' = k + \delta\) is then scaled by the sampling rate to find the true CFO. The resolution in \(k\) is \(\epsilon(k) = 1/2N_{FFT}\). The CPON specification provides only \(L = 11\) training symbols, so data-aided operation without zero-padding gives \(\epsilon(\hat{f}_d) \approx 0.05\,R_s\) — too coarse for the downstream phase recovery to correct. Zero-padding the training sequence to a larger \(N_{FFT}\) improves the resolution without requiring additional training data. The normalised mean squared-error (MSE) in the estimated CFO is shown in \cref{fig:fft_mcrb_data} for data-aided operation with 11 training symbols. A CFO estimate is computed for both polarizations and averaged to reduce the MSE. The modified Cramer-Rao bound (MCRB) provides a lower bound on the achievable MSE and is given by \cite{Andrea1994}
 \begin{equation}
     \mathrm{MCRB} = \frac{3}{2\pi^2 L^3 \times \mathrm{SNR}}.
 \end{equation}
-R\&B achieves this bound above a threshold SNR of \(\approx 4\) dB, where the threshold SNR is defined as the SNR below which the estimator begins to deviate from the MCRB. Below this, the noise has a significant contribution to the FFT values and can lead to an incorrect index being chosen.
+Rife \& Boorstyn achieves this bound above a threshold SNR of \(\approx 4\) dB, where the threshold SNR is defined as the SNR below which the estimator begins to deviate from the MCRB. Below this, the noise has a significant contribution to the FFT values and can lead to an incorrect index being chosen.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.7\textwidth]{MCRB_fft_data.png}
-    \caption{Normalised MSE of the R\&B algorithm with FFT size \(N_{FFT} = 512\) compared to the MCRB for \(L=11\) training symbols.}
+    \caption{Normalised MSE of the Rife \& Boorstyn algorithm with FFT size \(N_{FFT} = 512\) compared to the MCRB for \(L=11\) training symbols.}
     \label{fig:fft_mcrb_data}
 \end{figure}
-Data-aided operation is constrained by the length of the training sequence, but the accuracy of the R\&B algorithm improves with longer observation lengths, as shown in \cref{fig:fft_mcrb_blind} for non-data-aided operation. The SNR threshold at which this algorithm begins to deviate from the MCRB is initially higher with data-aided operation due to the amplification of noise, but decreases for longer observation lengths.
+Data-aided operation is constrained by the length of the training sequence, but the accuracy of the Rife \& Boorstyn algorithm improves with longer observation lengths, as shown in \cref{fig:fft_mcrb_blind} for non-data-aided operation. The SNR threshold at which this algorithm begins to deviate from the MCRB is initially higher with data-aided operation due to the amplification of noise, but decreases for longer observation lengths.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.7\textwidth]{MCRB_fft_blind.png}
-    \caption{Normalised MSE of the R\&B algorithm for non-data-aided operation and different observation lengths.}
+    \caption{Normalised MSE of the Rife \& Boorstyn algorithm for non-data-aided operation and different observation lengths.}
     \label{fig:fft_mcrb_blind}
 \end{figure}
 
-\subsection{Differential Phase + Kay Estimator}
-The R\&B algorithm exhibits good performance even at low SNRs, but is computationally expensive. The FFT requires \(\frac{N_{FFT}}{2} \log_2(N_{FFT})\) complex multiplications and \(N_{FFT}\log_2(N_{FFT})\) complex additions. The fine search from \cref{eq:fft_refined} also requires a complex division. A cheaper approach would involve computing the phase difference
+\subsection{Differential Phase and Kay Estimator}
+The Rife \& Boorstyn algorithm exhibits good performance even at low SNRs, but is computationally expensive. The FFT requires \(\frac{N_{FFT}}{2} \log_2(N_{FFT})\) complex multiplications and \(N_{FFT}\log_2(N_{FFT})\) complex additions. The fine search from \cref{eq:fft_refined} also requires a complex division. A cheaper approach would involve computing the phase difference
 \begin{equation}
     \arg (z[i]) - \arg (z[i-1]) = 2 \pi f_d T_s + \theta[i] - \theta[i-1] + \eta[i]
     \label{eq:phase_diff}
@@ -477,24 +484,24 @@ over several symbols and averaging to remove the effect of \(\theta\). Estimatin
     \hat{f_d} = \frac{R_s}{2 \pi} \sum_{k=1}^{L} \frac{6k(L-k)}{L(L^2 - 1)} \arg (z[k]z^*[k-1]).
 \end{equation}
 where \(\arg(z[k]z^*[k-1])\) computes the phase difference from \cref{eq:phase_diff} and \(\frac{6k(L-k)}{L(L^2 - 1)}\) is a weighting term that prioritises the contribution of phase differences in the middle of the observed sequence. This estimator is able to achieve the MCRB, but the least-squares approach considers phase differences of non-adjacent symbols, making it vulnerable to phase wrapping that distorts the estimate when the CFO is high enough. When the total phase drift \(\Delta \phi = 2\pi f_d L T_s\) across the observation window exceeds \(2\pi\), a wrap shifts the estimated CFO by \(\pm 1/(LT_s)\). A first-pass coarse CFO correction must therefore be applied before the Kay estimator to keep the residual CFO within the unambiguous range.
-The performance of the Differential Kay (DK) estimator for data-aided operation is shown in \cref{fig:diffkay_data}. The MCRB is achieved above a threshold SNR of \(\approx 7\) dB. This is higher than for R\&B, but at a reduced computational cost. Unlike the R\&B algorithm, the threshold SNR of the DK estimator does not depend on observation length, as shown in \cref{fig:diffkay_blind}.
+The performance of the differential phase + Kay estimator for data-aided operation is shown in \cref{fig:diffkay_data}. The MCRB is achieved above a threshold SNR of \(\approx 7\) dB. This is higher than for Rife \& Boorstyn, but at a reduced computational cost. Unlike the Rife \& Boorstyn algorithm, the threshold SNR of the differential phase and Kay estimator does not depend on observation length, as shown in \cref{fig:diffkay_blind}.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.7\textwidth]{MCRB_diffkay_data.png}
-    \caption{Normalised MSE of frequency estimation with the DK estimator for \(L = 11\) training symbols.}
+    \caption{Normalised MSE of frequency estimation with the differential phase and Kay estimator for \(L = 11\) training symbols.}
     \label{fig:diffkay_data}
 \end{figure}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.7\textwidth]{MCRB_diffkay_blind.png}
-    \caption{Normalised MSE of the DK estimator with blind operation for different observation lengths.}
+    \caption{Normalised MSE of the differential phase and Kay estimator with blind operation for different observation lengths.}
     \label{fig:diffkay_blind}
 \end{figure}
 \subsection{Computational Complexity}
-Here, the computational complexity of both frequency recovery algorithms is compared in terms of real multiplications and real additions. CORDIC is used to find phases and is assumed to cost the same as a real multiplication. Real division is also assumed to cost the same as multiplication since it is only performed once (this would be a suitable approximation if look-up tables are used to find reciprocals at some cost to accuracy). All analysis is for data-aided operation, avoiding the fourth power operation in \cref{eq:blind_noise}, and applies to a single polarization. If averaging is done over both polarizations, then all operations are doubled.
-\paragraph{R\&B}
-The R\&B algorithm requires an FFT followed by \(N_{FFT}\) comparisons of the magnitudes in the coarse search. Many of the FFT entries are 0 due to padding, which reduces the total number of operations needed. The interpolation requires the real part of a complex division
+Here, the computational complexity of both frequency recovery algorithms is compared in terms of real multiplications and real additions. CORDIC is used to find phases and is assumed to cost the same as a real multiplication. Real division is also assumed to cost the same as multiplication since it is only performed once (this would be a suitable approximation if look-up tables are used to find reciprocals at some cost to accuracy). All analysis applies to a single polarization. If averaging is done over both polarizations, then all operations are doubled.
+\paragraph{Rife \& Boorstyn}
+The Rife \& Boorstyn algorithm requires an FFT followed by \(N_{FFT}\) comparisons of the magnitudes in the coarse search. Many of the FFT entries are 0 due to padding, which reduces the total number of operations needed. The interpolation requires the real part of a complex division
 \begin{equation}
 \Re \left[\frac{a + bj}{c + dj}\right] = \frac{ac + bd}{c^2 + d^2}.
 \end{equation}
@@ -511,11 +518,11 @@ The total complexity is summarised in \cref{tab:fft_cost}, with the complexity f
         Interpolation & \(5\) & \(4\) \\
         \bottomrule
     \end{tabular}
-    \caption{Computational complexity of estimating CFO with the R\&B algorithm.}
+    \caption{Computational complexity of estimating CFO with the Rife \& Boorstyn algorithm.}
     \label{tab:fft_cost}
 \end{table}
-\paragraph{DK}
-The DK estimator has lower complexity, only requiring CORDIC, real additions, and real multiplications. The fixed multiplications by the weights of the Kay estimator can be optimised into a low-energy shift-add circuit, but this is ignored for simplicity. The first-pass CFO correction involves forming the phase corrections of each training symbol as \(\phi[i] = \hat{f_d}i\), then applying them with CORDIC.
+\paragraph{Differential phase and Kay}
+The differential phase and Kay estimator has lower complexity, only requiring CORDIC, real additions, and real multiplications. The fixed multiplications by the weights of the Kay estimator can be optimised into a low-energy shift-add circuit, but this is ignored for simplicity. The first-pass CFO correction involves forming the phase corrections of each training symbol as \(\phi[i] = \hat{f_d}i\), then applying them with CORDIC.
 \begin{table}[H]
     \centering
     \begin{tabular}{lcc}
@@ -529,7 +536,7 @@ The DK estimator has lower complexity, only requiring CORDIC, real additions, an
         Kay & \(L\) & \(L-1\) \\
         \bottomrule
     \end{tabular}
-    \caption{Computational complexity of estimating CFO with the DK estimator.}
+    \caption{Computational complexity of estimating CFO with the differential phase and Kay estimator.}
     \label{tab:diffkay_cost}
 \end{table}
 
@@ -537,7 +544,7 @@ The DK estimator has lower complexity, only requiring CORDIC, real additions, an
 These frequency recovery algorithms compute an estimate of the normalised CFO \(f_d / R_s\). For \(n\) bits of precision, the smallest normalised CFO that can be estimated is \(2^{-n}\) for an estimation range \(0 \leq |f_d / R_s| \leq 1\). In reality, a much smaller range of CFOs needs to be estimated. If the maximum permitted value of \(|f_d / R_s| = 2^{-d}\), \(d\) bits of precision that would otherwise be redundant can be utilised by scaling each estimate by \(2^d\) during calculation, then inserting \(d\) bits in the final answer to recover the true normalised CFO. This improves the resolution to \(2^{-(n+d)}\) without any increase in energy consumption.
 
 \subsection{Maximum CFO}
-The theoretical limit on the maximum CFO that can be corrected is given by Nyquist as \(0.5R_s\). From \cref{eq:blind_noise}, we see that blind operation reduces this limit by a factor of 4. Both the R\&B and DK estimators accurately estimate the CFO up to the Nyquist limit, as seen in \cref{fig:max_cfo}. Blind operation aliases as expected at \(f/R_s = 0.125\), making it viable for CFOs up to 3.8 GHz with a symbol rate of 30.5 GHz.
+The theoretical limit on the maximum CFO that can be corrected is given by Nyquist as \(0.5R_s\). From \cref{eq:blind_noise}, we see that blind operation reduces this limit by a factor of 4. Both the Rife \& Boorstyn and differential phase and Kay estimators accurately estimate the CFO up to the Nyquist limit, as seen in \cref{fig:max_cfo}. Blind operation aliases as expected at \(f/R_s = 0.125\), making it viable for CFOs up to 3.8 GHz with a symbol rate of 30.5 GHz.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.7\textwidth]{max_cfo.png}
@@ -595,101 +602,48 @@ Only phases are needed, so the entire estimation can be performed with CORDIC. T
 The two phase recovery algorithms are compared in isolation by simulating an AWGN channel with additive Wiener phase noise, without chromatic dispersion, PMD, or fibre nonlinearity, so that any performance difference is attributable solely to the phase estimation stage. BER is estimated by Monte Carlo simulation over independent realisations for each combination of laser linewidth and SNR, with the phase ambiguity inherent to QPSK resolved by exhaustive search over the four \(\pi/2\) rotations before symbol decisions are made.
 
 \subsection{System Energy Comparison}
-The energy framework of \cref{chapter:energy} is applied to compare all combinations of frequency and phase recovery algorithm. All simulations target the CPON specification.
 
-
-
-For each algorithm combination, the fixed-point word lengths of the frequency recovery (\(n_\mathrm{FR}\)) and phase recovery (\(n_\mathrm{PR}\)) stages are varied independently over a grid. At each grid point, Monte Carlo simulation over multiple independent realisations estimates the FEC SNR which determines the required transmitter power via \cref{eq:snr_shot}. The receiver DSP energy at that precision is computed from the operation counts of the preceding sections via \cref{eq:rx_energy}, and the transmitter energy follows from \cref{eq:tx_bit_energy}. The precision combination that minimises the mean system energy of \cref{eq:sys_energy} is then selected for each algorithm pair and splitting ratio.
-
-The reported energies should be interpreted as a \emph{comparative} metric. The 45\,nm CMOS reference values of \cref{tab:energy} provide a consistent basis for ranking implementations, but do not constitute absolute power predictions for a real device. Additionally, the energy cost of applying the estimated corrections to each received symbol is excluded, as this contribution is implementation-independent and does not affect relative comparisons.
 
 \section{Results \& Discussion}
 \subsection{Phase Recovery Performance}
-To replace Viterbi \& Viterbi with the simplified pilots-only phase correction, it must exhibit comparable performance over the range of linewidths that could be expected during operation of the network. The BER for each phase recovery algorithm as SNR varies is shown in \cref{fig:vv_vs_pilots}. Both algorithms have almost identical performance and are reliable up to 10 MHz, well beyond the maximum specified in the CPON spec.
+To replace Viterbi \& Viterbi with the simplified pilots-only phase correction, it must exhibit comparable performance over the range of linewidths that could be expected during operation of the network. The BER for each phase recovery algorithm as SNR varies is shown in \cref{fig:vv_vs_pilots}. Both algorithms have almost identical performance (plots overlapping) and are reliable up to 10 MHz, well beyond the maximum of 1 MHz given in the CPON spec.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.7\textwidth]{vv_vs_pilots.png}
     \caption{Performance comparison of V\&V and Pilots-Only phase correction}
     \label{fig:vv_vs_pilots}
 \end{figure}
+The choice of fixed-point precision used in  phase recovery will balance receiver energy and performance. \Cref{fig:CR_precision_performance} compares the performance of both algorithms and \cref{fig:CR_precision_energy} shows the energy savings when using pilots-only instead of Viterbi \& Viterbi. Both algorithms perform almost identically down to 6 bits, where the FEC SNR of Viterbi \& Viterbi rises quickly. The additional operations needed by Viterbi \& Viterbi to estimate the phase error mean that quantisation errors compound, degrading perfomance at low precision. The ability of the pilots-only estimate to match or improve on the FEC SNR of Viterbi \& Viterbi is likely due to the inherent robustness of QPSK to additive and phase noise; pilots-only will produce a slightly less accurate estimate but as long as it brings the symbol within the correct QPSK quadrant, decoding will be succesful. It is then clear from \cref{fig:CR_precision_performance,fig:CR_precision_energy} that a receiver can save energy at no performance cost by using the pilots-only estimate with 4 bits of precision. The increase in transmitter energy from the slight increase in FEC SNR at 2 bits of precision may be outweighed by the receiver energy savings, but this will depend on if the carrier recovery block limits the receiver SNR and other system parameters like the wall-plug efficiency of the laser.
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.7\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{CR_precision_comparison.png}
+        \caption{FEC SNR.}
+        \label{fig:CR_precision_performance}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.7\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{CR_precision_energy.png}
+        \caption{Energy saved by switching V\&V \(\to\) pilots-only.}
+        \label{fig:CR_precision_energy}
+    \end{subfigure}
+    \caption{Phase recovery as fixed-point precision varies with 1\,MHz laser linewidth: FEC SNR for pilots-only and Viterbi \& Viterbi, and the phase recovery energy saved by replacing V\&V with pilots-only. Rife \& Boorstyn used to remove initial CFO.}
+    \label{fig:CR_precision}
+\end{figure}
 
 \subsection{Blind vs Data-Aided Operation}
-The decrease in threshold SNR for longer observation lengths suggests that the performance of the R\&B algorithm will improve with blind observation length \(D\). This is not the case for the DK estimator, where increasing blind observation length has no effect on threshold SNR. The effect of observation length on FEC SNR is shown for both algorithms in \cref{fig:observation_length}, where blind R\&B shows a clear increase in performance over the blind DK estimator for longer observations and improves on data-aided R\&B after \(\approx 50\) symbols. The DK estimator in blind operation is thus not viable for frequency recovery, but blind R\&B can provide the best performance at a higher computational cost.
+The decrease in threshold SNR for longer observation lengths suggests that the performance of the Rife \& Boorstyn algorithm will improve with blind observation length \(D\). This is not the case for the differential phase and Kay estimator, where increasing blind observation length has no effect on threshold SNR. The effect of observation length on FEC SNR is shown for both algorithms in \cref{fig:observation_length}, where blind Rife \& Boorstyn shows a clear increase in performance over the blind differential phase and Kay estimator for longer observations and improves on data-aided Rife \& Boorstyn after \(\approx 50\) symbols. The differential phase and Kay estimator in blind operation is thus not viable for frequency recovery, but blind Rife \& Boorstyn can provide the best performance at a higher computational cost.
 \begin{figure}[H]
     \centering\includegraphics[width=0.7\textwidth]{blind_data.png}
-    \caption{FEC SNR vs blind observation length for the R\&B and DK estimators. CFO = 2 GHz, laser linewidth = 1 MHz.}
+    \caption{FEC SNR vs blind observation length for the Rife \& Boorstyn and differential phase and Kay estimators. CFO = 2 GHz, laser linewidth = 1 MHz.}
     \label{fig:observation_length}
 \end{figure}
-
-
-\subsection{Combined Performance}
-The best performance achieved by each carrier recovery combination is shown in \cref{tab:min_fec_snr}. The most computationally expensive combination of blind R\&B and Viterbi \& Viterbi achieves the lowest FEC SNR. DK and data-aided R\&B exhibit almost identical best-case performance.
-\begin{table}[H]
-    \centering
-    \small
-    \caption{Minimum mean FEC SNR achievable by each frequency/phase recovery pair over the fixed-point precision grid (energy cost disregarded), with the precision combo at which the minimum occurs.}
-    \label{tab:min_fec_snr}
-    \begin{tabular}{llcc}
-        \toprule
-        FR & PR & Min FEC SNR \(\pm\,\sigma\) (dB) & \((n_\mathrm{FR}, n_\mathrm{PR})\)  \\
-        \midrule
-        DK                & Pilots & \(7.94 \pm 0.40\)  & \((14, 8)\)  \\
-        DK                & V\&V   & \(7.64 \pm 0.25\)  & \((14, 8)\)  \\
-        R\&B              & Pilots & \(7.93 \pm 0.40\)  & \((12, 14)\) \\
-        R\&B              & V\&V   & \(7.64 \pm 0.27\)  & \((10, 8)\)  \\
-        R\&B blind (D=512)       & Pilots & \(7.50 \pm 0.08\)  & \((12, 10)\) \\
-        R\&B blind (D=256)       & V\&V   & \(\bm{7.39 \pm 0.08}\) & \((14, 10)\) \\
-        \bottomrule
-    \end{tabular}
-\end{table}
-The best-case performance is not of interest in an energy-efficient design. Instead we wish to find the implementation that uses the least system energy to achieve acceptable performance. \Cref{fig:cr_energy_breakdown} shows the minimum combined energy required to reach the pre-FEC threshold for each frequency/phase recovery pair, with the energy-optimal fixed-point precision and the corresponding energy breakdown listed in \cref{tab:energy_sys}. Amortisation means phase recovery dominates the receiver energy. The high complexity of Viterbi \& Viterbi means that the optimal implementation uses few bits of precision to reduce the receiver energy at the cost of a high FEC SNR. Viterbi \& Viterbi evidently suffers more from this reduced precision than pilots-only as quantisation error accumulates over multiple operations, resulting in greater energy consumption by the transmitter and receiver. The choice of frequency recovery algorithm is less significant, with DK saving $\approx 30$ fJ/bit over R\&B when a CFO estimate is applied to each subframe (3712 symbols). 
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.6\textwidth]{shot_noise_bar.png}
-    \caption{Energy breakdown for carrier recovery. Left: (20 km, 1:512). Right: (80 km, 1:16).}
-    \label{fig:cr_energy_breakdown}
-\end{figure}
-
-\begin{table}[H]
-    \centering
-    \small
-    \caption{Energy-optimal fixed-point configuration for each frequency/phase recovery pair under the 35\,dB flat-loss shot-noise model. Energies in fJ/bit; results are independent of the splitting ratio \(K\).}
-    \label{tab:energy_sys}
-    \begin{tabular}{llcccc}
-        \toprule
-        FR & PR & \((n_\mathrm{FR}, n_\mathrm{PR})\) & \(E_\mathrm{tx}\) / \(E_\mathrm{rx}\) & \(E_\mathrm{sys} \pm \sigma\) & FEC SNR \(\pm\,\sigma\) (dB) \\
-        \midrule
-        DK                       & Pilots & \((4,4)\) & \(26.5\) / \(3.07\) & \(\bm{29.5 \pm 3.4}\)  & \(\bm{8.11 \pm 0.50}\) \\
-        DK                       & V\&V   & \((6,4)\) & \(225\) / \(956\)   & \(1181 \pm 40\)        & \(17.2 \pm 1.3\) \\
-        R\&B                     & Pilots & \((2,4)\) & \(32.6\) / \(28.5\) & \(61.1 \pm 4.3\)       & \(9.01 \pm 0.54\) \\
-        R\&B                     & V\&V   & \((2,4)\) & \(238\) / \(980\)   & \(1218 \pm 25\)        & \(17.6 \pm 0.71\) \\
-        R\&B blind (\(D{=}32\))  & Pilots & \((2,4)\) & \(33.0\) / \(40.0\) & \(73.0 \pm 4.0\)       & \(9.06 \pm 0.51\) \\
-        R\&B blind (\(D{=}64\))  & V\&V   & \((2,2)\) & \(748\) / \(329\)   & \(1077 \pm 987\)       & \(19.7 \pm 4.6\) \\
-        \bottomrule
-    \end{tabular}
-\end{table}
-If the CFO remains constant over a longer period, the energy contribution from CFO estimation becomes negligible. With the frequency recovery energy amortised away, the energy-optimal pilots-only configurations are listed in \cref{tab:energy_sys_no_fr}. Blind R\&B now becomes the most efficient frequency recovery algorithm, since its high observation length lowers the FEC SNR at no per-symbol cost, narrowly beating DK.
-
-\begin{table}[H]
-    \centering
-    \small
-    \caption{Energy-optimal configuration when the frequency recovery energy is amortised away (CFO constant over many symbols). Energies in fJ/bit; results are independent of the splitting ratio \(K\).}
-    \label{tab:energy_sys_no_fr}
-    \begin{tabular}{llcccc}
-        \toprule
-        FR & PR & \((n_\mathrm{FR}, n_\mathrm{PR})\) & \(E_\mathrm{tx}\) / \(E_\mathrm{rx}\) & \(E_\mathrm{sys} \pm \sigma\) & FEC SNR \(\pm\,\sigma\) (dB) \\
-        \midrule
-        DK                       & Pilots & \((8,4)\)  & \(25.8\) / \(1.91\) & \(27.7 \pm 2.8\)        & \(8.01 \pm 0.44\) \\
-        R\&B blind (\(D{=}256\)) & Pilots & \((12,4)\) & \(23.1\) / \(1.91\) & \(\bm{25.0 \pm 0.39}\)  & \(\bm{7.55 \pm 0.07}\) \\
-        \bottomrule
-    \end{tabular}
-\end{table}
-
-   
 
 \section{Conclusions}
 The robustness to both additive and phase noise of QPSK allows the phase recovery block of a coherent receiver to be dramatically simplified by just using pilot symbols with no noticeable drop in performance, resulting in considerable energy savings. Frequency recovery can also be implemented with simple algorithms to save energy; however, the efficacy of doing so depends on how often the CFO must be estimated. For access networks dominated by shot noise where dispersive effects have been compensated, carrier recovery performance is independent of the length and splitting ratio when constrained to a given loss from OLT to ONU.
 
+\chapter{Full DSP Pipeline}
 \printbibliography
 \end{document}

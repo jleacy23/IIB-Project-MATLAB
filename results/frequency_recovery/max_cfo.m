@@ -40,7 +40,7 @@ classdef max_cfo < matlab.unittest.TestCase
         LW_Hz  = 1000e3                 % laser linewidth [Hz]
 
         % CFO sweep — normalised to R_s, 0 to <0.5 in steps of 0.05
-        NormCFO_vec = 0 : 0.05 : 0.45
+        NormCFO_vec = 0 : 0.025 : 0.475
 
         % FFT search parameters
         FR_Nfft       = 512

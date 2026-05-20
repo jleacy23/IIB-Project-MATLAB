@@ -2,14 +2,13 @@ classdef blind_data < matlab.unittest.TestCase
 %BLIND_DATA  SNR threshold at FEC limit vs blind observation length.
 %
 %   Sweeps the blind data-observation length D and plots, for each FR
-%   algorithm separately, the SNR required to achieve BER = 2e-2 with
-%   both Viterbi-Viterbi and pilots-only phase recovery.  Data-aided
-%   results are shown as horizontal dashed reference lines.
+%   algorithm, the SNR required to achieve BER = 2e-2 with pilots-only
+%   phase recovery.  Data-aided FFT-search is shown as a horizontal
+%   dashed reference line.
 %
 %   FR algorithms:  fft_search (Nfft fixed at FR_Nfft for all D),
 %                   differential_kay  — both as blind and data-aided
-%   PR algorithms:  viterbiViterbi, pilots_only  (fixed-point MEX)
-%   Output:         two figures, one per FR algorithm
+%   PR algorithm:   pilots_only  (fixed-point MEX)
 %
 %   Run with:
 %       runtests('blind_data')
@@ -37,7 +36,7 @@ classdef blind_data < matlab.unittest.TestCase
 
         % Fixed-point configuration (word length / fraction length)
         FxpConfig_FR   = struct('WL', 32, 'FL', 16)   % frequency recovery
-        FxpConfig_CR   = struct('WL', 32, 'FL', 16)  % carrier recovery (VV + PO)
+        FxpConfig_CR   = struct('WL', 32, 'FL', 16)   % carrier recovery (PO)
         CordicIts      = 16
 
         % FFT search parameters — Nfft is constant across all D values
@@ -47,9 +46,6 @@ classdef blind_data < matlab.unittest.TestCase
 
         % Phase recovery
         BlockLen       = 32
-        StepSize       = 32
-        PilotThreshold = 5 * pi / 9    % cycle-slip detection threshold [rad]
-        VV_NTaps       = 10
 
         % Build control
         Rebuild        = true
@@ -57,10 +53,6 @@ classdef blind_data < matlab.unittest.TestCase
         % FEC threshold
         FEC_BER        = 2e-2
 
-    end
-
-    properties
-        VVFilters   % {1 x NSNR} Wiener VV filter taps, one per SNR point
     end
 
     %% ================================================================
@@ -87,13 +79,9 @@ classdef blind_data < matlab.unittest.TestCase
             B.FR_Po2Twiddle  = testCase.FR_Po2Twiddle;
             B.FR_BlindD      = max(testCase.BlindD_vec);
             B.FxpConfig_FR   = testCase.FxpConfig_FR;
-            B.FxpConfig_VV   = testCase.FxpConfig_CR;
             B.FxpConfig_PO   = testCase.FxpConfig_CR;
             B.CordicIts      = testCase.CordicIts;
-            B.VV_NTaps       = testCase.VV_NTaps;
             B.BlockLen       = testCase.BlockLen;
-            B.StepSize       = testCase.StepSize;
-            B.PilotThreshold = testCase.PilotThreshold;
             B.PilotLen       = 1;
             B.MaxFreq        = testCase.MaxFreq;
 
@@ -104,23 +92,8 @@ classdef blind_data < matlab.unittest.TestCase
                 fprintf('Building MEX objects...\n');
                 build_freq_recovery_fft_search_fxp_mex(B, cfg);
                 build_freq_recovery_differential_kay_fxp_mex(B, cfg);
-                build_carrier_recovery_viterbiViterbi_fxp_mex(B, cfg);
                 build_carrier_recovery_pilots_only_fxp_mex(B, cfg);
                 fprintf('All MEX objects built.\n');
-            end
-        end
-
-        function calibrateVVFilters(testCase)
-            BITS_PER_SF = 3586 * 2 * 2;
-            [tmp, ~, ~, ~] = modem.modulate(modem.randomBits(BITS_PER_SF));
-            symEnergy = mean(abs(tmp(:)).^2);
-
-            NSNR = length(testCase.SNR_dB_vec);
-            testCase.VVFilters = cell(1, NSNR);
-            for si = 1:NSNR
-                testCase.VVFilters{si} = carrier_recovery.genVVFilter( ...
-                    testCase.LW_Hz, testCase.Rs, testCase.SNR_dB_vec(si), ...
-                    symEnergy, testCase.N_pol, testCase.VV_NTaps);
             end
         end
 
@@ -135,22 +108,13 @@ classdef blind_data < matlab.unittest.TestCase
             P  = testCase;
             ND = length(P.BlindD_vec);
 
-            % fecSNR: [ND x 2]  columns = VV, PO
-            fecSNR_fft_blind = nan(ND, 2);
-            fecSNR_dk_blind  = nan(ND, 2);
-            fecSNR_fft_DA    = nan(1, 2);
-            fecSNR_dk_DA     = nan(1, 2);
+            fecSNR_fft_blind = nan(ND, 1);
+            fecSNR_dk_blind  = nan(ND, 1);
 
-            % ---- Data-aided references ----------------------------------
+            % ---- Data-aided reference -----------------------------------
             fprintf('Data-aided reference (FFT search)...\n');
             ber = testCase.runSnrSweep('fft_search', 0);
-            fecSNR_fft_DA(1) = blind_data.fecCrossing(P.SNR_dB_vec, ber(:,1), P.FEC_BER);
-            fecSNR_fft_DA(2) = blind_data.fecCrossing(P.SNR_dB_vec, ber(:,2), P.FEC_BER);
-
-            fprintf('Data-aided reference (differential Kay)...\n');
-            ber = testCase.runSnrSweep('differential_kay', 0);
-            fecSNR_dk_DA(1) = blind_data.fecCrossing(P.SNR_dB_vec, ber(:,1), P.FEC_BER);
-            fecSNR_dk_DA(2) = blind_data.fecCrossing(P.SNR_dB_vec, ber(:,2), P.FEC_BER);
+            fecSNR_fft_DA = blind_data.fecCrossing(P.SNR_dB_vec, ber, P.FEC_BER);
 
             % ---- Blind sweep over D -------------------------------------
             for di = 1:ND
@@ -158,13 +122,11 @@ classdef blind_data < matlab.unittest.TestCase
 
                 fprintf('[FFT search]       blind D = %4d  (%d/%d)\n', D, di, ND);
                 ber = testCase.runSnrSweep('fft_search_blind', D);
-                fecSNR_fft_blind(di,1) = blind_data.fecCrossing(P.SNR_dB_vec, ber(:,1), P.FEC_BER);
-                fecSNR_fft_blind(di,2) = blind_data.fecCrossing(P.SNR_dB_vec, ber(:,2), P.FEC_BER);
+                fecSNR_fft_blind(di) = blind_data.fecCrossing(P.SNR_dB_vec, ber, P.FEC_BER);
 
                 fprintf('[Differential Kay] blind D = %4d  (%d/%d)\n', D, di, ND);
                 ber = testCase.runSnrSweep('differential_kay_blind', D);
-                fecSNR_dk_blind(di,1) = blind_data.fecCrossing(P.SNR_dB_vec, ber(:,1), P.FEC_BER);
-                fecSNR_dk_blind(di,2) = blind_data.fecCrossing(P.SNR_dB_vec, ber(:,2), P.FEC_BER);
+                fecSNR_dk_blind(di) = blind_data.fecCrossing(P.SNR_dB_vec, ber, P.FEC_BER);
             end
 
             % ---- Plot ---------------------------------------------------
@@ -179,10 +141,10 @@ classdef blind_data < matlab.unittest.TestCase
     methods (Access = private)
 
         function ber_avg = runSnrSweep(testCase, fr_algo, blindD)
-            % Returns BER averaged over NTrials: [NSNR x 2] (col1=VV, col2=PO).
+            % Returns pilots-only BER averaged over NTrials: [NSNR x 1].
             P       = testCase;
             NSNR    = length(P.SNR_dB_vec);
-            ber_all = zeros(P.NTrials, NSNR, 2);
+            ber_all = zeros(P.NTrials, NSNR);
 
             T_fr = freq_recovery.fxp_types(P.FxpConfig_FR);
             T_cr = carrier_recovery.fxp_types(P.FxpConfig_CR);
@@ -192,28 +154,19 @@ classdef blind_data < matlab.unittest.TestCase
                     [fr_out, pilots, txRefBits] = blind_data.buildChannel( ...
                         P, P.SNR_dB_vec(si), fr_algo, blindD, T_fr);
 
-                    fr_fi     = cast(fr_out,              'like', T_cr.x);
-                    pilots_fi = cast(pilots,               'like', T_cr.x);
-                    vvfilt_fi = cast(testCase.VVFilters{si}, 'like', T_cr.w);
-
-                    % Viterbi-Viterbi
-                    [cr_vv, ~] = carrier_recovery.viterbiViterbi_fxp_mex( ...
-                        fr_fi, P.N_pol, P.VV_NTaps, vvfilt_fi, pilots_fi, ...
-                        P.BlockLen, double(P.StepSize), P.PilotThreshold, ...
-                        double(P.CordicIts), T_cr);
-                    cr_vv = blind_data.resolveAmbiguity(double(cr_vv), txRefBits);
-                    ber_all(tr, si, 1) = blind_data.computeBER(cr_vv, txRefBits);
+                    fr_fi     = cast(fr_out, 'like', T_cr.x);
+                    pilots_fi = cast(pilots, 'like', T_cr.x);
 
                     % Pilots-only
                     [cr_po, ~] = carrier_recovery.pilots_only_fxp_mex( ...
                         fr_fi, P.N_pol, P.BlockLen, pilots_fi, ...
                         double(P.CordicIts), T_cr);
                     cr_po = blind_data.resolveAmbiguity(double(cr_po), txRefBits);
-                    ber_all(tr, si, 2) = blind_data.computeBER(cr_po, txRefBits);
+                    ber_all(tr, si) = blind_data.computeBER(cr_po, txRefBits);
                 end
             end
 
-            ber_avg = reshape(mean(ber_all, 1), [NSNR, 2]);
+            ber_avg = mean(ber_all, 1).';
 
             nBits    = 3712 * P.N_pol * 2;
             berFloor = 1 / (P.NTrials * nBits);
@@ -320,14 +273,12 @@ classdef blind_data < matlab.unittest.TestCase
         end
 
         function plotCombinedResults(P, fecSNR_fft_blind, fecSNR_dk_blind, fecSNR_fft_DA)
-            % fecSNR_fft_blind : [ND x 2]  columns = VV, PO  (FFT search, blind)
-            % fecSNR_dk_blind  : [ND x 2]  columns = VV, PO  (Differential Kay, blind)
-            % fecSNR_fft_DA    : [1  x 2]  FFT search data-aided reference
+            % fecSNR_fft_blind : [ND x 1]  FFT search, blind, pilots-only
+            % fecSNR_dk_blind  : [ND x 1]  Differential Kay, blind, pilots-only
+            % fecSNR_fft_DA    : scalar    FFT search data-aided reference (pilots-only)
 
-            prNames  = {'Viterbi-Viterbi', 'Pilots-only'};
-            frNames  = {sprintf('FFT Search (N_{fft}=%d)', P.FR_Nfft), 'Differential Kay'};
-            colors   = lines(4);
-            markers  = {'o', 's'};
+            frNames = {sprintf('FFT Search (N_{fft}=%d)', P.FR_Nfft), 'Differential Kay'};
+            colors  = lines(2);
 
             figure('Name', 'SNR at FEC vs Blind D', ...
                 'Position', [100 100 780 520], 'Color', 'w');
@@ -337,32 +288,26 @@ classdef blind_data < matlab.unittest.TestCase
 
             fecSNR_blind = {fecSNR_fft_blind, fecSNR_dk_blind};
             for ai = 1:2
-                for c = 1:2
-                    ci    = (ai - 1) * 2 + c;
-                    valid = ~isnan(fecSNR_blind{ai}(:, c));
-                    if any(valid)
-                        plot(ax, P.BlindD_vec(valid), fecSNR_blind{ai}(valid, c), ...
-                            'LineStyle', '-', 'Marker', markers{c}, ...
-                            'MarkerSize', 6, 'LineWidth', 1.8, ...
-                            'Color', colors(ci, :), ...
-                            'DisplayName', sprintf('%s — %s', frNames{ai}, prNames{c}));
-                    end
+                valid = ~isnan(fecSNR_blind{ai});
+                if any(valid)
+                    plot(ax, P.BlindD_vec(valid), fecSNR_blind{ai}(valid), ...
+                        'LineStyle', '-', 'Marker', 'o', ...
+                        'MarkerSize', 6, 'LineWidth', 1.8, ...
+                        'Color', colors(ai, :), ...
+                        'DisplayName', frNames{ai});
                 end
             end
 
-            % FFT search data-aided horizontal reference lines only
-            for c = 1:2
-                ci = c;
-                if ~isnan(fecSNR_fft_DA(c))
-                    yline(ax, fecSNR_fft_DA(c), ...
-                        'LineStyle', '--', 'LineWidth', 1.2, ...
-                        'Color', colors(ci, :), ...
-                        'HandleVisibility', 'off');
-                    plot(ax, NaN, NaN, ...
-                        'LineStyle', '--', 'LineWidth', 1.2, ...
-                        'Color', colors(ci, :), ...
-                        'DisplayName', sprintf('%s — %s (data-aided)', frNames{1}, prNames{c}));
-                end
+            % FFT search data-aided horizontal reference line
+            if ~isnan(fecSNR_fft_DA)
+                yline(ax, fecSNR_fft_DA, ...
+                    'LineStyle', '--', 'LineWidth', 1.2, ...
+                    'Color', colors(1, :), ...
+                    'HandleVisibility', 'off');
+                plot(ax, NaN, NaN, ...
+                    'LineStyle', '--', 'LineWidth', 1.2, ...
+                    'Color', colors(1, :), ...
+                    'DisplayName', sprintf('%s (data-aided)', frNames{1}));
             end
 
             set(ax, 'XScale', 'log', 'FontSize', 11, 'Box', 'on');
@@ -370,11 +315,12 @@ classdef blind_data < matlab.unittest.TestCase
 
             xlabel(ax, 'Blind observation length  D  [symbols]', 'FontSize', 12);
             ylabel(ax, sprintf('SNR at BER = %.0e  [dB]', P.FEC_BER), 'FontSize', 12);
-            title(ax, sprintf('SNR at FEC vs Blind Observation Length\n\\DeltaF = %.0f MHz,  LW = %.0f kHz', ...
+            title(ax, sprintf(['SNR at FEC vs Blind Observation Length ' ...
+                '(pilots-only)\n\\DeltaF = %.0f MHz,  LW = %.0f kHz'], ...
                 P.DeltaF_Hz/1e6, P.LW_Hz/1e3), 'FontSize', 12);
 
-            lgd = legend(ax, 'Location', 'northeast', 'FontSize', 10);
-            lgd.Title.String = 'Algorithm — Phase recovery';
+            lgd = legend(ax, 'Location', 'northeast', 'FontSize', 11);
+            lgd.Title.String = 'Frequency recovery';
         end
 
     end

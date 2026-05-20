@@ -25,7 +25,7 @@
 \contentsline {section}{\numberline {2.4}Transmitter Energy}{8}{}%
 \contentsline {subsection}{\numberline {2.4.1}Minimum Required SNR}{9}{}%
 \contentsline {subsection}{\numberline {2.4.2}Noise}{9}{}%
-\contentsline {section}{\numberline {2.5}System Energy}{9}{}%
+\contentsline {section}{\numberline {2.5}Combined Energy}{9}{}%
 \contentsline {chapter}{\numberline {3}Equalisation}{11}{}%
 \contentsline {section}{\numberline {3.1}Introduction}{11}{}%
 \contentsline {section}{\numberline {3.2}Static Equalisation}{11}{}%
@@ -43,10 +43,10 @@
 \contentsline {section}{\numberline {4.2}Frequency Recovery}{15}{}%
 \contentsline {subsection}{\numberline {4.2.1}Isolating CFO}{15}{}%
 \contentsline {subsection}{\numberline {4.2.2}Rife and Boorstyn}{16}{}%
-\contentsline {subsection}{\numberline {4.2.3}Differential Phase + Kay Estimator}{17}{}%
+\contentsline {subsection}{\numberline {4.2.3}Differential Phase and Kay Estimator}{17}{}%
 \contentsline {subsection}{\numberline {4.2.4}Computational Complexity}{19}{}%
-\contentsline {paragraph}{R\&B}{19}{}%
-\contentsline {paragraph}{DK}{20}{}%
+\contentsline {paragraph}{Rife \& Boorstyn}{19}{}%
+\contentsline {paragraph}{Differential phase and Kay}{20}{}%
 \contentsline {subsection}{\numberline {4.2.5}Optimising Bit Width}{20}{}%
 \contentsline {subsection}{\numberline {4.2.6}Maximum CFO}{20}{}%
 \contentsline {section}{\numberline {4.3}Phase Recovery}{21}{}%
@@ -62,5 +62,5 @@
 \contentsline {section}{\numberline {4.5}Results \& Discussion}{23}{}%
 \contentsline {subsection}{\numberline {4.5.1}Phase Recovery Performance}{23}{}%
 \contentsline {subsection}{\numberline {4.5.2}Blind vs Data-Aided Operation}{24}{}%
-\contentsline {subsection}{\numberline {4.5.3}Combined Performance}{24}{}%
-\contentsline {section}{\numberline {4.6}Conclusions}{26}{}%
+\contentsline {section}{\numberline {4.6}Conclusions}{25}{}%
+\contentsline {chapter}{\numberline {5}Full DSP Pipeline}{26}{}%

@@ -1,22 +1,25 @@
 # Fdb version 4
-["biber full"] 1779269149.84799 "full.bcf" "full.bbl" "full" 1779284376.32772 0
+["biber full"] 1779269149.84799 "full.bcf" "full.bbl" "full" 1779367667.41095 0
   "../energy/ref.bib" 1777992037 1213 3edeab146894889c227b177519c60136 ""
   "../frequency_recovery/ref.bib" 1777558777 1554 5f443762d1d5dcd5fd6ffed8945c1a19 ""
-  "full.bcf" 1779284376 109851 418fb4377a4a667f711d5e8ba68ec88a "pdflatex"
+  "full.bcf" 1779367667 109851 418fb4377a4a667f711d5e8ba68ec88a "pdflatex"
   "ref.bib" 1779269149 3456 a894c00d1b50f9e1f5e2783661d548f5 ""
   (generated)
   "full.bbl"
   "full.blg"
   (rewritten before read)
-["pdflatex"] 1779284374.638 "c:/Users/joele/Downloads/iib_project/report/full/full.tex" "full.pdf" "full" 1779284376.32875 0
+["pdflatex"] 1779367665.09579 "c:/Users/joele/Downloads/iib_project/report/full/full.tex" "full.pdf" "full" 1779367667.41236 0
   "../frequency_recovery/CR_precision_comparison.png" 1779281098 37243 70fe50ace231aa272b9e1671c5ed62a1 ""
-  "../frequency_recovery/CR_precision_energy.png" 1779281932 45603 e487685a769f11f988418c27b6623448 ""
+  "../frequency_recovery/CR_precision_energy.png" 1779353782 44254 90393dac3f933c21b862e6cd57433962 ""
+  "../frequency_recovery/FR_precision_comparison.png" 1779353923 60379 2a7954f047d2fe5c931de09151675b06 ""
+  "../frequency_recovery/FR_precision_energy.png" 1779363661 67071 4ef1e796f1b21195abc6f1e18814ba74 ""
   "../frequency_recovery/MCRB_diffkay_blind.png" 1779275050 115865 0abc6cd5311ebefe452fa7dd8376be61 ""
   "../frequency_recovery/MCRB_diffkay_data.png" 1779275226 74749 6f5697d5f2ffbd7d65835b3528195fc7 ""
   "../frequency_recovery/MCRB_fft_blind.png" 1779275031 117154 e4c4218fe0bd59371e4bef97cd810375 ""
   "../frequency_recovery/MCRB_fft_data.png" 1779275208 63051 62f6f8a3b6cd3d18244f144323a4f654 ""
   "../frequency_recovery/blind_data.png" 1779284367 60892 25cdc0568be91820b3dca72d5d8c8fad ""
   "../frequency_recovery/max_cfo.png" 1779279992 84184 ee65a2bf2189c1c15a0234f1672a55a3 ""
+  "../frequency_recovery/receiver_energy_breakdown_CR.png" 1779367563 46919 f68d811f372c6f6f78a90dbfbe7ff182 ""
   "../frequency_recovery/vv_vs_pilots.png" 1779280895 96506 603a2fb5fc419ed61dcb4fbf2b539001 ""
   "MZM.jpeg" 1779214511 58704 0ab67457ff68e93ec6feefed72464dd5 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy6.tfm" 1772596518 1124 14ccf5552bc7f77ca02a8a402bea8bfb ""
@@ -201,12 +204,12 @@
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1772596550 94259 aec9939469efac8f0cf917369f632359 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/web2c/pdftex/pdflatex.fmt" 1772596566 2236130 036198fdb3bbb46401ac4d671e71ba73 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf.cnf" 1772596498 903 164c5b127cd0d6dc91abad2f62421ea2 ""
-  "c:/Users/joele/Downloads/iib_project/report/full/full.tex" 1779284373 55471 782ae5ad1d2bb0464c92f19d1a3b7797 ""
-  "full.aux" 1779284376 20075 08fa951774a31ca49a988af48d60677f "pdflatex"
+  "c:/Users/joele/Downloads/iib_project/report/full/full.tex" 1779367664 58760 5c062c413324e4efbf96c9e60efbf8b4 ""
+  "full.aux" 1779367667 21804 f6709c12b63ed6e6be3e29cae490b91d "pdflatex"
   "full.bbl" 1779269159 17063 79cf89f29c80f64931187519840cb996 "biber full"
-  "full.run.xml" 1779284376 2384 f9b9b8c3c78720b486d776d617ad8939 "pdflatex"
-  "full.tex" 1779284373 55471 782ae5ad1d2bb0464c92f19d1a3b7797 ""
-  "full.toc" 1779284376 4524 5fe5f60074e0cae7ebd0d7ae7323cbae "pdflatex"
+  "full.run.xml" 1779367667 2384 f9b9b8c3c78720b486d776d617ad8939 "pdflatex"
+  "full.tex" 1779367664 58760 5c062c413324e4efbf96c9e60efbf8b4 ""
+  "full.toc" 1779367667 4680 a7999c307162cf14a063e9e1e4a5582b "pdflatex"
   (generated)
   "full.aux"
   "full.bcf"

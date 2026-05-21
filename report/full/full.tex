@@ -613,7 +613,7 @@ To replace Viterbi \& Viterbi with the simplified pilots-only phase correction, 
     \caption{Performance comparison of V\&V and Pilots-Only phase correction}
     \label{fig:vv_vs_pilots}
 \end{figure}
-The choice of fixed-point precision used in  phase recovery will balance receiver energy and performance. \Cref{fig:CR_precision_performance} compares the performance of both algorithms and \cref{fig:CR_precision_energy} shows the energy savings when using pilots-only instead of Viterbi \& Viterbi. Both algorithms perform almost identically down to 6 bits, where the FEC SNR of Viterbi \& Viterbi rises quickly. The additional operations needed by Viterbi \& Viterbi to estimate the phase error mean that quantisation errors compound, degrading perfomance at low precision. The ability of the pilots-only estimate to match or improve on the FEC SNR of Viterbi \& Viterbi is likely due to the inherent robustness of QPSK to additive and phase noise; pilots-only will produce a slightly less accurate estimate but as long as it brings the symbol within the correct QPSK quadrant, decoding will be succesful. It is then clear from \cref{fig:CR_precision_performance,fig:CR_precision_energy} that a receiver can save energy at no performance cost by using the pilots-only estimate with 4 bits of precision. The increase in transmitter energy from the slight increase in FEC SNR at 2 bits of precision may be outweighed by the receiver energy savings, but this will depend on if the carrier recovery block limits the receiver SNR and other system parameters like the wall-plug efficiency of the laser.
+The choice of fixed-point precision used in  phase recovery will balance receiver energy and performance. \Cref{fig:CR_precision_performance} compares the performance of both algorithms and \cref{fig:CR_precision_energy} shows the energy savings when using pilots-only instead of Viterbi \& Viterbi. Both algorithms perform almost identically down to 6 bits, where the FEC SNR of Viterbi \& Viterbi rises quickly. The additional operations needed by Viterbi \& Viterbi to estimate the phase error mean that quantisation errors compound, degrading perfomance at low precision. The ability of the pilots-only estimate to match or improve on the FEC SNR of Viterbi \& Viterbi is likely due to the inherent robustness of QPSK to additive and phase noise; pilots-only will produce a slightly less accurate estimate but as long as it brings the symbol within the correct QPSK quadrant, decoding will be succesful. It is then clear from \cref{fig:CR_precision_performance,fig:CR_precision_energy} that a receiver can save energy at no performance cost by using the pilots-only estimate with 4 bits of precision. The increase in transmitter energy from the slight increase in FEC SNR at 2 bits of precision may be outweighed by the receiver energy savings, but this will depend on if the carrier recovery block limits the receiver SNR and other system parameters like the wall-plug efficiency of the laser. All further investigations in this section use pilots-only for phase recovery.
 \begin{figure}[H]
     \centering
     \begin{subfigure}{0.7\textwidth}
@@ -637,10 +637,39 @@ The choice of fixed-point precision used in  phase recovery will balance receive
 The decrease in threshold SNR for longer observation lengths suggests that the performance of the Rife \& Boorstyn algorithm will improve with blind observation length \(D\). This is not the case for the differential phase and Kay estimator, where increasing blind observation length has no effect on threshold SNR. The effect of observation length on FEC SNR is shown for both algorithms in \cref{fig:observation_length}, where blind Rife \& Boorstyn shows a clear increase in performance over the blind differential phase and Kay estimator for longer observations and improves on data-aided Rife \& Boorstyn after \(\approx 50\) symbols. The differential phase and Kay estimator in blind operation is thus not viable for frequency recovery, but blind Rife \& Boorstyn can provide the best performance at a higher computational cost.
 \begin{figure}[H]
     \centering\includegraphics[width=0.7\textwidth]{blind_data.png}
-    \caption{FEC SNR vs blind observation length for the Rife \& Boorstyn and differential phase and Kay estimators. CFO = 2 GHz, laser linewidth = 1 MHz.}
+    \caption{FEC SNR vs blind observation length for the Rife \& Boorstyn and differential phase and Kay estimators.}
     \label{fig:observation_length}
 \end{figure}
 
+\subsection{Frequency Recovery Performance}
+The fixed-point performance of each frequency recovery algorithm is compared in \cref{fig:FR_precision_performance} and the corresponding energy savings when switching to the differential phase and Kay estimator is shown \cref{fig:FR_precision_energy}. Data-aided Rife \& Boorstyn appears to offer no performance improvement on differential phase and Kay but consumes more energy. Blind Rife \& Boorstyn consumes the most energy but offers a significant performance increase over both data-aided algorithms. The performance of all algorithms do not degrade until 4 bits of precision. Decreasing the precision further will again depend on the balance between transmitter and receiver energy. The most energy-efficient algorithm depends on how frequently the CFO must be estimated; frequent estimates will likely favour the differential phase and Kay estimator but in the extreme case of only one CFO estimate per transmission then amortisation makes the energy consumption negligible and blind Rife \& Boorstyn will be preferred. Only using 11 symbols in the CFO estimate for data-aided operation introduces high sensitivity to the noise present in those symbols, hence a high variance in the FEC SNR is observed. This has significant design implications as a transmitter tailored to provide the average FEC SNR at the receiver could cause decoding errors if the noise on the 11 training symbols is particularly high. A safe design would then ensure the receiver SNR is closer to the maximum of the FEC SNR range. The variance could be reduced by averaging the CFO estimate over several subframes, but this requires the CFO to stay constant for long enough and consumes more energy at the receiver.
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.7\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{FR_precision_comparison.png}
+        \caption{FEC SNR.}
+        \label{fig:FR_precision_performance}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.7\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{FR_precision_energy.png}
+        \caption{Energy saved by switching to the differential phase and Kay estimator.}
+        \label{fig:FR_precision_energy}
+    \end{subfigure}
+    \caption{Frequency recovery as fixed-point precision varies. FEC SNR for the data-aided differential phase and kay estimator, data aided Rife \& Boorstyn, and blind Rife \& Boorstyn and the corresponding energy savings when switching to diffential phase and Kay. Amortisation over one subframe (3712 symbols).}
+    \label{fig:CR_precision}
+\end{figure}
+
+\subsection{Energy Breakdown}
+Blind Rife \& Boorstyn and differential phase and Kay with pilots-only phase recovery are the two most promising approaches for energy-efficient carrier recovery. The energy breakdowns for each are shown in \cref{fig:cr_energy_breakdown}. Estimating the phase error with pilots-only consumes very little energy.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{receiver_energy_breakdown_CR.png}
+    \caption{Receiver energy breakdown of carrier recovery for 4 bits (left) and 2 bits (right) of precision.}
+    \label{fig:cr_energy_breakdown}
+\end{figure}
 \section{Conclusions}
 The robustness to both additive and phase noise of QPSK allows the phase recovery block of a coherent receiver to be dramatically simplified by just using pilot symbols with no noticeable drop in performance, resulting in considerable energy savings. Frequency recovery can also be implemented with simple algorithms to save energy; however, the efficacy of doing so depends on how often the CFO must be estimated. For access networks dominated by shot noise where dispersive effects have been compensated, carrier recovery performance is independent of the length and splitting ratio when constrained to a given loss from OLT to ONU.
 

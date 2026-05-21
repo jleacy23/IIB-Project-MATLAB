@@ -62,5 +62,7 @@
 \contentsline {section}{\numberline {4.5}Results \& Discussion}{23}{}%
 \contentsline {subsection}{\numberline {4.5.1}Phase Recovery Performance}{23}{}%
 \contentsline {subsection}{\numberline {4.5.2}Blind vs Data-Aided Operation}{24}{}%
-\contentsline {section}{\numberline {4.6}Conclusions}{25}{}%
-\contentsline {chapter}{\numberline {5}Full DSP Pipeline}{26}{}%
+\contentsline {subsection}{\numberline {4.5.3}Frequency Recovery Performance}{25}{}%
+\contentsline {subsection}{\numberline {4.5.4}Energy Breakdown}{26}{}%
+\contentsline {section}{\numberline {4.6}Conclusions}{27}{}%
+\contentsline {chapter}{\numberline {5}Full DSP Pipeline}{28}{}%

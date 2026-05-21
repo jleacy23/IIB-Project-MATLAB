@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.4)  20 MAY 2026 14:39
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.4)  21 MAY 2026 13:47
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -669,6 +669,12 @@ LaTeX Warning: Label `chapter:carrier_recovery' multiply defined.
 
 LaTeX Warning: Label `chapter:carrier_recovery@cref' multiply defined.
 
+
+LaTeX Warning: Label `fig:CR_precision' multiply defined.
+
+
+LaTeX Warning: Label `fig:CR_precision@cref' multiply defined.
+
 )
 \openout1 = `full.aux'.
 
@@ -886,22 +892,39 @@ File: ../frequency_recovery/CR_precision_comparison.png Graphic file (type png)
 <use ../frequency_recovery/CR_precision_comparison.png>
 Package pdftex.def Info: ../frequency_recovery/CR_precision_comparison.png  used on input line 621.
 (pdftex.def)             Requested size: 318.66948pt x 193.33376pt.
-<../frequency_recovery/CR_precision_energy.png, id=103, 578.6418pt x 341.1144pt>
+<../frequency_recovery/CR_precision_energy.png, id=103, 573.342pt x 341.1144pt>
 File: ../frequency_recovery/CR_precision_energy.png Graphic file (type png)
 <use ../frequency_recovery/CR_precision_energy.png>
 Package pdftex.def Info: ../frequency_recovery/CR_precision_energy.png  used on input line 628.
-(pdftex.def)             Requested size: 318.66948pt x 187.86333pt.
+(pdftex.def)             Requested size: 318.66948pt x 189.60178pt.
  [23 <../frequency_recovery/vv_vs_pilots.png (PNG copy)>]
 <../frequency_recovery/blind_data.png, id=107, 489.5088pt x 359.4228pt>
 File: ../frequency_recovery/blind_data.png Graphic file (type png)
 <use ../frequency_recovery/blind_data.png>
 Package pdftex.def Info: ../frequency_recovery/blind_data.png  used on input line 639.
 (pdftex.def)             Requested size: 318.66948pt x 233.98401pt.
- [24 <../frequency_recovery/CR_precision_comparison.png (PNG copy)> <../frequency_recovery/CR_precision_energy.png (PNG copy)>] [25 <../frequency_recovery/blind_data.png (PNG copy)>]
+ [24 <../frequency_recovery/CR_precision_comparison.png (PNG copy)> <../frequency_recovery/CR_precision_energy.png (PNG copy)>]
+<../frequency_recovery/FR_precision_comparison.png, id=112, 564.6696pt x 341.1144pt>
+File: ../frequency_recovery/FR_precision_comparison.png Graphic file (type png)
+<use ../frequency_recovery/FR_precision_comparison.png>
+Package pdftex.def Info: ../frequency_recovery/FR_precision_comparison.png  used on input line 650.
+(pdftex.def)             Requested size: 318.66948pt x 192.50616pt.
+<../frequency_recovery/FR_precision_energy.png, id=113, 573.342pt x 341.1144pt>
+File: ../frequency_recovery/FR_precision_energy.png Graphic file (type png)
+<use ../frequency_recovery/FR_precision_energy.png>
+Package pdftex.def Info: ../frequency_recovery/FR_precision_energy.png  used on input line 657.
+(pdftex.def)             Requested size: 318.66948pt x 189.60178pt.
+ [25 <../frequency_recovery/blind_data.png (PNG copy)>]
+<../frequency_recovery/receiver_energy_breakdown_CR.png, id=117, 533.8344pt x 337.26pt>
+File: ../frequency_recovery/receiver_energy_breakdown_CR.png Graphic file (type png)
+<use ../frequency_recovery/receiver_energy_breakdown_CR.png>
+Package pdftex.def Info: ../frequency_recovery/receiver_energy_breakdown_CR.png  used on input line 669.
+(pdftex.def)             Requested size: 318.66948pt x 201.32832pt.
+ [26 <../frequency_recovery/FR_precision_comparison.png (PNG copy)> <../frequency_recovery/FR_precision_energy.png (PNG copy)>] [27 <../frequency_recovery/receiver_energy_breakdown_CR.png (PNG copy)>]
 Chapter 5.
-[26
+[28
 
-] [27
+] [29
 
 ] (./full.aux)
  ***********
@@ -917,18 +940,18 @@ Package logreq Info: Writing requests to 'full.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 26250 strings out of 469515
- 538982 string characters out of 5467663
- 1337257 words of memory out of 5000000
- 54534 multiletter control sequences out of 15000+600000
+ 26287 strings out of 469515
+ 540673 string characters out of 5467663
+ 1337638 words of memory out of 5000000
+ 54571 multiletter control sequences out of 15000+600000
  645292 words of font info for 104 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 84i,13n,104p,1494b,1472s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 84i,13n,104p,1793b,1472s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmcsc10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb>
-Output written on full.pdf (28 pages, 1052318 bytes).
+Output written on full.pdf (30 pages, 1229344 bytes).
 PDF statistics:
- 203 PDF objects out of 1000 (max. 8388607)
- 123 compressed objects within 2 object streams
+ 212 PDF objects out of 1000 (max. 8388607)
+ 127 compressed objects within 2 object streams
  0 named destinations out of 1000 (max. 500000)
- 63 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 78 words of extra memory for PDF output out of 10000 (max. 10000000)
 

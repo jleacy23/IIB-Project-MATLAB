@@ -88,8 +88,8 @@
 \@writefile{toc}{\contentsline {chapter}{\numberline {3}Equalisation}{11}{}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\newlabel{chapter:carrier_recovery}{{3}{11}{}{chapter.3}{}}
-\newlabel{chapter:carrier_recovery@cref}{{[chapter][3][]3}{[1][11][]11}{}{}{}}
+\newlabel{chapter:equalisation}{{3}{11}{}{chapter.3}{}}
+\newlabel{chapter:equalisation@cref}{{[chapter][3][]3}{[1][11][]11}{}{}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {3.1}Introduction}{11}{}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {3.2}Static Equalisation}{11}{}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.2.1}Equalisation Procedure}{11}{}\protected@file@percent }
@@ -153,7 +153,7 @@
 \newlabel{eq:phase_blind@cref}{{[equation][3][4]4.3}{[1][16][]16}{}{}{}}
 \newlabel{eq:phase_data}{{4.4}{16}{}{equation.4.4}{}}
 \newlabel{eq:phase_data@cref}{{[equation][4][4]4.4}{[1][16][]16}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.2.2}Rife and Boorstyn}{16}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2.2}Rife \& Boorstyn}{16}{}\protected@file@percent }
 \newlabel{eq:fft_refined}{{4.5}{16}{}{equation.4.5}{}}
 \newlabel{eq:fft_refined@cref}{{[equation][5][4]4.5}{[1][16][]16}{}{}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {4.1}{\ignorespaces Normalised MSE of the Rife \& Boorstyn algorithm with FFT size \(N_{FFT} = 512\) compared to the MCRB for \(L=11\) training symbols.}}{17}{}\protected@file@percent }
@@ -184,7 +184,7 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.2.6}Maximum CFO}{20}{}\protected@file@percent }
 \abx@aux@cite{0}{Cheng2013PilotCycleSlip}
 \abx@aux@segm{0}{0}{Cheng2013PilotCycleSlip}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.5}{\ignorespaces Normalised MSE in CFO estimate (\(\mathrm  {MSE}^2/R_s^2\)) vs Normalised CFO (\(f/R_s\))}}{21}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4.5}{\ignorespaces Normalised MSE in CFO estimate (\(\mathrm  {MSE}/R_s^2\)) vs.\ normalised CFO (\(f/R_s\)).}}{21}{}\protected@file@percent }
 \newlabel{fig:max_cfo}{{4.5}{21}{}{figure.4.5}{}}
 \newlabel{fig:max_cfo@cref}{{[figure][5][4]4.5}{[1][20][]21}{}{}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {4.3}Phase Recovery}{21}{}\protected@file@percent }
@@ -207,7 +207,7 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.5.1}Phase Recovery Performance}{23}{}\protected@file@percent }
 \@writefile{lof}{\contentsline {figure}{\numberline {4.6}{\ignorespaces Performance comparison of V\&V and Pilots-Only phase correction}}{23}{}\protected@file@percent }
 \newlabel{fig:vv_vs_pilots}{{4.6}{23}{}{figure.4.6}{}}
-\newlabel{fig:vv_vs_pilots@cref}{{[figure][6][4]4.6}{[1][22][]23}{}{}{}}
+\newlabel{fig:vv_vs_pilots@cref}{{[figure][6][4]4.6}{[1][23][]23}{}{}{}}
 \newlabel{fig:CR_precision_performance}{{4.7a}{24}{}{subfigure.4.7.1}{}}
 \newlabel{fig:CR_precision_performance@cref}{{[subfigure][1][4,7]4.7a}{[1][23][]24}{}{}{}}
 \newlabel{sub@fig:CR_precision_performance}{{a}{24}{}{subfigure.4.7.1}{}}
@@ -216,7 +216,7 @@
 \newlabel{fig:CR_precision_energy@cref}{{[subfigure][2][4,7]4.7b}{[1][23][]24}{}{}{}}
 \newlabel{sub@fig:CR_precision_energy}{{b}{24}{}{subfigure.4.7.2}{}}
 \newlabel{sub@fig:CR_precision_energy@cref}{{[subfigure][2][4,7]4.7b}{[1][23][]24}{}{}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.7}{\ignorespaces Phase recovery as fixed-point precision varies with 1\,MHz laser linewidth: FEC SNR for pilots-only and Viterbi \& Viterbi, and the phase recovery energy saved by replacing V\&V with pilots-only. Rife \& Boorstyn used to remove initial CFO.}}{24}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4.7}{\ignorespaces Phase recovery performance vs fixed-point precision at 1\,MHz laser linewidth, with Rife \& Boorstyn used to remove the initial CFO.}}{24}{}\protected@file@percent }
 \newlabel{fig:CR_precision}{{4.7}{24}{}{figure.4.7}{}}
 \newlabel{fig:CR_precision@cref}{{[figure][7][4]4.7}{[1][23][]24}{}{}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.5.2}Blind vs Data-Aided Operation}{24}{}\protected@file@percent }
@@ -232,13 +232,16 @@
 \newlabel{fig:FR_precision_energy@cref}{{[subfigure][2][4,9]4.9b}{[1][25][]26}{}{}{}}
 \newlabel{sub@fig:FR_precision_energy}{{b}{26}{}{subfigure.4.9.2}{}}
 \newlabel{sub@fig:FR_precision_energy@cref}{{[subfigure][2][4,9]4.9b}{[1][25][]26}{}{}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.9}{\ignorespaces Frequency recovery as fixed-point precision varies. FEC SNR for the data-aided differential phase and kay estimator, data aided Rife \& Boorstyn, and blind Rife \& Boorstyn and the corresponding energy savings when switching to diffential phase and Kay. Amortisation over one subframe (3712 symbols).}}{26}{}\protected@file@percent }
-\newlabel{fig:CR_precision}{{4.9}{26}{}{figure.4.9}{}}
-\newlabel{fig:CR_precision@cref}{{[figure][9][4]4.9}{[1][25][]26}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.9}{\ignorespaces Frequency recovery as fixed-point precision varies, comparing data-aided differential phase and Kay, data-aided Rife \& Boorstyn, and blind Rife \& Boorstyn, with the corresponding energy savings when switching to differential phase and Kay. FR energy amortised over one subframe (3712 symbols).}}{26}{}\protected@file@percent }
+\newlabel{fig:FR_precision}{{4.9}{26}{}{figure.4.9}{}}
+\newlabel{fig:FR_precision@cref}{{[figure][9][4]4.9}{[1][25][]26}{}{}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.5.4}Energy Breakdown}{26}{}\protected@file@percent }
 \@writefile{lof}{\contentsline {figure}{\numberline {4.10}{\ignorespaces Receiver energy breakdown of carrier recovery for 4 bits (left) and 2 bits (right) of precision.}}{27}{}\protected@file@percent }
 \newlabel{fig:cr_energy_breakdown}{{4.10}{27}{}{figure.4.10}{}}
 \newlabel{fig:cr_energy_breakdown@cref}{{[figure][10][4]4.10}{[1][26][]27}{}{}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4.5}{\ignorespaces Combined energy and FEC SNR of the differential phase and Kay estimator and blind Rife \& Boorstyn, both using pilots-only phase recovery.}}{27}{}\protected@file@percent }
+\newlabel{tab:cr_energy_breakdown}{{4.5}{27}{}{table.4.5}{}}
+\newlabel{tab:cr_energy_breakdown@cref}{{[table][5][4]4.5}{[1][26][]27}{}{}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {4.6}Conclusions}{27}{}\protected@file@percent }
 \@writefile{toc}{\contentsline {chapter}{\numberline {5}Full DSP Pipeline}{28}{}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}

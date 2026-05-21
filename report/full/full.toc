@@ -42,7 +42,7 @@
 \contentsline {section}{\numberline {4.1}Introduction}{15}{}%
 \contentsline {section}{\numberline {4.2}Frequency Recovery}{15}{}%
 \contentsline {subsection}{\numberline {4.2.1}Isolating CFO}{15}{}%
-\contentsline {subsection}{\numberline {4.2.2}Rife and Boorstyn}{16}{}%
+\contentsline {subsection}{\numberline {4.2.2}Rife \& Boorstyn}{16}{}%
 \contentsline {subsection}{\numberline {4.2.3}Differential Phase and Kay Estimator}{17}{}%
 \contentsline {subsection}{\numberline {4.2.4}Computational Complexity}{19}{}%
 \contentsline {paragraph}{Rife \& Boorstyn}{19}{}%

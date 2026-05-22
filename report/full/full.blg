@@ -1,0 +1,26 @@
+[0] Config.pm:328> INFO - This is Biber 2.21
+[1] Config.pm:331> INFO - Logfile is 'full.blg'
+[191] biber-MSWIN64:342> INFO - === 
+[261] Biber.pm:421> INFO - Reading 'full.bcf'
+[410] Biber.pm:1002> INFO - Found 12 citekeys in bib section 0
+[425] Biber.pm:4487> INFO - Processing section 0
+[441] Biber.pm:4678> INFO - Looking for bibtex file '../energy/ref.bib' for section 0
+[514] bibtex.pm:1713> INFO - LaTeX decoding ...
+[523] bibtex.pm:1519> INFO - Found BibTeX data source '../energy/ref.bib'
+[571] Biber.pm:4678> INFO - Looking for bibtex file '../frequency_recovery/ref.bib' for section 0
+[625] bibtex.pm:1713> INFO - LaTeX decoding ...
+[632] bibtex.pm:1519> INFO - Found BibTeX data source '../frequency_recovery/ref.bib'
+[653] Biber.pm:4678> INFO - Looking for bibtex file 'ref.bib' for section 0
+[704] bibtex.pm:1713> INFO - LaTeX decoding ...
+[715] bibtex.pm:1519> INFO - Found BibTeX data source 'ref.bib'
+[784] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'variable = shifted' with 'variable = non-ignorable'
+[784] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'normalization = NFD' with 'normalization = prenormalized'
+[785] Biber.pm:4307> INFO - Sorting list 'nty/global//global/global/global' of type 'entry' with template 'nty' and locale 'en-US'
+[785] Biber.pm:4313> INFO - No sort tailoring available for locale 'en-US'
+[843] bbl.pm:676> INFO - Writing 'full.bbl' with encoding 'UTF-8'
+[854] bbl.pm:779> INFO - Output to full.bbl
+[855] Biber.pm:132> WARN - Duplicate entry key: 'CPON_PMD_2025' in file '../frequency_recovery/ref.bib', skipping ...
+[855] Biber.pm:132> WARN - I didn't find a database entry for 'coherent_receivers' (section 0)
+[856] Biber.pm:132> WARN - I didn't find a database entry for 'Cardenas:14' (section 0)
+[856] Biber.pm:132> WARN - I didn't find a database entry for 'Mantzoukis:11' (section 0)
+[856] Biber.pm:134> INFO - WARNINGS: 4

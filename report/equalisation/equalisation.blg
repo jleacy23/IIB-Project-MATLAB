@@ -1,17 +1,17 @@
 [0] Config.pm:328> INFO - This is Biber 2.21
 [0] Config.pm:331> INFO - Logfile is 'equalisation.blg'
-[109] biber-MSWIN64:342> INFO - === 
-[147] Biber.pm:421> INFO - Reading 'equalisation.bcf'
-[267] Biber.pm:1002> INFO - Found 4 citekeys in bib section 0
-[283] Biber.pm:4487> INFO - Processing section 0
-[295] Biber.pm:4678> INFO - Looking for bibtex file 'ref.bib' for section 0
-[344] bibtex.pm:1713> INFO - LaTeX decoding ...
-[357] bibtex.pm:1519> INFO - Found BibTeX data source 'ref.bib'
-[467] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'variable = shifted' with 'variable = non-ignorable'
-[468] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'normalization = NFD' with 'normalization = prenormalized'
-[468] Biber.pm:4307> INFO - Sorting list 'nty/global//global/global/global' of type 'entry' with template 'nty' and locale 'en-US'
-[468] Biber.pm:4313> INFO - No sort tailoring available for locale 'en-US'
-[479] bbl.pm:676> INFO - Writing 'equalisation.bbl' with encoding 'UTF-8'
-[483] bbl.pm:779> INFO - Output to equalisation.bbl
-[483] Biber.pm:132> WARN - legacy month field 'Jun' in entry 'Mantzoukis:11' is not an integer - this will probably not sort properly.
-[483] Biber.pm:134> INFO - WARNINGS: 1
+[125] biber-MSWIN64:342> INFO - === 
+[182] Biber.pm:421> INFO - Reading 'equalisation.bcf'
+[305] Biber.pm:1002> INFO - Found 4 citekeys in bib section 0
+[320] Biber.pm:4487> INFO - Processing section 0
+[331] Biber.pm:4678> INFO - Looking for bibtex file 'ref.bib' for section 0
+[405] bibtex.pm:1713> INFO - LaTeX decoding ...
+[419] bibtex.pm:1519> INFO - Found BibTeX data source 'ref.bib'
+[510] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'variable = shifted' with 'variable = non-ignorable'
+[510] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'normalization = NFD' with 'normalization = prenormalized'
+[510] Biber.pm:4307> INFO - Sorting list 'nty/global//global/global/global' of type 'entry' with template 'nty' and locale 'en-US'
+[510] Biber.pm:4313> INFO - No sort tailoring available for locale 'en-US'
+[519] bbl.pm:676> INFO - Writing 'equalisation.bbl' with encoding 'UTF-8'
+[523] bbl.pm:779> INFO - Output to equalisation.bbl
+[524] Biber.pm:132> WARN - legacy month field 'Jun' in entry 'Mantzoukis:11' is not an integer - this will probably not sort properly.
+[524] Biber.pm:134> INFO - WARNINGS: 1

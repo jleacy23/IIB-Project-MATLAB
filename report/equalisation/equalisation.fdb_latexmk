@@ -1,12 +1,12 @@
 # Fdb version 4
-["biber equalisation"] 1778949890.13395 "equalisation.bcf" "equalisation.bbl" "equalisation" 1779112125.65316 0
-  "equalisation.bcf" 1779112125 108814 0fb714455b9ed75f89ccaa7853143af7 "pdflatex"
+["biber equalisation"] 1779441612.81867 "equalisation.bcf" "equalisation.bbl" "equalisation" 1779441618.10715 0
+  "equalisation.bcf" 1779441617 108814 0fb714455b9ed75f89ccaa7853143af7 "pdflatex"
   "ref.bib" 1778948219 2973 72619ddfd2a1accdc06ca0f0a291c76d ""
   (generated)
   "equalisation.bbl"
   "equalisation.blg"
   (rewritten before read)
-["pdflatex"] 1779112124.47133 "c:/Users/joele/Downloads/iib_project/report/equalisation/equalisation.tex" "equalisation.pdf" "equalisation" 1779112125.65643 0
+["pdflatex"] 1779441617.02025 "c:/Users/joele/Downloads/iib_project/report/equalisation/equalisation.tex" "equalisation.pdf" "equalisation" 1779441618.10836 0
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm" 1772596518 1004 54797486969f23fa377b128694d548df ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex8.tfm" 1772596518 988 bdf658c3bfc2d96d3c8b02cfc1c94c20 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/amsfonts/symbols/msam10.tfm" 1772596518 916 f87d7c45f9c908e672703b83b72241a3 ""
@@ -171,11 +171,11 @@
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1772596550 94259 aec9939469efac8f0cf917369f632359 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/web2c/pdftex/pdflatex.fmt" 1772596566 2236130 036198fdb3bbb46401ac4d671e71ba73 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf.cnf" 1772596498 903 164c5b127cd0d6dc91abad2f62421ea2 ""
-  "c:/Users/joele/Downloads/iib_project/report/equalisation/equalisation.tex" 1779112124 6458 995bd3bdfacb592666871824c39b1c74 ""
-  "equalisation.aux" 1779112125 2207 7c7031792dfc2967e19ed003996fc349 "pdflatex"
-  "equalisation.bbl" 1778949891 10319 6a97289bbe2eb9024ad9bee78585292f "biber equalisation"
-  "equalisation.run.xml" 1779112125 2354 cb7d1b3782875e382c4da9fa08583cde "pdflatex"
-  "equalisation.tex" 1779112124 6458 995bd3bdfacb592666871824c39b1c74 ""
+  "c:/Users/joele/Downloads/iib_project/report/equalisation/equalisation.tex" 1779441611 6629 2851e38ab04295372a02b68e3a5c22aa ""
+  "equalisation.aux" 1779441617 2314 5781a324b56f827c657c33dbeeed95de "pdflatex"
+  "equalisation.bbl" 1779441614 10319 6a97289bbe2eb9024ad9bee78585292f "biber equalisation"
+  "equalisation.run.xml" 1779441617 2354 cb7d1b3782875e382c4da9fa08583cde "pdflatex"
+  "equalisation.tex" 1779441611 6629 2851e38ab04295372a02b68e3a5c22aa ""
   (generated)
   "equalisation.aux"
   "equalisation.bcf"

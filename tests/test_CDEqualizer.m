@@ -310,5 +310,200 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
                 'FXP32 output contains NaN/Inf.');
         end
 
+        % ============================================================
+        %  Time-domain (FIR) fixed-point tests
+        % ============================================================
+
+        % -------- CD only: time-domain fxp BER check -----------------
+        function testCDOnlyBER_TD_Fxp(testCase)
+            T = cd_eq.equalize_td_fxp_types('fixed16');
+
+            % --- Tx ---
+            Nbits    = 4 * testCase.Ns;
+            txBits   = modem.randomBits(Nbits);
+            symbols  = modem.modulate(txBits);
+            txSig    = modem.rectPulse(symbols, testCase.SpS);
+
+            % --- Channel (CD only) ---
+            rxSig = channel.add_chromatic_dispersion(txSig, ...
+                testCase.L, testCase.SpS, testCase.Rs, testCase.D, testCase.CWL);
+
+            % --- Cast to fi ---
+            rxSig_fi = cast(rxSig, 'like', T.x);
+
+            % --- Time-domain CD Equalizer (fxp MATLAB) ---
+            eqSig = cd_eq.equalize_td_fxp(rxSig_fi, testCase.D, testCase.L, ...
+                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, T);
+
+            % --- BER ---
+            eqSymbols   = double(eqSig(1:testCase.SpS:end, :));
+            decidedSyms = modem.decideSymbols(eqSymbols);
+            rxBits      = modem.symbolsToBits(decidedSyms);
+            txRefBits   = modem.symbolsToBits(symbols);
+            nBits   = min(length(txRefBits), length(rxBits));
+            nErrors = sum(txRefBits(1:nBits) ~= rxBits(1:nBits));
+            BER     = nErrors / nBits;
+            fprintf('CD-only TD-FXP BER = %.2e  (%d errors / %d bits)\n', ...
+                     BER, nErrors, length(txBits));
+
+            testCase.verifyLessThan(BER, testCase.BER_CD_ONLY, ...
+                sprintf('TD-FXP CD-only BER %.2e exceeds threshold %.2e.', ...
+                         BER, testCase.BER_CD_ONLY));
+        end
+
+        % -------- CD only: time-domain fxp vs time-domain float ------
+        %  Isolates quantization error against the same algorithm's float
+        %  reference (equalize_td), so the threshold can be tight.
+        function testCDOnly_TD_Fxp_vs_Float(testCase)
+            T = cd_eq.equalize_td_fxp_types('fixed16');
+
+            % --- Tx ---
+            Nbits    = 4 * testCase.Ns;
+            txBits   = modem.randomBits(Nbits);
+            symbols  = modem.modulate(txBits);
+            txSig    = modem.rectPulse(symbols, testCase.SpS);
+
+            % --- Channel (CD only) ---
+            rxSig = channel.add_chromatic_dispersion(txSig, ...
+                testCase.L, testCase.SpS, testCase.Rs, testCase.D, testCase.CWL);
+
+            % --- Time-domain float reference (same algorithm) ---
+            eqRef = cd_eq.equalize_td(rxSig, testCase.D, testCase.L, ...
+                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS);
+
+            % --- Time-domain FXP ---
+            rxSig_fi = cast(rxSig, 'like', T.x);
+            eqFxp    = cd_eq.equalize_td_fxp(rxSig_fi, testCase.D, testCase.L, ...
+                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, T);
+
+            % --- NRMSE (quantization error only) ---
+            nrmse = norm(double(eqFxp) - eqRef) / norm(eqRef);
+            fprintf('CD-only TD-FXP vs TD-float NRMSE = %.4e\n', nrmse);
+
+            testCase.verifyLessThan(nrmse, 0.05, ...
+                sprintf('TD-FXP NRMSE %.4e exceeds 5%% threshold.', nrmse));
+        end
+
+        % -------- CD only: time-domain float vs freq-domain float ----
+        %  Cross-checks that the two algorithms (FIR vs overlap-save)
+        %  realise the same all-pass response.
+        function testCDOnly_TD_vs_FD_Float(testCase)
+            % --- Tx ---
+            Nbits    = 4 * testCase.Ns;
+            txBits   = modem.randomBits(Nbits);
+            symbols  = modem.modulate(txBits);
+            txSig    = modem.rectPulse(symbols, testCase.SpS);
+
+            % --- Channel (CD only) ---
+            rxSig = channel.add_chromatic_dispersion(txSig, ...
+                testCase.L, testCase.SpS, testCase.Rs, testCase.D, testCase.CWL);
+
+            % --- Freq-domain float (overlap-save) ---
+            eqFD = cd_eq.equalize(rxSig, testCase.D, testCase.L, ...
+                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, ...
+                testCase.NFFT);
+
+            % --- Time-domain float (FIR) ---
+            eqTD = cd_eq.equalize_td(rxSig, testCase.D, testCase.L, ...
+                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS);
+
+            % --- NRMSE between the two algorithms ---
+            nrmse = norm(eqTD - eqFD) / norm(eqFD);
+            fprintf('CD-only TD-float vs FD-float NRMSE = %.4e\n', nrmse);
+
+            testCase.verifyLessThan(nrmse, 0.10, ...
+                sprintf('TD vs FD float NRMSE %.4e exceeds 10%% threshold.', nrmse));
+        end
+
+        % -------- CD only: time-domain fxp MEX bit-exact -------------
+        function testCDOnly_TD_MexMatch(testCase)
+            testCase.assumeTrue(exist('equalize_td_fxp_mex', 'file') == 3, ...
+                'equalize_td_fxp_mex not found — run build_cd_eq_equalize_td_fxp_mex first.');
+
+            T = cd_eq.equalize_td_fxp_types('fixed16');
+
+            % --- Tx ---
+            Nbits    = 4 * testCase.Ns;
+            txBits   = modem.randomBits(Nbits);
+            symbols  = modem.modulate(txBits);
+            txSig    = modem.rectPulse(symbols, testCase.SpS);
+
+            % --- Channel (CD only) ---
+            rxSig = channel.add_chromatic_dispersion(txSig, ...
+                testCase.L, testCase.SpS, testCase.Rs, testCase.D, testCase.CWL);
+
+            rxSig_fi = cast(rxSig, 'like', T.x);
+
+            % --- MATLAB fxp ---
+            eqML = cd_eq.equalize_td_fxp(rxSig_fi, testCase.D, testCase.L, ...
+                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, T);
+
+            % --- MEX fxp ---
+            eqMEX = equalize_td_fxp_mex(rxSig_fi, testCase.D, testCase.L, ...
+                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, T);
+
+            % --- Verify bit-exact ---
+            testCase.verifyEqual(double(eqMEX), double(eqML), ...
+                'MEX output must be bit-exact with MATLAB fxp output.');
+
+            if isa(eqML, 'embedded.fi') && isa(eqMEX, 'embedded.fi')
+                testCase.verifyEqual(eqMEX.WordLength, eqML.WordLength, ...
+                    'MEX WordLength differs from MATLAB.');
+                testCase.verifyEqual(eqMEX.FractionLength, eqML.FractionLength, ...
+                    'MEX FractionLength differs from MATLAB.');
+            end
+        end
+
+        % -------- CD only: time-domain vs freq-domain fxp BER --------
+        function testCDOnly_TD_vs_FD_Fxp_BER(testCase)
+            T_td = cd_eq.equalize_td_fxp_types('fixed16');
+            T_fd = cd_eq.equalize_fxp_types('fixed16');
+
+            % --- Tx ---
+            Nbits    = 4 * testCase.Ns;
+            txBits   = modem.randomBits(Nbits);
+            symbols  = modem.modulate(txBits);
+            txSig    = modem.rectPulse(symbols, testCase.SpS);
+
+            % --- Channel (CD only) ---
+            rxSig = channel.add_chromatic_dispersion(txSig, ...
+                testCase.L, testCase.SpS, testCase.Rs, testCase.D, testCase.CWL);
+
+            % --- Freq-domain fxp ---
+            rxSig_fd = cast(rxSig, 'like', T_fd.x);
+            eqFD = cd_eq.equalize_fxp(rxSig_fd, testCase.D, testCase.L, ...
+                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, ...
+                testCase.NFFT, false, T_fd);
+
+            % --- Time-domain fxp ---
+            rxSig_td = cast(rxSig, 'like', T_td.x);
+            eqTD = cd_eq.equalize_td_fxp(rxSig_td, testCase.D, testCase.L, ...
+                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, T_td);
+
+            % --- BER for each ---
+            txRefBits = modem.symbolsToBits(symbols);
+
+            berFD = localBER(eqFD, testCase.SpS, txRefBits);
+            berTD = localBER(eqTD, testCase.SpS, txRefBits);
+            fprintf('CD-only FXP BER:  freq-domain = %.2e | time-domain = %.2e\n', ...
+                     berFD, berTD);
+
+            testCase.verifyLessThan(berTD, testCase.BER_CD_ONLY, ...
+                sprintf('TD-FXP BER %.2e exceeds threshold %.2e.', ...
+                         berTD, testCase.BER_CD_ONLY));
+        end
+
     end
+end
+
+% --------------------------------------------------------------------
+%  Local helper: BER of an equalized signal against reference bits
+% --------------------------------------------------------------------
+function BER = localBER(eqSig, SpS, txRefBits)
+    eqSymbols   = double(eqSig(1:SpS:end, :));
+    decidedSyms = modem.decideSymbols(eqSymbols);
+    rxBits      = modem.symbolsToBits(decidedSyms);
+    nBits   = min(length(txRefBits), length(rxBits));
+    nErrors = sum(txRefBits(1:nBits) ~= rxBits(1:nBits));
+    BER     = nErrors / nBits;
 end

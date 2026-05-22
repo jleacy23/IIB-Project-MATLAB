@@ -329,20 +329,20 @@ The FFT can be simplified by rounding all twiddle-factors to a power of 2. This 
     \caption{Per-symbol computational cost of the time-domain and overlap-save chromatic dispersion equalisers, including overlap-save with twiddle factors rounded to a power of 2.}
     \label{tab:cd_cost}
 \end{table}
-Evaluating these expressions with the \(N_\mathrm{CD}\) of \cref{tab:cd_taps} gives the per-symbol operation counts for each network in \cref{tab:cd_cost_eval}.
+Evaluating these expressions with the \(N_\mathrm{CD}\) of \cref{tab:cd_taps} gives the per-symbol operation counts for each network in \cref{tab:cd_cost_eval} with 2 samples per symbol.
 \begin{table}[H]
     \centering
-    \begin{tabular}{lcccccc}
+    \begin{tabular}{lccccccc}
         \toprule
-        & \multicolumn{2}{c}{Time-domain} & \multicolumn{2}{c}{Overlap-save} & \multicolumn{2}{c}{Overlap-save (\(2^k\) twiddle)} \\
-        \cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
-        \(L\) (km) & RM & RA & RM & RA & RM & RA \\
+        & & \multicolumn{2}{c}{Time-domain} & \multicolumn{2}{c}{Overlap-save} & \multicolumn{2}{c}{Overlap-save (\(2^k\) twiddle)} \\
+        \cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}
+        \(L\) (km) & \(N\) & RM & RA & RM & RA & RM & RA \\
         \midrule
-        20 &  &  &  &  &  &  \\
-        80 &  &  &  &  &  &  \\
+        20 & 32 & 48 & 44 & 56.9 & 75.9 & 9.48 & 75.9 \\
+        80 & 128 & 168 & 164 & 75.9 & 104.3 & 9.48 & 104.3 \\
         \bottomrule
     \end{tabular}
-    \caption{Real multiplications (RM) and real additions (RA) per symbol for each chromatic dispersion equaliser implementation, evaluated with the \(N_\mathrm{CD}\) and \(N\) of \cref{tab:cd_taps}.}
+    \caption{Real multiplications (RM) and real additions (RA) per symbol for each chromatic dispersion equaliser implementation and the optimum FFT size $N$, evaluated with the \(N_\mathrm{CD}\) of \cref{tab:cd_taps}.}
     \label{tab:cd_cost_eval}
 \end{table}
 
@@ -384,32 +384,53 @@ where $T$ is the sampling period of the receiver. For an access network where $L
 
 
 \subsection{Computational Complexity}
-The per-sample cost of the weight updates is compared below for the direct and sign-sign implementations with $N$ taps.
+The per-symbol cost splits into three stages: forming the filter outputs, forming the error terms, and updating the weights. Forming the outputs evaluates the four $N$-tap FIR filters of \cref{eq:adaptive_output}, while the weights are updated with $N$ taps per \cref{eq:adaptive_update}. The sign-sign variant retains only the signs of the error and output terms \cite{Cardenas:14}, eliminating every multiplication in the update at no performance penalty. To support the 30.5 GBd symbol rate the equaliser is parallelised across $P$ lanes, the input vector of lane $p$ being
+\begin{equation}
+    \mathbf{x}_p = \left[\mathbf{x}[mP + p], \mathbf{x}[mP + p - 1], \dots, \mathbf{x}[mP + p - (N - 1)]\right].
+\end{equation}
+The outputs are formed independently on every lane, costing $16NP$ real multiplications and $(8N+4)P$ real additions per block of $P$ symbols regardless of how the weights are updated. The two strategies for forming the error and update the weights differ in how they scale with $P$; the cost per symbol is obtained in each case by dividing the block cost by $2P$.
+
+\paragraph{CMA}
+The CMA error terms of \cref{eq:adaptive_update} take the squared modulus of each output and subtract it from the dispersion constant $R$, formed on every lane. A single set of weights is shared across the lanes and updated from their summed contributions,
+\begin{equation}
+    \Delta \mathbf{h} = \mu \sum_{p=0}^{P-1}e[p]\mathbf{x}_p x_\mathrm{out}^*[p],
+\end{equation}
+so both the error terms and the update scale with $P$, as summarised in \cref{tab:adaptive_cost_cma}.
 \begin{table}[H]
     \centering
     \begin{tabular}{lcc}
         \toprule
-        Operation & Direct & Sign-Sign \\
+        Stage & Real mult. & Real add. \\
         \midrule
-        Real multiplications & $16N + 4$ & 0\\
-        Real additions & $16N$ & $16N$ \\
+        Error terms               & $4P$      & $2P$ \\
+        Weight update (direct)    & $16NP+4P$ & $16NP$ \\
+        Weight update (sign-sign) & $0$       & $16NP$ \\
         \bottomrule
     \end{tabular}
-    \caption{Per-symbol computational cost of the direct and sign-sign weight updates.}
-    \label{tab:update_cost}
+    \caption{Cost of the CMA error terms and weight update per block, parallelised across $P$ lanes.}
+    \label{tab:adaptive_cost_cma}
 \end{table}
-The adaptive equaliser must be parallelised to support a 30.5 GBd symbol rate. The input samples are split into $P$ lanes, with the input vector of lane $p$
-\begin{equation}
-    \mathbf{x}_p = \left[\mathbf{x}[mP + p], \mathbf{x}[mP + p - 1], \dots, \mathbf{x}[mP + p - (N - 1)]\right].
-\end{equation}
-The update step for the shared weights is given by
-\begin{equation}
-    \Delta \mathbf{h} = \mu \sum_{p=0}^{P-1}e[p]\mathbf{x}_p x_\mathrm{out}[p].
-\end{equation}
-A natural choice for blocks of 32 symbols is $P=32$, allowing the pilot symbols with a larger modulus to be processed separately. With an oversampling rate of 2, each lane would need to operate with a sampling frequency of $ 2 \cdot 30.5 / 32 = 1.9$ GHz which is reasonable for modern CMOS. This scales the number of operations in \cref{tab:update_cost} by $P$.
-\subsection{Fixed Point Precision}
-The convergence parameter $\mu$ in \cref{eq:adaptive_update} is typically $\approx 10^{-3}$ which would require at least 10 bits of precision to represent. Computing the update term to this precison adds unnecessary computational cost, so it should instead be computed at lower precision and bit-shifted (equivalent to setting $\mu$ to a power of 2) to the least significant bits of the weights before updating. This can lead to the most significant bits being redundant. These bits waste energy when the weights change sign and when forming the outputs in \cref{eq:adaptive_output} if the weights are negative. Jiang et al. \cite{Jiang;26} propose removing these redundant bits with an optimisation over the precision of each weight and demonstrate a decrease in energy consumption with a slight performance loss. The decrease in energy consumption can be estimated directly from the frequency of sign changes in the weights and the proportion of multiplications in \cref{eq:adaptive_output} that use negative weights. For $d$ redundant bits, a sign change is equivalent to the cost of a $d$-bit addition and the additional cost in forming the outputs will be a $d$-bit multiplication.
 
+\paragraph{Pilots}
+Alternatively the update can be driven directly from the pilot symbol,
+\begin{equation}
+    \Delta \mathbf{h} = \mu e^* \mathbf{x}_p = \mu (\hat{s} - s)^* \mathbf{x}_p,
+\end{equation}
+where $s$ and $\hat{s}$ are the transmitted and received pilot symbols at the start of each block. With only one pilot symbol per block the error is formed once and the weights updated once, so neither scales with $P$, as summarised in \cref{tab:adaptive_cost_pilot}.
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lcc}
+        \toprule
+        Stage & Real mult. & Real add. \\
+        \midrule
+        Error terms               & $0$    & $4$ \\
+        Weight update (direct)    & $16N$  & $16N$ \\
+        Weight update (sign-sign) & $0$    & $16N$ \\
+        \bottomrule
+    \end{tabular}
+    \caption{Cost of the pilot error terms and weight update per block, formed once per block.}
+    \label{tab:adaptive_cost_pilot}
+\end{table}
 \section{Methodology}
 
 % =====================================================================
@@ -602,7 +623,9 @@ Only phases are needed, so the entire estimation can be performed with CORDIC. T
 The two phase recovery algorithms are compared in isolation by simulating an AWGN channel with additive Wiener phase noise, without chromatic dispersion, PMD, or fibre nonlinearity, so that any performance difference is attributable solely to the phase estimation stage. BER is estimated by Monte Carlo simulation over independent realisations for each combination of laser linewidth and SNR, with the phase ambiguity inherent to QPSK resolved by exhaustive search over the four \(\pi/2\) rotations before symbol decisions are made.
 
 \subsection{System Energy Comparison}
+The full carrier recovery chain is then characterised over the same isolated channel, now with a fixed 2\,GHz carrier frequency offset and Wiener phase noise at the 1\,MHz linewidth limit of \cref{sec:cpon_tolerances}, so the result depends only on frequency and phase recovery. Each frequency recovery algorithm is paired with each phase recovery algorithm, and for every pair the pre-FEC BER is estimated by Monte Carlo simulation over 100 independent subframes at each SNR from 0 to 30\,dB. The FEC SNR is found by interpolation between adjacent SNR samples. It is computed per trial and reported as a mean with standard deviation.
 
+Receiver energy per bit is evaluated from the per-symbol operation counts of \cref{tab:fft_cost,tab:diffkay_cost,tab:viterbi_cost,tab:pilot_cost} using the arithmetic energy model of \cref{sec:rx_energy}, with the frequency-recovery cost amortised over one 3712-symbol subframe and the phase-recovery cost over one 32-symbol block.
 
 \section{Results \& Discussion}
 \subsection{Phase Recovery Performance}

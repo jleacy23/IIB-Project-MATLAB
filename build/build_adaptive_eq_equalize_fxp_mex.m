@@ -25,6 +25,15 @@ function build_adaptive_eq_equalize_fxp_mex(P, cfg)
     x_aeq = fi(complex(0,0), numerictype(T_aeq.x), fimath(T_aeq.x));
     In_aeq_type = coder.typeof(x_aeq, [Inf, 2], [true, false]);
 
+    % Pilot reference is carried at T.y precision; variable row count so the
+    % same MEX accepts an empty [0x2] (pure CMA) or a full [NBlocks x 2].
+    p_aeq = fi(complex(0,0), numerictype(T_aeq.y), fimath(T_aeq.y));
+    Pilots_aeq_type = coder.typeof(p_aeq, [Inf, 2], [true, false]);
+
+    % Optional CPON fields (defaults keep the pre-CPON behaviour).
+    if isfield(P, 'AEQ_Mode'),     Mode_aeq = P.AEQ_Mode;     else, Mode_aeq = 0;             end
+    if isfield(P, 'AEQ_BlockLen'), BLen_aeq = P.AEQ_BlockLen; else, BLen_aeq = P.AEQ_PLanes;  end
+
     args_aeq = { ...
         In_aeq_type, ...                    % x
         double(P.SpS), ...                  % SpS
@@ -36,7 +45,10 @@ function build_adaptive_eq_equalize_fxp_mex(P, cfg)
         logical(P.AEQ_SignOnly), ...        % SignOnly
         double(P.AEQ_UpdateStep), ...       % UpdateStep
         T_aeq, ...                          % T
-        double(P.AEQ_PLanes)};              % PLanes
+        double(P.AEQ_PLanes), ...           % PLanes
+        double(Mode_aeq), ...               % Mode
+        Pilots_aeq_type, ...                % Pilots
+        double(BLen_aeq)};                  % BlockLen
 
     codegen('-config', cfg, ...
             'adaptive_eq.equalize_fxp', ...

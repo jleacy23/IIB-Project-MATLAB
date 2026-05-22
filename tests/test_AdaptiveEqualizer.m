@@ -127,6 +127,86 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
                 bestBER));
         end
 
+        % -------- CPON pilot-aided LMS (float) -----------------------
+        %  The pilot at the first symbol of every 32-symbol block drives a
+        %  data-aided LMS update shared by the whole block.  After
+        %  convergence the equalizer output at the pilot positions should
+        %  track the known +/-3+/-3j pilots, so the pilot NMSE is small.
+        function testCPON_PilotAided_Float(testCase)
+            BlockLen = 32;
+            [rxSig, ~, PilotsAll] = genRxCPON(testCase, 16);
+
+            eqSym = adaptive_eq.equalize(rxSig, testCase.SpS, ...
+                testCase.NTaps, 1e-3, true, testCase.N1, 0, false, ...
+                1, 1, PilotsAll, BlockLen);   % Mode = 1 (pilot-aided)
+
+            testCase.verifyTrue(all(isfinite(eqSym(:))), ...
+                'Pilot-aided equalizer output contains NaN/Inf.');
+
+            nmse = testCase.pilotNMSE(eqSym, PilotsAll, BlockLen);
+            fprintf('CPON pilot-aided (float) pilot NMSE = %.3e\n', nmse);
+            testCase.verifyLessThan(nmse, 0.3, ...
+                sprintf('Pilot-aided pilot NMSE %.3e too high (diverged?).', ...
+                nmse));
+        end
+
+        % -------- CPON CMA excludes pilots from the update (float) ----
+        %  In CMA mode the pilot symbols must NOT contribute to the weight
+        %  update.  Running CMA with pilots supplied (pilots skipped) must
+        %  therefore differ from running CMA with the pilots treated as data
+        %  -- proving the exclusion actually takes effect -- while both stay
+        %  finite.
+        function testCPON_CMA_ExcludesPilot_Float(testCase)
+            BlockLen = 32;
+            [rxSig, ~, PilotsAll] = genRxCPON(testCase, 8);
+
+            % CMA, pilots supplied -> pilot gradient skipped.
+            eqSkip = adaptive_eq.equalize(rxSig, testCase.SpS, ...
+                testCase.NTaps, testCase.Mu, true, testCase.N1, 0, false, ...
+                1, 0, PilotsAll, BlockLen);
+
+            % CMA, no pilots -> every symbol (incl. pilot positions) updates.
+            eqAll = adaptive_eq.equalize(rxSig, testCase.SpS, ...
+                testCase.NTaps, testCase.Mu, true, testCase.N1, 0, false, ...
+                1, 0, [], BlockLen);
+
+            testCase.verifyTrue(all(isfinite(eqSkip(:))) && ...
+                all(isfinite(eqAll(:))), 'CMA output contains NaN/Inf.');
+            testCase.verifyEqual(size(eqSkip), size(eqAll), ...
+                'CMA outputs differ in size.');
+            testCase.verifyGreaterThan( ...
+                max(abs(eqSkip(:) - eqAll(:))), 0, ...
+                'Excluding pilots from the CMA update had no effect.');
+        end
+
+        % -------- CPON pilot-aided LMS (fixed-point MEX) -------------
+        function testCPON_PilotAided_Fxp(testCase)
+            BlockLen = 32;
+            [rxSig, ~, PilotsAll] = genRxCPON(testCase, 16);
+
+            T = adaptive_eq.equalize_fxp_types(testCase.FxpConfig);
+            rxSig_fi   = cast(rxSig,    'like', T.x);
+            Pilots_fi  = cast(PilotsAll, 'like', T.y);
+
+            eqSym = adaptive_eq.equalize_fxp_mex(rxSig_fi, ...
+                double(testCase.SpS), double(testCase.NTaps), double(1e-3), ...
+                true, double(testCase.N1), double(0), false, ...
+                double(testCase.UpdateStep), T, double(1), ...
+                double(1), Pilots_fi, double(BlockLen));   % Mode = 1
+
+            testCase.verifyTrue(isa(eqSym, 'embedded.fi'), ...
+                'Fixed-point pilot-aided output must be a fi object.');
+            eqD = double(eqSym);
+            testCase.verifyTrue(all(isfinite(eqD(:))), ...
+                'Fixed-point pilot-aided output contains NaN/Inf.');
+
+            nmse = testCase.pilotNMSE(eqD, PilotsAll, BlockLen);
+            fprintf('CPON pilot-aided (%s) pilot NMSE = %.3e\n', ...
+                testCase.FxpConfig, nmse);
+            testCase.verifyLessThan(nmse, 0.3, ...
+                sprintf('Fixed-point pilot-aided NMSE %.3e too high.', nmse));
+        end
+
     end
 
     % ================================================================
@@ -182,10 +262,14 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
             rxSig_fi = cast(rxSig, 'like', T.x);
 
             % --- Parallel adaptive equalizer (fixed-point MEX) ---
+            %  Mode 0 (CMA), no pilots, BlockLen = PLanes -> identical to the
+            %  pre-CPON parallel-lane CMA.
+            pilotsEmpty = cast(complex(zeros(0, 2)), 'like', T.y);
             eqSym = adaptive_eq.equalize_fxp_mex(rxSig_fi, ...
                 double(testCase.SpS), double(NTaps), double(Mu), ...
                 SingleSpike, double(N1), double(NOut), logical(SignOnly), ...
-                double(testCase.UpdateStep), T, double(PLanes));
+                double(testCase.UpdateStep), T, double(PLanes), ...
+                double(0), pilotsEmpty, double(PLanes));
         end
 
         function bestBER = computeBestBER(testCase, refSyms, eqSym)
@@ -239,6 +323,45 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
                 xlabel('In-Phase'); ylabel('Quadrature');
             end
             sgtitle(sprintf('QPSK: %s  |  %s', channelStr, titleStr));
+        end
+
+        function [rxSig, symbols, PilotsAll] = genRxCPON(testCase, nSubTarget)
+            % Build a CPON-framed Tx (pilots + training inserted), upsample,
+            % and pass through the AWGN + PMD channel.  PilotsAll tiles the
+            % per-subframe pilot table so PilotsAll(b,:) is the pilot at the
+            % first symbol of the b-th 32-symbol block of the whole stream.
+            rng(42);
+            DATA_PER_SUBFRAME = 3586;
+            nBits = nSubTarget * DATA_PER_SUBFRAME * testCase.N_pol * 2;
+            bits  = randi([0 1], nBits, 1);
+
+            [symbols, pilots, ~, nSub] = modem.modulate(bits);
+            PilotsAll = repmat(pilots, nSub, 1);   % [nSub*116 x 2]
+
+            txSig = repelem(symbols, testCase.SpS, 1);
+            rxSig = channel.add_awgn(txSig, testCase.SNR_dB);
+            rxSig = channel.add_pmd(rxSig, testCase.L, testCase.SpS, ...
+                testCase.Rs, testCase.DGDSpec, testCase.N_pmd);
+        end
+
+        function nmse = pilotNMSE(~, eqSym, PilotsAll, BlockLen)
+            % Normalised MSE between the equalizer output at the pilot
+            % positions and the known pilots, evaluated over the converged
+            % final quarter of the blocks.  Assumes NOut = 0 so output index
+            % i corresponds to symbol i and the pilot of block b is at output
+            % index (b-1)*BlockLen + 1.
+            nBlkOut = floor(size(eqSym, 1) / BlockLen);
+            nBlk    = min(nBlkOut, size(PilotsAll, 1));
+            bStart  = floor(3 * nBlk / 4) + 1;
+
+            blks = bStart:nBlk;
+            idx  = (blks - 1) * BlockLen + 1;
+
+            pred = eqSym(idx, :);
+            ref  = PilotsAll(blks, :);
+
+            err  = pred - ref;
+            nmse = sum(abs(err(:)).^2) / sum(abs(ref(:)).^2);
         end
     end
 end

@@ -38,6 +38,8 @@ function P = pipeline_params()
     P.AEQ_NOut       = 5000;        % transient discard
     P.AEQ_SignOnly   = false;      % if true, use sign(err) & complex-sign(y) updates
     P.AEQ_PLanes     = 1;          % parallel lanes (1 = serial fixed-point CMA)
+    P.AEQ_Mode       = 0;          % 0 = CMA, 1 = pilot-aided LMS
+    P.AEQ_BlockLen   = 32;         % CPON weight-update block (32 = one block)
 
     % ---- Carrier Recovery ----------------------------
     P.VV_NTaps       = 5;         % half-width of VV averaging filter

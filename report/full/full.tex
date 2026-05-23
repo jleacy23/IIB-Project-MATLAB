@@ -16,12 +16,13 @@
 \usetikzlibrary{shapes.geometric, arrows.meta, positioning}
 
 % Look for figures in each chapter's source directory.
-\graphicspath{{../energy/}{../frequency_recovery/}}
+\graphicspath{{../energy/}{../frequency_recovery/}{../equalisation}}
 
 % Both chapters carry their own bibliography file.  biblatex merges them;
 % duplicate keys (if any) are resolved by biber to the first definition.
 \addbibresource{../energy/ref.bib}
 \addbibresource{../frequency_recovery/ref.bib}
+\addbibresource{../equalisation/ref.bib}
 \addbibresource{ref.bib}
 
 \title{Energy-Efficient 200 Gbit/s Transceivers for Optical Access Networks}
@@ -378,7 +379,8 @@ There must be sufficient taps in the filter to cover the channel memory introduc
 \end{equation}
 The number of taps can be found for a given outage probability from \cref{eq:maxwellian} as
 \begin{equation}
-    N = \frac{x}{T} + 1\
+    N = \frac{x}{T} + 1
+    \label{eq:aeq_taps}
 \end{equation}
 where $T$ is the sampling period of the receiver. For an access network where $L \leq 80$ km, and a typical DGD parameter $D = 0.1$ ps/$\sqrt{\mathrm{km}}$ then $\langle\Delta\tau\rangle \leq 0.9$ ps. With an oversampling rate of 2, the sampling period $T = 16.4$ ps. Given that an outage probability of $10^{-12}$ only requires $x = 4.81\langle\Delta\tau\rangle = 4.3$ ps, few taps will be needed for reliable performance.
 
@@ -412,11 +414,11 @@ so both the error terms and the update scale with $P$, as summarised in \cref{ta
 \end{table}
 
 \paragraph{Pilots}
-Alternatively the update can be driven directly from the pilot symbol,
+Alternatively the update can be driven directly from the pilot symbol using a least mean-squares (LMS) approach \cite{Savory;08}
 \begin{equation}
     \Delta \mathbf{h} = \mu e^* \mathbf{x}_p = \mu (\hat{s} - s)^* \mathbf{x}_p,
 \end{equation}
-where $s$ and $\hat{s}$ are the transmitted and received pilot symbols at the start of each block. With only one pilot symbol per block the error is formed once and the weights updated once, so neither scales with $P$, as summarised in \cref{tab:adaptive_cost_pilot}.
+where $s$ and $\hat{s}$ are the transmitted and estimated pilot symbols at the start of each block, and $\mathbf{x}_p$ is the buffer of $N$ symbols used to form the pilot estimate from \cref{eq:adaptive_output}. A 'sign-sign' implementation of the pilot-based update would use the complex sign of the error term. With only one pilot symbol per block the error is formed once and the weights updated once, so neither scales with $P$, as summarised in \cref{tab:adaptive_cost_pilot}.
 \begin{table}[H]
     \centering
     \begin{tabular}{lcc}
@@ -432,6 +434,42 @@ where $s$ and $\hat{s}$ are the transmitted and received pilot symbols at the st
     \label{tab:adaptive_cost_pilot}
 \end{table}
 \section{Methodology}
+-rrc pulse shaping
+-monte carlo
+-application of CD and PMD
+- convergence parameter size and number of symbols before single spike and number of symbols discarded
+\section{Results \& Discussion}
+\subsection{Static Equalisation}
+- show FEC SNR vs fxp plots and energy and conclude feasible implementations
+\subsection{Adaptive Equalisation}
+\subsubsection{Filter Length}
+\Cref{eq:aeq_taps} predicts an adaptive filter length of 1 tap for both the 20 km and 80 km networks. \Cref{fig:aeq_taps_ber} indicates that increasing the tap length degrades performance such that the FEC threshold is not achieved. Adding more taps increases the dimension of the gradient descent in \cref{eq:adaptive_update} which can cause slower convergence to the minimum error, so this loss in performance is likely a failure to converge before the single spike reinitialisation. 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{aeq_cma_taps.png}
+    \caption{BER vs SNR for adaptive equaliser tap lengths of 1,3,5 using CMA and direct update at 16 bits of precision.}
+    \label{fig:aeq_taps_ber}
+\end{figure}
+\subsubsection{Algorithm Comparison}
+\Cref{tab:adaptive_cost_total} totals the per-symbol real additions and multiplications of the output formation, error and weight-update stages for $N = 1$ tap and $P = 32$ lanes, the operating point used in the fixed-point sweep. The pilot variants are roughly half the multiplications and a quarter of the additions of CMA, since their error and update stages do not scale with $P$. The sign-sign variant of CMA halves the multiplication count without changing the additions, while the pilot sign-sign variant saves only the $16N = 16$ multiplications of the update.
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lcc}
+        \toprule
+        Combination & Real mult. & Real add. \\
+        \midrule
+        CMA, direct        & 20 & 15 \\
+        CMA, sign-sign     &  10 & 15 \\
+        Pilot, direct      &  8.25 & 6.3125 \\
+        Pilot, sign-sign   &  8 & 6.3125 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Total real additions and multiplications per symbol for each algorithm at $N = 1$ tap and $P = 32$ lanes, including output formation, error terms and weight update.}
+    \label{tab:adaptive_cost_total}
+\end{table}
+
+\subsection{Combined Performance}
+- results for combined equalisation, FEC SNR vs fxp.
 
 % =====================================================================
 \chapter{Carrier Recovery}\label{chapter:carrier_recovery}
@@ -623,7 +661,7 @@ Only phases are needed, so the entire estimation can be performed with CORDIC. T
 The two phase recovery algorithms are compared in isolation by simulating an AWGN channel with additive Wiener phase noise, without chromatic dispersion, PMD, or fibre nonlinearity, so that any performance difference is attributable solely to the phase estimation stage. BER is estimated by Monte Carlo simulation over independent realisations for each combination of laser linewidth and SNR, with the phase ambiguity inherent to QPSK resolved by exhaustive search over the four \(\pi/2\) rotations before symbol decisions are made.
 
 \subsection{System Energy Comparison}
-The full carrier recovery chain is then characterised over the same isolated channel, now with a fixed 2\,GHz carrier frequency offset and Wiener phase noise at the 1\,MHz linewidth limit of \cref{sec:cpon_tolerances}, so the result depends only on frequency and phase recovery. Each frequency recovery algorithm is paired with each phase recovery algorithm, and for every pair the pre-FEC BER is estimated by Monte Carlo simulation over 100 independent subframes at each SNR from 0 to 30\,dB. The FEC SNR is found by interpolation between adjacent SNR samples. It is computed per trial and reported as a mean with standard deviation.
+The full carrier recovery chain is then characterised over the same isolated channel, now with a fixed 3\,GHz carrier frequency offset and Wiener phase noise at the 1\,MHz linewidth limit of \cref{sec:cpon_tolerances}, so the result depends only on frequency and phase recovery. Each frequency recovery algorithm is paired with each phase recovery algorithm, and for every pair the pre-FEC BER is estimated by Monte Carlo simulation over 100 independent subframes at each SNR from 0 to 30\,dB. The FEC SNR is found by interpolation between adjacent SNR samples. It is computed per trial and reported as a mean with standard deviation.
 
 Receiver energy per bit is evaluated from the per-symbol operation counts of \cref{tab:fft_cost,tab:diffkay_cost,tab:viterbi_cost,tab:pilot_cost} using the arithmetic energy model of \cref{sec:rx_energy}, with the frequency-recovery cost amortised over one 3712-symbol subframe and the phase-recovery cost over one 32-symbol block.
 

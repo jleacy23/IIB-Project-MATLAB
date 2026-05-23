@@ -31,8 +31,9 @@ function build_adaptive_eq_equalize_fxp_mex(P, cfg)
     Pilots_aeq_type = coder.typeof(p_aeq, [Inf, 2], [true, false]);
 
     % Optional CPON fields (defaults keep the pre-CPON behaviour).
-    if isfield(P, 'AEQ_Mode'),     Mode_aeq = P.AEQ_Mode;     else, Mode_aeq = 0;             end
-    if isfield(P, 'AEQ_BlockLen'), BLen_aeq = P.AEQ_BlockLen; else, BLen_aeq = P.AEQ_PLanes;  end
+    if isfield(P, 'AEQ_Mode'),           Mode_aeq = P.AEQ_Mode;                 else, Mode_aeq = 0;             end
+    if isfield(P, 'AEQ_BlockLen'),       BLen_aeq = P.AEQ_BlockLen;             else, BLen_aeq = P.AEQ_PLanes;  end
+    if isfield(P, 'AEQ_SubframeBlocks'), SubBlk_aeq = P.AEQ_SubframeBlocks;     else, SubBlk_aeq = 0;           end
 
     args_aeq = { ...
         In_aeq_type, ...                    % x
@@ -48,7 +49,8 @@ function build_adaptive_eq_equalize_fxp_mex(P, cfg)
         double(P.AEQ_PLanes), ...           % PLanes
         double(Mode_aeq), ...               % Mode
         Pilots_aeq_type, ...                % Pilots
-        double(BLen_aeq)};                  % BlockLen
+        double(BLen_aeq), ...               % BlockLen
+        double(SubBlk_aeq)};                % SubframeBlocks
 
     codegen('-config', cfg, ...
             'adaptive_eq.equalize_fxp', ...

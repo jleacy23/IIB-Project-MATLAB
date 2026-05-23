@@ -1,8 +1,9 @@
-function y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, UpdateStep, T, PLanes, Mode, Pilots, BlockLen) %#codegen
+function y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, UpdateStep, T, PLanes, Mode, Pilots, BlockLen, SubframeBlocks) %#codegen
 %equalize_fxp  Fixed-point adaptive butterfly equalization (CMA / pilot-aided).
 %
 %   y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, ...
-%                    UpdateStep, T, PLanes, Mode, Pilots, BlockLen)
+%                    UpdateStep, T, PLanes, Mode, Pilots, BlockLen, ...
+%                    SubframeBlocks)
 %
 %   Inputs
 %     x             - input signal [samples x 2] (fi or double)
@@ -36,6 +37,13 @@ function y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, Up
 %                     weights are held across the 32 symbols of a block and
 %                     a single update is applied at the block end.  The
 %                     pilot sits at the first symbol of each block.
+%     SubframeBlocks - (optional) number of blocks per CPON subframe (= 116
+%                     for the CPON spec).  When > 0 and Mode = 0 (CMA), the
+%                     first block of every subframe is excluded from the CMA
+%                     gradient update.  This keeps the 10 high-amplitude
+%                     training symbols (TS2..TS11 at +/-3+/-3j, positions 2-11
+%                     of block 1) from corrupting the CMA gradient with
+%                     ~9x-too-large error terms.  Default 0 (no skipping).
 %
 %   CPON adaptation (see docs/cpon_framing_structure.md)
 %     Symbols are processed in blocks of BlockLen (= 32 for CPON), all
@@ -97,6 +105,9 @@ function y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, Up
     if nargin < 14 || isempty(BlockLen)
         BlockLen = PLanes;
     end
+    if nargin < 15 || isempty(SubframeBlocks)
+        SubframeBlocks = 0;   % 0 -> no subframe-level CMA skip
+    end
 
     %% Pilot handling.  Carry the pilot reference at T.y precision so the
     %  data-aided error e = pilot - y is formed in the output datapath type.
@@ -105,7 +116,9 @@ function y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, Up
     Pilots_fi     = cast(Pilots, 'like', T.y);
 
     %% Cast CMA radius
-    R_CMA = cast(sqrt(2), 'like', T.R_CMA);
+    %  For +/-1+/-1j QPSK, R = E[|s|^4]/E[|s|^2] = 4/2 = 2, so the error
+    %  R_CMA - |y|^2 zeros at |y| = sqrt(2) (the natural QPSK magnitude).
+    R_CMA = cast(2, 'like', T.R_CMA);
 
     %% Step size kept as double so very small values are not rounded to zero
     mu_dbl = double(Mu);
@@ -174,6 +187,13 @@ function y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, Up
         % exact multiple of BlockLen, so b is integer.
         b = floor((iStart - 1) / BlockLen) + 1;
 
+        % First block of every subframe is excluded from the CMA gradient
+        % (it contains the 10 high-amplitude TS2..TS11 training symbols
+        % that would otherwise dominate the gradient).  SubframeBlocks = 0
+        % disables this behaviour (pure parallel-lane CMA).
+        skipCMAblock = (SubframeBlocks > 0) && ...
+                       (mod(b - 1, SubframeBlocks) == 0);
+
         % Zero the per-tap gradient accumulators for this block.
         g1V(:) = complex(0, 0);
         g1H(:) = complex(0, 0);
@@ -220,8 +240,12 @@ function y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, Up
                     end
                 end
             else
-                % --- CMA: every symbol except the pilot contributes ---
-                if ~isPilot
+                % --- CMA: every symbol except the pilot contributes,
+                %     and the entire first block of each subframe is
+                %     excluded (skipCMAblock) so high-amplitude CPON
+                %     training symbols (TS2..TS11 at +/-3+/-3j) don't
+                %     corrupt the gradient.
+                if ~isPilot && ~skipCMAblock
                     if SignOnly
                         err1(:) = sign(R_CMA - abs(y1(i))^2);
                         err2(:) = sign(R_CMA - abs(y2(i))^2);

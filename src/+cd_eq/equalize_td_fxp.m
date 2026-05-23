@@ -41,8 +41,9 @@ function Out = equalize_td_fxp(In, D, L, CLambda, Rs, NPol, SpSIn, T) %#codegen
 %   Implementation notes for codegen:
 %     - Taps are pre-computed in double and cast once to fi (T.hcd).
 %     - The number of taps follows the standard chirp-support criterion
-%       (Savory): the chirp instantaneous frequency reaches Nyquist at
-%       |m| = K = floor(|A|/(2*Ts^2)), giving an odd FIR of 2K+1 taps.
+%       (Savory) sized to the signal band B = Rs: the chirp instantaneous
+%       frequency reaches the band edge Rs/2 at |m| = K = |A|*Rs^2*SpS/2,
+%       giving an odd FIR of 2K+1 taps (matches the report's N_CD).
 %     - The input is treated as periodic (circular convolution), matching
 %       the cyclic extension used by the overlap-save float reference and
 %       avoiding edge transients.  Output length equals input length.
@@ -75,10 +76,18 @@ function Out = equalize_td_fxp(In, D, L, CLambda, Rs, NPol, SpSIn, T) %#codegen
     end
 
     %% CD impulse response (FIR taps), pre-computed in double
-    %  Chirp support: instantaneous frequency m*Ts/A reaches Nyquist
-    %  (1/(2*Ts)) at |m| = K, i.e. K = |A|/(2*Ts^2).
-    K     = floor(abs(A) / (2 * Ts^2));
-    K     = min(K, floor((NIn - 1) / 2));   % cannot exceed signal length
+    %  The filter is dimensioned to the signal bandwidth B = Rs (Nyquist
+    %  pulse-shaping is assumed), not the full sampling Nyquist Fs/2.  The
+    %  dispersive memory over that band is the delay spread
+    %     Delta_tau/Ts = |A| * Rs^2 * SpS   [samples],
+    %  matching the report's N_CD = Delta_tau/T + 1 (tab:cd_taps).  The
+    %  impulse-response chirp has instantaneous frequency f_inst = m*Ts/A,
+    %  which reaches the signal band edge Rs/2 at |m| = K, giving an odd FIR
+    %  of 2K+1 taps.  (An oversampled signal carries no energy beyond Rs/2,
+    %  so spanning the chirp out to Fs/2 would only add cost.)
+    NspanSamp = abs(A) * Rs_si^2 * SpSIn;        % delay spread Delta_tau/Ts
+    K     = floor(NspanSamp / 2);
+    K     = min(K, floor((NIn - 1) / 2));        % cannot exceed signal length
     m     = (-K:K).';                        % tap lags (column)
     alpha = Ts / sqrt(1i * A);               % unit-gain normalisation
     g     = alpha * exp(1i * pi * (m * Ts).^2 / A);

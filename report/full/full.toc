@@ -39,31 +39,37 @@
 \contentsline {paragraph}{CMA}{14}{}%
 \contentsline {paragraph}{Pilots}{14}{}%
 \contentsline {section}{\numberline {3.4}Methodology}{15}{}%
-\contentsline {chapter}{\numberline {4}Carrier Recovery}{16}{}%
-\contentsline {section}{\numberline {4.1}Introduction}{16}{}%
-\contentsline {section}{\numberline {4.2}Frequency Recovery}{16}{}%
-\contentsline {subsection}{\numberline {4.2.1}Isolating CFO}{16}{}%
-\contentsline {subsection}{\numberline {4.2.2}Rife \& Boorstyn}{17}{}%
-\contentsline {subsection}{\numberline {4.2.3}Differential Phase and Kay Estimator}{18}{}%
-\contentsline {subsection}{\numberline {4.2.4}Computational Complexity}{20}{}%
-\contentsline {paragraph}{Rife \& Boorstyn}{20}{}%
-\contentsline {paragraph}{Differential phase and Kay}{21}{}%
-\contentsline {subsection}{\numberline {4.2.5}Optimising Bit Width}{21}{}%
-\contentsline {subsection}{\numberline {4.2.6}Maximum CFO}{21}{}%
-\contentsline {section}{\numberline {4.3}Phase Recovery}{22}{}%
-\contentsline {subsection}{\numberline {4.3.1}Feed-Forward vs PLL Algorithms}{22}{}%
-\contentsline {subsection}{\numberline {4.3.2}Viterbi \& Viterbi}{22}{}%
-\contentsline {subsection}{\numberline {4.3.3}Pilots-Only Correction}{23}{}%
-\contentsline {subsection}{\numberline {4.3.4}Computational Complexity}{23}{}%
-\contentsline {paragraph}{Viterbi \& Viterbi}{23}{}%
-\contentsline {paragraph}{Pilots-Only}{23}{}%
-\contentsline {section}{\numberline {4.4}Methodology}{23}{}%
-\contentsline {subsection}{\numberline {4.4.1}Phase Recovery Comparison}{23}{}%
-\contentsline {subsection}{\numberline {4.4.2}System Energy Comparison}{24}{}%
-\contentsline {section}{\numberline {4.5}Results \& Discussion}{24}{}%
-\contentsline {subsection}{\numberline {4.5.1}Phase Recovery Performance}{24}{}%
-\contentsline {subsection}{\numberline {4.5.2}Blind vs Data-Aided Operation}{26}{}%
-\contentsline {subsection}{\numberline {4.5.3}Frequency Recovery Performance}{27}{}%
-\contentsline {subsection}{\numberline {4.5.4}Energy Breakdown}{28}{}%
-\contentsline {section}{\numberline {4.6}Conclusions}{29}{}%
-\contentsline {chapter}{\numberline {5}Full DSP Pipeline}{30}{}%
+\contentsline {section}{\numberline {3.5}Results \& Discussion}{15}{}%
+\contentsline {subsection}{\numberline {3.5.1}Static Equalisation}{15}{}%
+\contentsline {subsection}{\numberline {3.5.2}Adaptive Equalisation}{15}{}%
+\contentsline {subsubsection}{Filter Length}{15}{}%
+\contentsline {subsubsection}{Algorithm Comparison}{16}{}%
+\contentsline {subsection}{\numberline {3.5.3}Combined Performance}{16}{}%
+\contentsline {chapter}{\numberline {4}Carrier Recovery}{17}{}%
+\contentsline {section}{\numberline {4.1}Introduction}{17}{}%
+\contentsline {section}{\numberline {4.2}Frequency Recovery}{17}{}%
+\contentsline {subsection}{\numberline {4.2.1}Isolating CFO}{17}{}%
+\contentsline {subsection}{\numberline {4.2.2}Rife \& Boorstyn}{18}{}%
+\contentsline {subsection}{\numberline {4.2.3}Differential Phase and Kay Estimator}{19}{}%
+\contentsline {subsection}{\numberline {4.2.4}Computational Complexity}{21}{}%
+\contentsline {paragraph}{Rife \& Boorstyn}{21}{}%
+\contentsline {paragraph}{Differential phase and Kay}{22}{}%
+\contentsline {subsection}{\numberline {4.2.5}Optimising Bit Width}{22}{}%
+\contentsline {subsection}{\numberline {4.2.6}Maximum CFO}{22}{}%
+\contentsline {section}{\numberline {4.3}Phase Recovery}{23}{}%
+\contentsline {subsection}{\numberline {4.3.1}Feed-Forward vs PLL Algorithms}{23}{}%
+\contentsline {subsection}{\numberline {4.3.2}Viterbi \& Viterbi}{23}{}%
+\contentsline {subsection}{\numberline {4.3.3}Pilots-Only Correction}{24}{}%
+\contentsline {subsection}{\numberline {4.3.4}Computational Complexity}{24}{}%
+\contentsline {paragraph}{Viterbi \& Viterbi}{24}{}%
+\contentsline {paragraph}{Pilots-Only}{24}{}%
+\contentsline {section}{\numberline {4.4}Methodology}{24}{}%
+\contentsline {subsection}{\numberline {4.4.1}Phase Recovery Comparison}{24}{}%
+\contentsline {subsection}{\numberline {4.4.2}System Energy Comparison}{25}{}%
+\contentsline {section}{\numberline {4.5}Results \& Discussion}{25}{}%
+\contentsline {subsection}{\numberline {4.5.1}Phase Recovery Performance}{25}{}%
+\contentsline {subsection}{\numberline {4.5.2}Blind vs Data-Aided Operation}{27}{}%
+\contentsline {subsection}{\numberline {4.5.3}Frequency Recovery Performance}{28}{}%
+\contentsline {subsection}{\numberline {4.5.4}Energy Breakdown}{29}{}%
+\contentsline {section}{\numberline {4.6}Conclusions}{30}{}%
+\contentsline {chapter}{\numberline {5}Full DSP Pipeline}{31}{}%

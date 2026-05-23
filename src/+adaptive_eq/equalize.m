@@ -1,8 +1,8 @@
-function y = equalize(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, PLanes, Mode, Pilots, BlockLen)
+function y = equalize(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, PLanes, Mode, Pilots, BlockLen, SubframeBlocks)
 %equalize  Adaptive butterfly equalization (CMA / pilot-aided), block-parallel.
 %
 %   y = equalize(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, ...
-%                PLanes, Mode, Pilots, BlockLen)
+%                PLanes, Mode, Pilots, BlockLen, SubframeBlocks)
 %
 %   Inputs
 %     x             - input signal [samples x 2]
@@ -32,6 +32,13 @@ function y = equalize(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, PLanes
 %                     across the 32 symbols of a block and updated once at
 %                     the block end ("weights shared by the whole block").
 %                     The pilot sits at the first symbol of each block.
+%     SubframeBlocks - (optional) number of blocks per CPON subframe (= 116
+%                     for the CPON spec).  When > 0 and Mode = 0 (CMA), the
+%                     first block of every subframe is excluded from the CMA
+%                     gradient update so the 10 high-amplitude training
+%                     symbols (TS2..TS11 at +/-3+/-3j, positions 2-11 of
+%                     block 1) don't corrupt the gradient.  Default 0 (no
+%                     skipping).
 %
 %   CPON adaptation
 %     The symbol stream is processed in blocks of BlockLen (= 32 for CPON).
@@ -61,12 +68,16 @@ function y = equalize(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, PLanes
     if nargin < 12 || isempty(BlockLen)
         BlockLen = PLanes;
     end
+    if nargin < 13 || isempty(SubframeBlocks)
+        SubframeBlocks = 0;   % 0 -> no subframe-level CMA skip
+    end
 
     usePilots     = ~isempty(Pilots);
     NBlocksPilots = size(Pilots, 1);
 
-    % CMA radius
-    R_CMA = sqrt(2);
+    % CMA radius: R = E[|s|^4]/E[|s|^2] = 4/2 = 2 for +/-1+/-1j QPSK
+    % (zeros R_CMA - |y|^2 at |y| = sqrt(2), the natural symbol magnitude).
+    R_CMA = 2;
 
     %% Input blocks (padding for convolution)
     x = [x(end-floor(NTaps/2)+1:end,:); x; x(1:floor(NTaps/2),:)];
@@ -104,6 +115,13 @@ function y = equalize(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, PLanes
         % exact multiple of BlockLen, so b is integer.
         b = floor((iStart - 1) / BlockLen) + 1;
 
+        % First block of every subframe is excluded from the CMA gradient
+        % (it contains the 10 high-amplitude TS2..TS11 training symbols
+        % that would otherwise dominate the gradient).  SubframeBlocks = 0
+        % disables this behaviour.
+        skipCMAblock = (SubframeBlocks > 0) && ...
+                       (mod(b - 1, SubframeBlocks) == 0);
+
         % Accumulated gradient terms over the symbols in this block.
         g1V = zeros(NTaps, 1);
         g1H = zeros(NTaps, 1);
@@ -138,8 +156,12 @@ function y = equalize(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, PLanes
                     g2H = g2H + xH(:,i)*f2;
                 end
             else
-                % --- CMA: every symbol except the pilot contributes ---
-                if ~isPilot
+                % --- CMA: every symbol except the pilot contributes, and
+                %     the entire first block of each subframe is excluded
+                %     (skipCMAblock) so high-amplitude CPON training
+                %     symbols (TS2..TS11 at +/-3+/-3j) don't corrupt the
+                %     gradient.
+                if ~isPilot && ~skipCMAblock
                     if SignOnly
                         e1  = sign(R_CMA - abs(y1(i))^2);
                         e2  = sign(R_CMA - abs(y2(i))^2);

@@ -1,14 +1,16 @@
 # Fdb version 4
-["biber full"] 1779445802.56131 "full.bcf" "full.bbl" "full" 1779453015.79815 0
+["biber full"] 1779562791.22046 "full.bcf" "full.bbl" "full" 1779569333.90682 0
   "../energy/ref.bib" 1777992037 1213 3edeab146894889c227b177519c60136 ""
+  "../equalisation/ref.bib" 1779562731 3211 a5750d6ffdc20e5706013f761561a692 ""
   "../frequency_recovery/ref.bib" 1777558777 1554 5f443762d1d5dcd5fd6ffed8945c1a19 ""
-  "full.bcf" 1779453015 109854 3b628a660a767425fdcf38390ce60b5f "pdflatex"
+  "full.bcf" 1779569333 110023 5157c7bcdcb0584e512042b9b83dc811 "pdflatex"
   "ref.bib" 1779269149 3456 a894c00d1b50f9e1f5e2783661d548f5 ""
   (generated)
   "full.bbl"
   "full.blg"
   (rewritten before read)
-["pdflatex"] 1779453014.3578 "c:/Users/joele/Downloads/iib_project/report/full/full.tex" "full.pdf" "full" 1779453015.7991 0
+["pdflatex"] 1779569332.36665 "c:/Users/joele/Downloads/iib_project/report/full/full.tex" "full.pdf" "full" 1779569333.90877 0
+  "../equalisation/aeq_cma_taps.png" 1779558174 59133 5f1b4bd456735be7839b3012435bfdb7 ""
   "../frequency_recovery/CR_precision_comparison.png" 1779281098 37243 70fe50ace231aa272b9e1671c5ed62a1 ""
   "../frequency_recovery/CR_precision_energy.png" 1779353782 44254 90393dac3f933c21b862e6cd57433962 ""
   "../frequency_recovery/FR_precision_comparison.png" 1779353923 60379 2a7954f047d2fe5c931de09151675b06 ""
@@ -203,12 +205,12 @@
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1772596550 94259 aec9939469efac8f0cf917369f632359 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/web2c/pdftex/pdflatex.fmt" 1772596566 2236130 036198fdb3bbb46401ac4d671e71ba73 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf.cnf" 1772596498 903 164c5b127cd0d6dc91abad2f62421ea2 ""
-  "c:/Users/joele/Downloads/iib_project/report/full/full.tex" 1779453012 61505 5670923768c3ae49087bbe95122cf4dd ""
-  "full.aux" 1779453015 22487 6513aa9c2e6aaa2126f46bfeff4d0160 "pdflatex"
-  "full.bbl" 1779445804 17041 6331bf9313ac5baed62b557e6fb878cf "biber full"
-  "full.run.xml" 1779453015 2384 f9b9b8c3c78720b486d776d617ad8939 "pdflatex"
-  "full.tex" 1779453012 61505 5670923768c3ae49087bbe95122cf4dd ""
-  "full.toc" 1779453015 4682 f55382e0a3df4e6558ee8561e908c359 "pdflatex"
+  "c:/Users/joele/Downloads/iib_project/report/full/full.tex" 1779569330 64241 919ed9ba38f0263804d75dba33e14640 ""
+  "full.aux" 1779569333 24390 2667845965faad5b9d6387ec3bb4c48d "pdflatex"
+  "full.bbl" 1779562794 25220 d07114ac092a67127491749b814d7818 "biber full"
+  "full.run.xml" 1779569333 2427 c04674f756bf2d1a886c84fe4a3c5a3e "pdflatex"
+  "full.tex" 1779569330 64241 919ed9ba38f0263804d75dba33e14640 ""
+  "full.toc" 1779569333 5089 2c052740965f6e8ec8394afd79d94528 "pdflatex"
   (generated)
   "full.aux"
   "full.bcf"

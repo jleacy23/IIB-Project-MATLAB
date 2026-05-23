@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.4)  22 MAY 2026 13:30
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.4)  23 MAY 2026 21:48
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -665,20 +665,20 @@ File: tikzlibrarypositioning.code.tex 2025-08-29 v3.1.11a (3.1.11a)
  (./full.aux)
 \openout1 = `full.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 30.
-LaTeX Font Info:    ... okay on input line 30.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 30.
-LaTeX Font Info:    ... okay on input line 30.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 30.
-LaTeX Font Info:    ... okay on input line 30.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 30.
-LaTeX Font Info:    ... okay on input line 30.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 30.
-LaTeX Font Info:    ... okay on input line 30.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 30.
-LaTeX Font Info:    ... okay on input line 30.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 30.
-LaTeX Font Info:    ... okay on input line 30.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 31.
+LaTeX Font Info:    ... okay on input line 31.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 31.
+LaTeX Font Info:    ... okay on input line 31.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 31.
+LaTeX Font Info:    ... okay on input line 31.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 31.
+LaTeX Font Info:    ... okay on input line 31.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 31.
+LaTeX Font Info:    ... okay on input line 31.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 31.
+LaTeX Font Info:    ... okay on input line 31.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 31.
+LaTeX Font Info:    ... okay on input line 31.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
@@ -722,14 +722,14 @@ File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Live
 ))
 Package caption Info: Begin \AtBeginDocument code.
 Package caption Info: End \AtBeginDocument code.
-LaTeX Info: Redefining \celsius on input line 30.
-Package gensymb Info: Faking symbols for \degree and \celsius on input line 30.
+LaTeX Info: Redefining \celsius on input line 31.
+Package gensymb Info: Faking symbols for \degree and \celsius on input line 31.
 
 
 Package gensymb Warning: Not defining \perthousand.
 
-LaTeX Info: Redefining \ohm on input line 30.
-Package gensymb Info: Using \Omega for \ohm on input line 30.
+LaTeX Info: Redefining \ohm on input line 31.
+Package gensymb Info: Using \Omega for \ohm on input line 31.
 
 Package gensymb Warning: Not defining \micro.
 
@@ -745,36 +745,14 @@ Package biblatex Info: Automatic encoding selection.
 
 Package biblatex Info: Trying to load bibliographic data...
 Package biblatex Info: ... file 'full.bbl' found.
- (./full.bbl
-
-Package biblatex Warning: The following entry could not be found
-(biblatex)                in the database:
-(biblatex)                Cardenas:14
-(biblatex)                Please verify the spelling and rerun
-(biblatex)                LaTeX afterwards.
-
-
-Package biblatex Warning: The following entry could not be found
-(biblatex)                in the database:
-(biblatex)                Mantzoukis:11
-(biblatex)                Please verify the spelling and rerun
-(biblatex)                LaTeX afterwards.
-
-
-Package biblatex Warning: The following entry could not be found
-(biblatex)                in the database:
-(biblatex)                coherent_receivers
-(biblatex)                Please verify the spelling and rerun
-(biblatex)                LaTeX afterwards.
-
-)
-Package biblatex Info: Reference section=0 on input line 30.
-Package biblatex Info: Reference segment=0 on input line 30.
-LaTeX Font Info:    Trying to load font information for U+msa on input line 32.
+ (./full.bbl)
+Package biblatex Info: Reference section=0 on input line 31.
+Package biblatex Info: Reference segment=0 on input line 31.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 33.
  (c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 32.
+LaTeX Font Info:    Trying to load font information for U+msb on input line 33.
  (c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 ) [1
@@ -794,7 +772,7 @@ Chapter 2.
 [5
 
 ]
-Overfull \hbox (2.56007pt too wide) in paragraph at lines 149--150
+Overfull \hbox (2.56007pt too wide) in paragraph at lines 150--151
  \OT1/cmr/bx/n/12 Polarisation-Mode Dis-per-sion[] \OT1/cmr/m/n/12 Polarisation-mode dis-per-sion (PMD) re-sults from ran-
  []
 
@@ -802,116 +780,118 @@ Overfull \hbox (2.56007pt too wide) in paragraph at lines 149--150
 <MZM.jpeg, id=47, 834.11626pt x 430.60875pt>
 File: MZM.jpeg Graphic file (type jpg)
 <use MZM.jpeg>
-Package pdftex.def Info: MZM.jpeg  used on input line 238.
+Package pdftex.def Info: MZM.jpeg  used on input line 239.
 (pdftex.def)             Requested size: 318.66948pt x 164.51347pt.
  [9] [10 <./MZM.jpeg>]
 Chapter 3.
 [11
 
-] [12]
-
-LaTeX Warning: Citation 'coherent_receivers' on page 13 undefined on input line 364.
-
-
-LaTeX Warning: Citation 'Cardenas:14' on page 13 undefined on input line 368.
-
-
-LaTeX Warning: Citation 'Mantzoukis:11' on page 13 undefined on input line 374.
-
-[13]
-
-LaTeX Warning: Citation 'Cardenas:14' on page 14 undefined on input line 387.
-
-[14] [15]
+] [12] [13] [14]
+<../equalisation/aeq_cma_taps.png, id=69, 464.937pt x 367.6134pt>
+File: ../equalisation/aeq_cma_taps.png Graphic file (type png)
+<use ../equalisation/aeq_cma_taps.png>
+Package pdftex.def Info: ../equalisation/aeq_cma_taps.png  used on input line 449.
+(pdftex.def)             Requested size: 318.66948pt x 251.97632pt.
+ [15] [16 <../equalisation/aeq_cma_taps.png (PNG copy)>]
 Chapter 4.
-[16
+[17
 
 ]
-<../frequency_recovery/MCRB_fft_data.png, id=76, 534.3162pt x 364.7226pt>
+<../frequency_recovery/MCRB_fft_data.png, id=80, 534.3162pt x 364.7226pt>
 File: ../frequency_recovery/MCRB_fft_data.png Graphic file (type png)
 <use ../frequency_recovery/MCRB_fft_data.png>
-Package pdftex.def Info: ../frequency_recovery/MCRB_fft_data.png  used on input line 485.
+Package pdftex.def Info: ../frequency_recovery/MCRB_fft_data.png  used on input line 523.
 (pdftex.def)             Requested size: 318.66948pt x 217.52185pt.
- [17]
-<../frequency_recovery/MCRB_fft_blind.png, id=80, 539.616pt x 364.7226pt>
+ [18]
+<../frequency_recovery/MCRB_fft_blind.png, id=85, 539.616pt x 364.7226pt>
 File: ../frequency_recovery/MCRB_fft_blind.png Graphic file (type png)
 <use ../frequency_recovery/MCRB_fft_blind.png>
-Package pdftex.def Info: ../frequency_recovery/MCRB_fft_blind.png  used on input line 492.
+Package pdftex.def Info: ../frequency_recovery/MCRB_fft_blind.png  used on input line 530.
 (pdftex.def)             Requested size: 318.66948pt x 215.39037pt.
- [18 <../frequency_recovery/MCRB_fft_data.png (PNG copy)> <../frequency_recovery/MCRB_fft_blind.png (PNG copy)>]
-<../frequency_recovery/MCRB_diffkay_data.png, id=85, 534.3162pt x 360.8682pt>
+ [19 <../frequency_recovery/MCRB_fft_data.png (PNG copy)> <../frequency_recovery/MCRB_fft_blind.png (PNG copy)>]
+<../frequency_recovery/MCRB_diffkay_data.png, id=89, 534.3162pt x 360.8682pt>
 File: ../frequency_recovery/MCRB_diffkay_data.png Graphic file (type png)
 <use ../frequency_recovery/MCRB_diffkay_data.png>
-Package pdftex.def Info: ../frequency_recovery/MCRB_diffkay_data.png  used on input line 511.
+Package pdftex.def Info: ../frequency_recovery/MCRB_diffkay_data.png  used on input line 549.
 (pdftex.def)             Requested size: 318.66948pt x 215.22307pt.
-<../frequency_recovery/MCRB_diffkay_blind.png, id=86, 539.616pt x 364.7226pt>
+<../frequency_recovery/MCRB_diffkay_blind.png, id=90, 539.616pt x 364.7226pt>
 File: ../frequency_recovery/MCRB_diffkay_blind.png Graphic file (type png)
 <use ../frequency_recovery/MCRB_diffkay_blind.png>
-Package pdftex.def Info: ../frequency_recovery/MCRB_diffkay_blind.png  used on input line 518.
+Package pdftex.def Info: ../frequency_recovery/MCRB_diffkay_blind.png  used on input line 556.
 (pdftex.def)             Requested size: 318.66948pt x 215.39037pt.
- [19 <../frequency_recovery/MCRB_diffkay_data.png (PNG copy)>]
-Overfull \hbox (28.60747pt too wide) in paragraph at lines 532--542
+ [20 <../frequency_recovery/MCRB_diffkay_data.png (PNG copy)>]
+Overfull \hbox (28.60747pt too wide) in paragraph at lines 570--580
  [][] 
  []
 
-[20 <../frequency_recovery/MCRB_diffkay_blind.png (PNG copy)>]
-<../frequency_recovery/max_cfo.png, id=93, 491.436pt x 343.5234pt>
+[21 <../frequency_recovery/MCRB_diffkay_blind.png (PNG copy)>]
+<../frequency_recovery/max_cfo.png, id=97, 491.436pt x 343.5234pt>
 File: ../frequency_recovery/max_cfo.png Graphic file (type png)
 <use ../frequency_recovery/max_cfo.png>
-Package pdftex.def Info: ../frequency_recovery/max_cfo.png  used on input line 571.
+Package pdftex.def Info: ../frequency_recovery/max_cfo.png  used on input line 609.
 (pdftex.def)             Requested size: 318.66948pt x 222.76862pt.
- [21] [22 <../frequency_recovery/max_cfo.png (PNG copy)>] [23]
-<../frequency_recovery/vv_vs_pilots.png, id=103, 573.8238pt x 407.6028pt>
+ [22] [23 <../frequency_recovery/max_cfo.png (PNG copy)>] [24]
+<../frequency_recovery/vv_vs_pilots.png, id=108, 573.8238pt x 407.6028pt>
 File: ../frequency_recovery/vv_vs_pilots.png Graphic file (type png)
 <use ../frequency_recovery/vv_vs_pilots.png>
-Package pdftex.def Info: ../frequency_recovery/vv_vs_pilots.png  used on input line 635.
+Package pdftex.def Info: ../frequency_recovery/vv_vs_pilots.png  used on input line 673.
 (pdftex.def)             Requested size: 318.66948pt x 226.35905pt.
- [24 <../frequency_recovery/vv_vs_pilots.png (PNG copy)>]
-<../frequency_recovery/CR_precision_comparison.png, id=108, 562.2606pt x 341.1144pt>
+ [25 <../frequency_recovery/vv_vs_pilots.png (PNG copy)>]
+<../frequency_recovery/CR_precision_comparison.png, id=112, 562.2606pt x 341.1144pt>
 File: ../frequency_recovery/CR_precision_comparison.png Graphic file (type png)
 <use ../frequency_recovery/CR_precision_comparison.png>
-Package pdftex.def Info: ../frequency_recovery/CR_precision_comparison.png  used on input line 646.
+Package pdftex.def Info: ../frequency_recovery/CR_precision_comparison.png  used on input line 684.
 (pdftex.def)             Requested size: 318.66948pt x 193.33376pt.
-<../frequency_recovery/CR_precision_energy.png, id=109, 573.342pt x 341.1144pt>
+<../frequency_recovery/CR_precision_energy.png, id=113, 573.342pt x 341.1144pt>
 File: ../frequency_recovery/CR_precision_energy.png Graphic file (type png)
 <use ../frequency_recovery/CR_precision_energy.png>
-Package pdftex.def Info: ../frequency_recovery/CR_precision_energy.png  used on input line 653.
+Package pdftex.def Info: ../frequency_recovery/CR_precision_energy.png  used on input line 691.
 (pdftex.def)             Requested size: 318.66948pt x 189.60178pt.
- [25]
-<../frequency_recovery/blind_data.png, id=113, 489.5088pt x 359.4228pt>
+ [26]
+<../frequency_recovery/blind_data.png, id=117, 489.5088pt x 359.4228pt>
 File: ../frequency_recovery/blind_data.png Graphic file (type png)
 <use ../frequency_recovery/blind_data.png>
-Package pdftex.def Info: ../frequency_recovery/blind_data.png  used on input line 664.
+Package pdftex.def Info: ../frequency_recovery/blind_data.png  used on input line 702.
 (pdftex.def)             Requested size: 318.66948pt x 233.98401pt.
- [26 <../frequency_recovery/CR_precision_comparison.png (PNG copy)> <../frequency_recovery/CR_precision_energy.png (PNG copy)>]
-<../frequency_recovery/FR_precision_comparison.png, id=117, 564.6696pt x 341.1144pt>
+ [27 <../frequency_recovery/CR_precision_comparison.png (PNG copy)> <../frequency_recovery/CR_precision_energy.png (PNG copy)>]
+<../frequency_recovery/FR_precision_comparison.png, id=121, 564.6696pt x 341.1144pt>
 File: ../frequency_recovery/FR_precision_comparison.png Graphic file (type png)
 <use ../frequency_recovery/FR_precision_comparison.png>
-Package pdftex.def Info: ../frequency_recovery/FR_precision_comparison.png  used on input line 675.
+Package pdftex.def Info: ../frequency_recovery/FR_precision_comparison.png  used on input line 713.
 (pdftex.def)             Requested size: 318.66948pt x 192.50616pt.
-<../frequency_recovery/FR_precision_energy.png, id=118, 573.342pt x 341.1144pt>
+<../frequency_recovery/FR_precision_energy.png, id=122, 573.342pt x 341.1144pt>
 File: ../frequency_recovery/FR_precision_energy.png Graphic file (type png)
 <use ../frequency_recovery/FR_precision_energy.png>
-Package pdftex.def Info: ../frequency_recovery/FR_precision_energy.png  used on input line 682.
+Package pdftex.def Info: ../frequency_recovery/FR_precision_energy.png  used on input line 720.
 (pdftex.def)             Requested size: 318.66948pt x 189.60178pt.
- [27 <../frequency_recovery/blind_data.png (PNG copy)>]
-<../frequency_recovery/receiver_energy_breakdown_CR.png, id=122, 533.8344pt x 337.26pt>
+ [28 <../frequency_recovery/blind_data.png (PNG copy)>]
+<../frequency_recovery/receiver_energy_breakdown_CR.png, id=126, 533.8344pt x 337.26pt>
 File: ../frequency_recovery/receiver_energy_breakdown_CR.png Graphic file (type png)
 <use ../frequency_recovery/receiver_energy_breakdown_CR.png>
-Package pdftex.def Info: ../frequency_recovery/receiver_energy_breakdown_CR.png  used on input line 694.
+Package pdftex.def Info: ../frequency_recovery/receiver_energy_breakdown_CR.png  used on input line 732.
 (pdftex.def)             Requested size: 318.66948pt x 201.32832pt.
 
-Overfull \hbox (8.89969pt too wide) in paragraph at lines 700--712
+Overfull \hbox (8.89969pt too wide) in paragraph at lines 738--750
  [][] 
  []
 
-[28 <../frequency_recovery/FR_precision_comparison.png (PNG copy)> <../frequency_recovery/FR_precision_energy.png (PNG copy)>] [29 <../frequency_recovery/receiver_energy_breakdown_CR.png (PNG copy)>]
+[29 <../frequency_recovery/FR_precision_comparison.png (PNG copy)> <../frequency_recovery/FR_precision_energy.png (PNG copy)>] [30 <../frequency_recovery/receiver_energy_breakdown_CR.png (PNG copy)>]
 Chapter 5.
-[30
+[31
 
-] [31
+]
+Overfull \hbox (4.13048pt too wide) in paragraph at lines 758--758
+[]\OT1/cmr/m/n/12 A.N. D'Andrea, Um-berto Men-gali, and Rug-gero Reg-gian-nini. ``The Mod-i-fied Cramer-
+ []
 
-] (./full.aux)
+
+Overfull \hbox (0.11009pt too wide) in paragraph at lines 758--758
+\OT1/cmr/m/n/12 '11. San Jose, Cal-i-for-nia, USA: As-so-ci-a-tion for Com-put-ing Ma-chin-ery, 2011, pp. 365{
+ []
+
+[32
+
+] [33] (./full.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
@@ -921,18 +901,18 @@ Package logreq Info: Writing requests to 'full.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 26295 strings out of 469515
- 540885 string characters out of 5467663
- 1338840 words of memory out of 5000000
- 54579 multiletter control sequences out of 15000+600000
+ 26329 strings out of 469515
+ 542735 string characters out of 5467663
+ 1339610 words of memory out of 5000000
+ 54613 multiletter control sequences out of 15000+600000
  645292 words of font info for 104 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  84i,13n,104p,1800b,1472s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmcsc10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb>
-Output written on full.pdf (32 pages, 1223527 bytes).
+Output written on full.pdf (34 pages, 1288371 bytes).
 PDF statistics:
- 214 PDF objects out of 1000 (max. 8388607)
- 129 compressed objects within 2 object streams
+ 221 PDF objects out of 1000 (max. 8388607)
+ 133 compressed objects within 2 object streams
  0 named destinations out of 1000 (max. 500000)
- 78 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 83 words of extra memory for PDF output out of 10000 (max. 10000000)
 

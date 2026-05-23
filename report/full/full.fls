@@ -325,6 +325,10 @@ INPUT ./MZM.jpeg
 INPUT ./MZM.jpeg
 INPUT ./MZM.jpeg
 INPUT ./MZM.jpeg
+INPUT ../equalisation/aeq_cma_taps.png
+INPUT ../equalisation/aeq_cma_taps.png
+INPUT ../equalisation/aeq_cma_taps.png
+INPUT ../equalisation/aeq_cma_taps.png
 INPUT ../frequency_recovery/MCRB_fft_data.png
 INPUT ../frequency_recovery/MCRB_fft_data.png
 INPUT ../frequency_recovery/MCRB_fft_data.png

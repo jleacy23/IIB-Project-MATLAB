@@ -53,10 +53,13 @@ function Out = equalize_td(In, D, L, CLambda, Rs, NPol, SpSIn)
     end
 
     %% CD impulse response (FIR taps)
-    %  Chirp support: instantaneous frequency m*Ts/A reaches Nyquist
-    %  (1/(2*Ts)) at |m| = K, i.e. K = |A|/(2*Ts^2).
-    K     = floor(abs(A) / (2 * Ts^2));
-    K     = min(K, floor((NIn - 1) / 2));   % cannot exceed signal length
+    %  Dimensioned to the signal bandwidth B = Rs (Nyquist pulse-shaping):
+    %  the dispersive memory over that band is Delta_tau/Ts = |A|*Rs^2*SpS
+    %  samples, matching the report's N_CD = Delta_tau/T + 1.  The chirp's
+    %  instantaneous frequency m*Ts/A reaches the band edge Rs/2 at |m| = K.
+    NspanSamp = abs(A) * Rs_si^2 * SpSIn;        % delay spread Delta_tau/Ts
+    K     = floor(NspanSamp / 2);
+    K     = min(K, floor((NIn - 1) / 2));        % cannot exceed signal length
     m     = (-K:K).';                        % tap lags (column)
     alpha = Ts / sqrt(1i * A);               % unit-gain normalisation
     g     = alpha * exp(1i * pi * (m * Ts).^2 / A);

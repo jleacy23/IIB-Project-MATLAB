@@ -52,24 +52,41 @@ function T = equalize_fxp_types(dt) %#codegen
 %     datapath (FPGA / ASIC).
 
     if isstruct(dt)
-        wl = dt.WL;
-        fl = dt.FL;
+        % "WL/FL" in the struct path is the GRADIENT precision (T.grad).
+        % All other data-path types are held at HIGH precision so the
+        % equaliser's inner products / error / output retain enough
+        % precision for the CMA to converge — only the gradient store is
+        % swept.  T.w is pinned at 16 fractional bits.  This mirrors the
+        % working grad_precision_fec.m pattern: the equaliser must not be
+        % broken at low FL just because the gradient is coarse, otherwise
+        % the sweep yields NaNs (divergence) rather than meaningful
+        % FEC-SNR values.
+        gradWL = dt.WL;
+        gradFL = dt.FL;
+        % Shared fimath: HIGH product/sum precision so per-operation
+        % truncation doesn't bottleneck the data path.  Codegen requires
+        % one fimath across all operands; individual quantisation is
+        % applied via the per-field numerictype (e.g. T.grad's FL).
         F = fimath( ...
             'RoundingMethod',       'Floor', ...
             'OverflowAction',       'Wrap',  ...
             'ProductMode',          'SpecifyPrecision', ...
-            'ProductWordLength',     wl, ...
-            'ProductFractionLength', fl, ...
+            'ProductWordLength',     48, ...
+            'ProductFractionLength', 32, ...
             'SumMode',              'SpecifyPrecision', ...
-            'SumWordLength',         wl, ...
-            'SumFractionLength',     fl);
-        T.x     = fi([], 1, wl, fl, F);
-        T.w     = fi([], 1, wl, fl, F);
-        T.y     = fi([], 1, wl, fl, F);
-        T.acc   = fi([], 1, wl, fl, F);
-        T.err   = fi([], 1, wl, fl, F);
-        T.grad  = fi([], 1, wl, fl, F);
-        T.R_CMA = fi([], 1, wl, fl, F);
+            'SumWordLength',         48, ...
+            'SumFractionLength',     32);
+        % Data-path numerictypes (x / y / acc / err / R_CMA): high
+        HiWL = 32; HiFL = 24;
+        % Weight register: fixed at 16 fractional bits, 32-bit WL
+        % (15 integer bits handle transient tap excursions).
+        T.x     = fi([], 1, HiWL,   HiFL,   F);
+        T.w     = fi([], 1, 32,     16,     F);
+        T.y     = fi([], 1, HiWL,   HiFL,   F);
+        T.acc   = fi([], 1, HiWL,   HiFL,   F);
+        T.err   = fi([], 1, HiWL,   HiFL,   F);
+        T.grad  = fi([], 1, gradWL, gradFL, F);
+        T.R_CMA = fi([], 1, HiWL,   HiFL,   F);
         return;
     end
 

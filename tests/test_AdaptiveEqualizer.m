@@ -192,7 +192,7 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
                 double(testCase.SpS), double(testCase.NTaps), double(1e-3), ...
                 true, double(testCase.N1), double(0), false, ...
                 double(testCase.UpdateStep), T, double(1), ...
-                double(1), Pilots_fi, double(BlockLen));   % Mode = 1
+                double(1), Pilots_fi, double(BlockLen), double(0));  % Mode = 1, no subframe skip
 
             testCase.verifyTrue(isa(eqSym, 'embedded.fi'), ...
                 'Fixed-point pilot-aided output must be a fi object.');
@@ -224,7 +224,8 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
             symbols = (2*randi([0 1], testCase.Ns, testCase.N_pol) - 1) ...
                 + 1j*(2*randi([0 1], testCase.Ns, testCase.N_pol) - 1);
             % duplicate for SpS > 1
-            txSig = repelem(symbols, testCase.SpS, 1);
+            txSig = modem.nyquistPulse(symbols, testCase.SpS, ...
+                testCase.Rolloff, testCase.Span);
 
             % --- Channel: AWGN + PMD ---
             rxSig = channel.add_awgn(txSig, testCase.SNR_dB);
@@ -269,7 +270,7 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
                 double(testCase.SpS), double(NTaps), double(Mu), ...
                 SingleSpike, double(N1), double(NOut), logical(SignOnly), ...
                 double(testCase.UpdateStep), T, double(PLanes), ...
-                double(0), pilotsEmpty, double(PLanes));
+                double(0), pilotsEmpty, double(PLanes), double(0)); % no subframe skip
         end
 
         function bestBER = computeBestBER(testCase, refSyms, eqSym)
@@ -338,7 +339,8 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
             [symbols, pilots, ~, nSub] = modem.modulate(bits);
             PilotsAll = repmat(pilots, nSub, 1);   % [nSub*116 x 2]
 
-            txSig = repelem(symbols, testCase.SpS, 1);
+            txSig = modem.nyquistPulse(symbols, testCase.SpS, ...
+                testCase.Rolloff, testCase.Span);
             rxSig = channel.add_awgn(txSig, testCase.SNR_dB);
             rxSig = channel.add_pmd(rxSig, testCase.L, testCase.SpS, ...
                 testCase.Rs, testCase.DGDSpec, testCase.N_pmd);

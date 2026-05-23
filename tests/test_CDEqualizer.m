@@ -21,8 +21,42 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
         % CD Equalizer
         NFFT    = 512
 
+        % Pulse shaping (Nyquist / raised-cosine)
+        Rolloff = 0.25
+        Span    = 10
+
+        % Fixed-point configuration
+        FxpConfig = 'fixed16'
+
         % Thresholds
         BER_CD_ONLY = 1e-3
+    end
+
+    methods (TestClassSetup)
+        function buildFxpMex(testCase)
+            % Build the CD fixed-point MEX binaries once so the fxp tests
+            % run against the compiled (fast) versions rather than the
+            % interpreted fi datapath.  Mirrors test_AdaptiveEqualizer.
+            thisDir  = fileparts(mfilename('fullpath'));
+            repoRoot = fileparts(thisDir);
+            addpath(genpath(fullfile(repoRoot, 'src')));
+            addpath(fullfile(repoRoot, 'build'));
+
+            P = struct();
+            P.FxpConfig_CD = testCase.FxpConfig;
+            P.N_pol        = testCase.N_pol;
+            P.D            = testCase.D;
+            P.L            = testCase.L;
+            P.CWL          = testCase.CWL;
+            P.Rs           = testCase.Rs;
+            P.SpS          = testCase.SpS;
+            P.NFFT         = testCase.NFFT;
+            P.po2Twiddle   = false;
+
+            cfg = coder.config('mex');
+            build_cd_eq_equalize_fxp_mex(P, cfg);       % freq-domain
+            build_cd_eq_equalize_td_fxp_mex(P, cfg);    % time-domain
+        end
     end
 
     methods (TestMethodSetup)
@@ -40,7 +74,8 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
             Nbits    = 4 * testCase.Ns;
             txBits   = modem.randomBits(Nbits);
             symbols  = modem.modulate(txBits);
-            txSig    = modem.rectPulse(symbols, testCase.SpS);
+            txSig    = modem.nyquistPulse(symbols, testCase.SpS, ...
+                testCase.Rolloff, testCase.Span);
 
             % --- Channel (CD only, high SNR, no phase noise/PMD) ---
             rxSig = channel.add_chromatic_dispersion(txSig, ...
@@ -79,7 +114,8 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
             Nbits    = 4 * testCase.Ns;
             txBits   = modem.randomBits(Nbits);
             symbols  = modem.modulate(txBits);
-            txSig    = modem.rectPulse(symbols, testCase.SpS);
+            txSig    = modem.nyquistPulse(symbols, testCase.SpS, ...
+                testCase.Rolloff, testCase.Span);
 
             % --- Channel (CD + AWGN) ---
             rxSig = channel.add_chromatic_dispersion(txSig, ...
@@ -149,7 +185,8 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
             Nbits    = 4 * testCase.Ns;
             txBits   = modem.randomBits(Nbits);
             symbols  = modem.modulate(txBits);
-            txSig    = modem.rectPulse(symbols, testCase.SpS);
+            txSig    = modem.nyquistPulse(symbols, testCase.SpS, ...
+                testCase.Rolloff, testCase.Span);
 
             % --- Channel (CD only) ---
             rxSig = channel.add_chromatic_dispersion(txSig, ...
@@ -158,10 +195,10 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
             % --- Cast to fi ---
             rxSig_fi = cast(rxSig, 'like', T.x);
 
-            % --- CD Equalizer (fxp MATLAB) ---
-            eqSig = cd_eq.equalize_fxp(rxSig_fi, testCase.D, testCase.L, ...
+            % --- CD Equalizer (fxp MEX) ---
+            eqSig = cd_eq.equalize_fxp_mex(rxSig_fi, testCase.D, testCase.L, ...
                 testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, ...
-                testCase.NFFT, false, T)
+                testCase.NFFT, false, T);
 
             % --- BER ---
             eqSymbols   = double(eqSig(1:testCase.SpS:end, :));
@@ -187,7 +224,8 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
             Nbits    = 4 * testCase.Ns;
             txBits   = modem.randomBits(Nbits);
             symbols  = modem.modulate(txBits);
-            txSig    = modem.rectPulse(symbols, testCase.SpS);
+            txSig    = modem.nyquistPulse(symbols, testCase.SpS, ...
+                testCase.Rolloff, testCase.Span);
 
             % --- Channel (CD only) ---
             rxSig = channel.add_chromatic_dispersion(txSig, ...
@@ -198,9 +236,9 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
                 testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, ...
                 testCase.NFFT);
 
-            % --- FXP ---
+            % --- FXP (MEX) ---
             rxSig_fi = cast(rxSig, 'like', T.x);
-            eqFxp    = cd_eq.equalize_fxp(rxSig_fi, testCase.D, testCase.L, ...
+            eqFxp    = cd_eq.equalize_fxp_mex(rxSig_fi, testCase.D, testCase.L, ...
                 testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, ...
                 testCase.NFFT, false, T);
 
@@ -214,8 +252,8 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
 
         % -------- CD only: fxp MEX bit-exact with MATLAB fxp ----------
         function testCDOnly_Fxp32_MexMatch(testCase)
-            testCase.assumeTrue(exist('cdeq_equalize_fxp_mex', 'file') == 3, ...
-                'cdeq_equalize_fxp_mex not found — run build_cdeq_equalize_fxp_mex first.');
+            testCase.assumeTrue(exist('cd_eq.equalize_fxp_mex', 'file') == 3, ...
+                'cd_eq.equalize_fxp_mex not found — run build_cd_eq_equalize_fxp_mex first.');
 
             T = cd_eq.equalize_fxp_types('fixed16');
 
@@ -223,7 +261,8 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
             Nbits    = 4 * testCase.Ns;
             txBits   = modem.randomBits(Nbits);
             symbols  = modem.modulate(txBits);
-            txSig    = modem.rectPulse(symbols, testCase.SpS);
+            txSig    = modem.nyquistPulse(symbols, testCase.SpS, ...
+                testCase.Rolloff, testCase.Span);
 
             % --- Channel (CD only) ---
             rxSig = channel.add_chromatic_dispersion(txSig, ...
@@ -237,7 +276,7 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
                 testCase.NFFT, false, T);
 
             % --- MEX fxp ---
-            eqMEX = cdeq_equalize_fxp_mex(rxSig_fi, testCase.D, testCase.L, ...
+            eqMEX = cd_eq.equalize_fxp_mex(rxSig_fi, testCase.D, testCase.L, ...
                 testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, ...
                 testCase.NFFT, false, T);
 
@@ -262,7 +301,8 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
             Nbits    = 4 * testCase.Ns;
             txBits   = modem.randomBits(Nbits);
             symbols  = modem.modulate(txBits);
-            txSig    = modem.rectPulse(symbols, testCase.SpS);
+            txSig    = modem.nyquistPulse(symbols, testCase.SpS, ...
+                testCase.Rolloff, testCase.Span);
 
             % --- Channel ---
             rxSig = channel.add_chromatic_dispersion(txSig, ...
@@ -274,9 +314,9 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
                 testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, ...
                 testCase.NFFT);
 
-            % --- FXP ---
+            % --- FXP (MEX) ---
             rxSig_fi = cast(rxSig, 'like', T.x);
-            eqFxp    = cd_eq.equalize_fxp(rxSig_fi, testCase.D, testCase.L, ...
+            eqFxp    = cd_eq.equalize_fxp_mex(rxSig_fi, testCase.D, testCase.L, ...
                 testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, ...
                 testCase.NFFT, false, T);
 
@@ -322,7 +362,8 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
             Nbits    = 4 * testCase.Ns;
             txBits   = modem.randomBits(Nbits);
             symbols  = modem.modulate(txBits);
-            txSig    = modem.rectPulse(symbols, testCase.SpS);
+            txSig    = modem.nyquistPulse(symbols, testCase.SpS, ...
+                testCase.Rolloff, testCase.Span);
 
             % --- Channel (CD only) ---
             rxSig = channel.add_chromatic_dispersion(txSig, ...
@@ -331,8 +372,8 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
             % --- Cast to fi ---
             rxSig_fi = cast(rxSig, 'like', T.x);
 
-            % --- Time-domain CD Equalizer (fxp MATLAB) ---
-            eqSig = cd_eq.equalize_td_fxp(rxSig_fi, testCase.D, testCase.L, ...
+            % --- Time-domain CD Equalizer (fxp MEX) ---
+            eqSig = cd_eq.equalize_td_fxp_mex(rxSig_fi, testCase.D, testCase.L, ...
                 testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, T);
 
             % --- BER ---
@@ -361,7 +402,8 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
             Nbits    = 4 * testCase.Ns;
             txBits   = modem.randomBits(Nbits);
             symbols  = modem.modulate(txBits);
-            txSig    = modem.rectPulse(symbols, testCase.SpS);
+            txSig    = modem.nyquistPulse(symbols, testCase.SpS, ...
+                testCase.Rolloff, testCase.Span);
 
             % --- Channel (CD only) ---
             rxSig = channel.add_chromatic_dispersion(txSig, ...
@@ -371,9 +413,9 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
             eqRef = cd_eq.equalize_td(rxSig, testCase.D, testCase.L, ...
                 testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS);
 
-            % --- Time-domain FXP ---
+            % --- Time-domain FXP (MEX) ---
             rxSig_fi = cast(rxSig, 'like', T.x);
-            eqFxp    = cd_eq.equalize_td_fxp(rxSig_fi, testCase.D, testCase.L, ...
+            eqFxp    = cd_eq.equalize_td_fxp_mex(rxSig_fi, testCase.D, testCase.L, ...
                 testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, T);
 
             % --- NRMSE (quantization error only) ---
@@ -392,7 +434,8 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
             Nbits    = 4 * testCase.Ns;
             txBits   = modem.randomBits(Nbits);
             symbols  = modem.modulate(txBits);
-            txSig    = modem.rectPulse(symbols, testCase.SpS);
+            txSig    = modem.nyquistPulse(symbols, testCase.SpS, ...
+                testCase.Rolloff, testCase.Span);
 
             % --- Channel (CD only) ---
             rxSig = channel.add_chromatic_dispersion(txSig, ...
@@ -417,8 +460,8 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
 
         % -------- CD only: time-domain fxp MEX bit-exact -------------
         function testCDOnly_TD_MexMatch(testCase)
-            testCase.assumeTrue(exist('equalize_td_fxp_mex', 'file') == 3, ...
-                'equalize_td_fxp_mex not found — run build_cd_eq_equalize_td_fxp_mex first.');
+            testCase.assumeTrue(exist('cd_eq.equalize_td_fxp_mex', 'file') == 3, ...
+                'cd_eq.equalize_td_fxp_mex not found — run build_cd_eq_equalize_td_fxp_mex first.');
 
             T = cd_eq.equalize_td_fxp_types('fixed16');
 
@@ -426,7 +469,8 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
             Nbits    = 4 * testCase.Ns;
             txBits   = modem.randomBits(Nbits);
             symbols  = modem.modulate(txBits);
-            txSig    = modem.rectPulse(symbols, testCase.SpS);
+            txSig    = modem.nyquistPulse(symbols, testCase.SpS, ...
+                testCase.Rolloff, testCase.Span);
 
             % --- Channel (CD only) ---
             rxSig = channel.add_chromatic_dispersion(txSig, ...
@@ -439,7 +483,7 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
                 testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, T);
 
             % --- MEX fxp ---
-            eqMEX = equalize_td_fxp_mex(rxSig_fi, testCase.D, testCase.L, ...
+            eqMEX = cd_eq.equalize_td_fxp_mex(rxSig_fi, testCase.D, testCase.L, ...
                 testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, T);
 
             % --- Verify bit-exact ---
@@ -463,21 +507,22 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
             Nbits    = 4 * testCase.Ns;
             txBits   = modem.randomBits(Nbits);
             symbols  = modem.modulate(txBits);
-            txSig    = modem.rectPulse(symbols, testCase.SpS);
+            txSig    = modem.nyquistPulse(symbols, testCase.SpS, ...
+                testCase.Rolloff, testCase.Span);
 
             % --- Channel (CD only) ---
             rxSig = channel.add_chromatic_dispersion(txSig, ...
                 testCase.L, testCase.SpS, testCase.Rs, testCase.D, testCase.CWL);
 
-            % --- Freq-domain fxp ---
+            % --- Freq-domain fxp (MEX) ---
             rxSig_fd = cast(rxSig, 'like', T_fd.x);
-            eqFD = cd_eq.equalize_fxp(rxSig_fd, testCase.D, testCase.L, ...
+            eqFD = cd_eq.equalize_fxp_mex(rxSig_fd, testCase.D, testCase.L, ...
                 testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, ...
                 testCase.NFFT, false, T_fd);
 
-            % --- Time-domain fxp ---
+            % --- Time-domain fxp (MEX) ---
             rxSig_td = cast(rxSig, 'like', T_td.x);
-            eqTD = cd_eq.equalize_td_fxp(rxSig_td, testCase.D, testCase.L, ...
+            eqTD = cd_eq.equalize_td_fxp_mex(rxSig_td, testCase.D, testCase.L, ...
                 testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, T_td);
 
             % --- BER for each ---

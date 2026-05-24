@@ -9,10 +9,11 @@ classdef cd_eq_precision_sweep < matlab.unittest.TestCase
 %
 %   The three CD equaliser configurations are:
 %       'time_domain'       — direct FIR convolution (cd_eq.equalize_td_fxp).
-%                             The filter length is derived internally for the
-%                             signal bandwidth B = Rs, matching the report's
-%                             N_CD (tab:cd_taps), which is also logged as
-%                             metadata (ncd_report).
+%                             The filter length is supplied by the caller
+%                             via cd_eq.computeOverlap (shared with the
+%                             overlap-save sizing); the report's N_CD
+%                             (tab:cd_taps) is also logged as metadata
+%                             (ncd_report) for reference.
 %       'overlap_save'      — overlap-save frequency-domain (cd_eq.equalize_fxp,
 %                             po2Twiddle = false).
 %       'overlap_save_po2'  — overlap-save with power-of-two twiddle factors
@@ -281,9 +282,12 @@ classdef cd_eq_precision_sweep < matlab.unittest.TestCase
             switch cfg
                 case 'time_domain'
                     rx_fi = cast(rxSig, 'like', T_td.x);
+                    NTap  = cd_eq.computeOverlap(double(P.D), double(net.L), ...
+                        double(P.CWL), double(P.Rs), double(P.SpS), ...
+                        double(net.NFFT));
                     eqSig = cd_eq.equalize_td_fxp_mex(rx_fi, double(P.D), ...
                         double(net.L), double(P.CWL), double(P.Rs), ...
-                        double(P.N_pol), double(P.SpS), T_td);
+                        double(P.N_pol), double(P.SpS), double(NTap), T_td);
                 case 'overlap_save'
                     rx_fi = cast(rxSig, 'like', T_fd.x);
                     eqSig = cd_eq.equalize_fxp_mex(rx_fi, double(P.D), ...

@@ -365,6 +365,43 @@
       \verb 10.1109/ISSCC.2014.6757323
       \endverb
     \endentry
+    \entry{Ezra;07}{article}{}{}
+      \name{author}{2}{}{%
+        {{hash=3554fa617e70f7a23c0ff8bab6b3ff9c}{%
+           family={Ip},
+           familyi={I\bibinitperiod},
+           given={Ezra},
+           giveni={E\bibinitperiod}}}%
+        {{hash=ed6f7c6121c82ef9f3fa92b4b8c6faba}{%
+           family={Kahn},
+           familyi={K\bibinitperiod},
+           given={Joseph\bibnamedelima M.},
+           giveni={J\bibinitperiod\bibinitdelim M\bibinitperiod}}}%
+      }
+      \strng{namehash}{654d6b7a3ec6912be546c7519a42a69b}
+      \strng{fullhash}{654d6b7a3ec6912be546c7519a42a69b}
+      \strng{fullhashraw}{654d6b7a3ec6912be546c7519a42a69b}
+      \strng{bibnamehash}{654d6b7a3ec6912be546c7519a42a69b}
+      \strng{authorbibnamehash}{654d6b7a3ec6912be546c7519a42a69b}
+      \strng{authornamehash}{654d6b7a3ec6912be546c7519a42a69b}
+      \strng{authorfullhash}{654d6b7a3ec6912be546c7519a42a69b}
+      \strng{authorfullhashraw}{654d6b7a3ec6912be546c7519a42a69b}
+      \field{sortinit}{I}
+      \field{sortinithash}{8d291c51ee89b6cd86bf5379f0b151d8}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Journal of Lightwave Technology}
+      \field{number}{8}
+      \field{title}{Digital Equalization of Chromatic Dispersion and Polarization Mode Dispersion}
+      \field{volume}{25}
+      \field{year}{2007}
+      \field{pages}{2033\bibrangedash 2043}
+      \range{pages}{11}
+      \verb{doi}
+      \verb 10.1109/JLT.2007.900889
+      \endverb
+      \keyw{Chromatic dispersion;Polarization mode dispersion;Optical receivers;Optical distortion;Equalizers;Optical pulse shaping;Optical filters;Sampling methods;Optical sensors;Optical signal processing;Chromatic dispersion (CD);coherent detection;digital signal processing;equalizers;optical fiber communication;polarization mode dispersion (PMD)}
+    \endentry
     \entry{Jacobsen2007}{article}{}{}
       \name{author}{2}{}{%
         {{hash=1897f21248594933ce9722c3e2f698ce}{%
@@ -493,6 +530,58 @@
       \verb{doi}
       \verb 10.1007/978-3-030-66541-8
       \endverb
+    \endentry
+    \entry{Rozental;15}{inproceedings}{}{}
+      \name{author}{5}{}{%
+        {{hash=51466e2b40d143221f03a18271fa3a55}{%
+           family={Rozental},
+           familyi={R\bibinitperiod},
+           given={Valery\bibnamedelima N.},
+           giveni={V\bibinitperiod\bibinitdelim N\bibinitperiod}}}%
+        {{hash=6c57b8b23c66de796a5b551557a2fc3d}{%
+           family={Parahyba},
+           familyi={P\bibinitperiod},
+           given={Victor\bibnamedelima E.},
+           giveni={V\bibinitperiod\bibinitdelim E\bibinitperiod}}}%
+        {{hash=9d4389f2501597fe97877ef3d71bea00}{%
+           family={Reis},
+           familyi={R\bibinitperiod},
+           given={Jacklyn\bibnamedelima D.},
+           giveni={J\bibinitperiod\bibinitdelim D\bibinitperiod}}}%
+        {{hash=1ae90a4bf22a8ed3efab4332e07865c4}{%
+           family={Oliveira},
+           familyi={O\bibinitperiod},
+           given={Juliano\bibnamedelima F.},
+           giveni={J\bibinitperiod\bibinitdelim F\bibinitperiod},
+           prefix={de},
+           prefixi={d\bibinitperiod}}}%
+        {{hash=81363d250418057b7c8123c1d44ae7da}{%
+           family={Mello},
+           familyi={M\bibinitperiod},
+           given={Darli\bibnamedelimb A.\bibnamedelimi A.},
+           giveni={D\bibinitperiod\bibinitdelim A\bibinitperiod\bibinitdelim A\bibinitperiod}}}%
+      }
+      \strng{namehash}{8fc1aacc6ee09be28bcc1837434b608e}
+      \strng{fullhash}{978365ba216896632c74c79ec351845a}
+      \strng{fullhashraw}{978365ba216896632c74c79ec351845a}
+      \strng{bibnamehash}{8fc1aacc6ee09be28bcc1837434b608e}
+      \strng{authorbibnamehash}{8fc1aacc6ee09be28bcc1837434b608e}
+      \strng{authornamehash}{8fc1aacc6ee09be28bcc1837434b608e}
+      \strng{authorfullhash}{978365ba216896632c74c79ec351845a}
+      \strng{authorfullhashraw}{978365ba216896632c74c79ec351845a}
+      \field{sortinit}{R}
+      \field{sortinithash}{5e1c39a9d46ffb6bebd8f801023a9486}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{2015 SBMO/IEEE MTT-S International Microwave and Optoelectronics Conference (IMOC)}
+      \field{title}{Digital-domain chromatic dispersion compensation for different pulse shapes: Practical considerations}
+      \field{year}{2015}
+      \field{pages}{1\bibrangedash 4}
+      \range{pages}{4}
+      \verb{doi}
+      \verb 10.1109/IMOC.2015.7369135
+      \endverb
+      \keyw{Optical signal processing;Bit error rate;Equalizers;Computational complexity;Optical receivers;Frequency-domain analysis;Optical pulse shaping}
     \endentry
     \entry{Savory;08}{article}{}{}
       \name{author}{1}{}{%

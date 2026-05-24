@@ -1,7 +1,7 @@
-function Out = equalize_td_fxp(In, D, L, CLambda, Rs, NPol, SpSIn, T) %#codegen
+function Out = equalize_td_fxp(In, D, L, CLambda, Rs, NPol, SpSIn, NTap, T) %#codegen
 %EQUALIZE_TD_FXP  Fixed-point time-domain (FIR) CD compensation.
 %
-%   Out = equalize_td_fxp(In, D, L, CLambda, Rs, NPol, SpSIn, T)
+%   Out = equalize_td_fxp(In, D, L, CLambda, Rs, NPol, SpSIn, NTap, T)
 %
 %   Alternate to equalize_fxp: instead of overlap-save frequency-domain
 %   compensation, this convolves the input with the truncated chromatic
@@ -30,6 +30,9 @@ function Out = equalize_td_fxp(In, D, L, CLambda, Rs, NPol, SpSIn, T) %#codegen
 %     Rs       - symbol rate [GBd]
 %     NPol     - number of polarizations (1 or 2)
 %     SpSIn    - samples per symbol
+%     NTap     - FIR length (use cd_eq.computeOverlap to size to the signal
+%                bandwidth).  The symmetric chirp window uses the largest
+%                odd value not exceeding NTap, i.e. 2*floor((NTap-1)/2)+1.
 %     T        - (optional) fixed-point types table from
 %                equalize_td_fxp_types.  If omitted, uses 'fixed32'.
 %
@@ -40,10 +43,10 @@ function Out = equalize_td_fxp(In, D, L, CLambda, Rs, NPol, SpSIn, T) %#codegen
 %
 %   Implementation notes for codegen:
 %     - Taps are pre-computed in double and cast once to fi (T.hcd).
-%     - The number of taps follows the standard chirp-support criterion
-%       (Savory) sized to the signal band B = Rs: the chirp instantaneous
-%       frequency reaches the band edge Rs/2 at |m| = K = |A|*Rs^2*SpS/2,
-%       giving an odd FIR of 2K+1 taps (matches the report's N_CD).
+%     - The FIR length is supplied by the caller (typically via
+%       cd_eq.computeOverlap, which applies the Savory chirp-support
+%       criterion to the signal band).  The symmetric chirp window uses
+%       2K+1 = closest odd value <= NTap.
 %     - The input is treated as periodic (circular convolution), matching
 %       the cyclic extension used by the overlap-save float reference and
 %       avoiding edge transients.  Output length equals input length.
@@ -52,7 +55,7 @@ function Out = equalize_td_fxp(In, D, L, CLambda, Rs, NPol, SpSIn, T) %#codegen
 %       sum is truncated to the same WL/FL — no bit growth.
 
     %% Default types table
-    if nargin < 8 || isempty(T)
+    if nargin < 9 || isempty(T)
         T = cd_eq.equalize_td_fxp_types('fixed32');
     end
 
@@ -76,17 +79,13 @@ function Out = equalize_td_fxp(In, D, L, CLambda, Rs, NPol, SpSIn, T) %#codegen
     end
 
     %% CD impulse response (FIR taps), pre-computed in double
-    %  The filter is dimensioned to the signal bandwidth B = Rs (Nyquist
-    %  pulse-shaping is assumed), not the full sampling Nyquist Fs/2.  The
-    %  dispersive memory over that band is the delay spread
-    %     Delta_tau/Ts = |A| * Rs^2 * SpS   [samples],
-    %  matching the report's N_CD = Delta_tau/T + 1 (tab:cd_taps).  The
-    %  impulse-response chirp has instantaneous frequency f_inst = m*Ts/A,
-    %  which reaches the signal band edge Rs/2 at |m| = K, giving an odd FIR
-    %  of 2K+1 taps.  (An oversampled signal carries no energy beyond Rs/2,
-    %  so spanning the chirp out to Fs/2 would only add cost.)
-    NspanSamp = abs(A) * Rs_si^2 * SpSIn;        % delay spread Delta_tau/Ts
-    K     = floor(NspanSamp / 2);
+    %  The FIR length is supplied by the caller (typically via
+    %  cd_eq.computeOverlap, which sizes the support to the occupied
+    %  signal band).  The symmetric chirp window has 2K+1 = closest odd
+    %  value <= NTap.  (An oversampled signal carries no energy beyond the
+    %  pulse-shaping band, so spanning the chirp out to Fs/2 would only
+    %  add cost.)
+    K     = floor((NTap - 1) / 2);
     K     = min(K, floor((NIn - 1) / 2));        % cannot exceed signal length
     m     = (-K:K).';                        % tap lags (column)
     alpha = Ts / sqrt(1i * A);               % unit-gain normalisation

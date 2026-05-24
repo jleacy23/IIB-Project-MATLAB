@@ -115,7 +115,7 @@ For a signal taking values over $[-A,A]$, $\Delta = \frac{2A}{2^{b}}$ and the si
 Coherent receivers perform phase estimates and rotations on complex-valued data in several DSP blocks. This is done efficiently in fixed-point hardware with the CORDIC algorithm, which evaluates these operations using only shifts and additions. CORDIC iteratively rotates a vector by the fixed angles \(\arctan(2^{-i})\), each implemented as a bit-shift and an add/subtract. Each iteration adds roughly one bit of angular resolution, so $n$ bits of precision require $n$ CORDIC iterations and the cost is taken to be equivalent to an $n$-bit real multiplication.
 
 \subsection{System Parameters}
-The network under investigation assumes an end-to-end OLT-to-ONU loss budget of 35\,dB and a back-to-back transmitter SNR of 35\,dB, both taken from the CPON downstream specification of \cref{chapter:cpon}. The two configurations are 80\,km with a 1:16 splitting ratio and 20\,km with a 1:512 splitting ratio. The fibre and signal parameters assumed for the network are listed in \cref{tab:network_params}. Nyquist pulse-shaping is assumed throughout.
+The network under investigation assumes an end-to-end OLT-to-ONU loss budget of 35\,dB and a back-to-back transmitter SNR of 35\,dB, both taken from the CPON downstream specification of \cref{chapter:cpon}. The two configurations are 80\,km with a 1:16 splitting ratio and 20\,km with a 1:512 splitting ratio. The fibre and signal parameters assumed for the network are listed in \cref{tab:network_params}.
 
 \begin{table}[H]
     \centering
@@ -132,6 +132,9 @@ The network under investigation assumes an end-to-end OLT-to-ONU loss budget of 
         \bottomrule
     \end{tabular}
 \end{table}
+
+\subsection{Pulse Shaping}
+To approach a signal bandwidth equal to the symbol rate \(R_s\), the transmitter shapes each symbol with a root-raised-cosine (RRC) pulse and the receiver applies a matched RRC filter. The cascade has a raised-cosine spectrum, which is strictly band-limited to \((1+\beta)R_s/2\) on either side of the carrier and whose impulse response has zero crossings at every non-zero multiple of the symbol period, so the Nyquist no-ISI criterion is met at the sampling instants. The excess bandwidth is set by the roll-off factor \(\beta\in[0,1]\); small \(\beta\) approaches the Nyquist minimum bandwidth of \(R_s\) but lengthens the pulse and raises its peak-to-average power.
 
 \subsection{Channel Impairments}
 Between the transmitter and receiver, the ideal symbol stream is degraded by the optical channel. Each impairment is applied as a separate stage so that individual DSP blocks can be characterised in isolation or in combination. The models used \cite{Mello;21} are described below.
@@ -158,7 +161,7 @@ Phase noise originates from the finite linewidth of the transmitter and LO laser
 \section{Energy Estimation}
 A DSP technique's energy efficiency cannot be judged from the receiver alone: a simpler implementation typically requires a higher SNR, which the transmitter must compensate for with extra launch power. The receiver contribution is modelled from fixed-point operation counts, and the transmitter contribution from the minimum SNR needed to meet the pre-FEC BER threshold in the CPON standard \cite{CPON_PMD_2025}. The two are combined to give a per-bit system energy.
 
-\section{Receiver Energy}\label{sec:rx_energy}
+\subsection{Receiver Energy}\label{sec:rx_energy}
 The energy consumption of the receiver can be estimated from the number of real multiplications \(N_M\) and real additions \(N_A\) it performs to process each symbol. The true cost of these operations depends on the hardware implementation. The reference values shown in \cref{tab:energy} provide a useful estimate to compare DSP algorithms but a more accurate estimate would require power simulations for an ASIC implementation.
 
 \begin{table}[H]
@@ -175,7 +178,7 @@ The energy consumption of the receiver can be estimated from the number of real 
     \end{tabular}
 \end{table}
 
-\subsection{Dependence on Word Length}
+\subsubsection{Dependence on Word Length}
 A ripple-carry adder performs \(n\) bit-wise additions on words of length \(n\), so its energy scales linearly with \(n\). A shift-and-add multiplier accumulates \(n\) partial products of length \(n\) and so scales as \(n^2\). Modern adders and multipliers (e.g.\ carry-lookahead, Booth/Wallace) reduce these costs by a constant factor or to $n\log n$, so the scalings used here are upper bounds; comparisons between algorithms remain valid because all are penalised equally. The proportionality constants are calibrated by a least-squares fit through the origin to the two data points of \cref{tab:energy}, giving
 \begin{equation}
     E_A(n) = 3.16\,n \mathrm{\ fJ}, \qquad E_M(n) = 3.03\,n^2 \mathrm{\ fJ}.
@@ -186,10 +189,10 @@ Energy consumption for arithmetic operations in modern process nodes is not wide
     E_A(n) = 0.79\,n \mathrm{\ fJ}, \qquad E_M(n) = 0.76\,n^2 \mathrm{\ fJ}.
     \label{eq:arithmetic_14}
 \end{equation}
-\subsection{Amortisation}
+\subsubsection{Amortisation}
 Some DSP algorithms perform computations that are reused over multiple symbols. For example, carrier frequency offset (CFO) varies much slower than the symbol rate so can be estimated less frequently. For a computation that requires \(N_M\) multiplications and \(N_A\) additions and is used by \(S\) symbols, the operations per symbol would be \(N_M / S\) and \(N_A / S\).
 
-\subsection{Total Energy and Power}
+\subsubsection{Total Energy and Power}
 Many DSP blocks operate on complex-valued data; each complex multiplication is counted as 4 real multiplications and 2 real additions, and each complex addition as 2 real additions. The energy per symbol for the entire receiver is then
 \begin{equation}
     E_{\mathrm{rx},s} = \sum_{k=1}^{L} 2 \left[ N_{A,k}E_A(n_k) + N_{M,k}E_M(n_k) \right],
@@ -205,13 +208,13 @@ and converting to energy per bit allows fair comparison across modulation scheme
 \end{equation}
 where \(M\) is the modulation order.
 
-\section{Transmitter Energy}
+\subsection{Transmitter Energy}
 The downstream link considered here consists of a single OLT transmitting through a 1:\(K\) passive splitter to \(K\) ONUs, as shown in \cref{fig:pon_intro}. The OLT power is divided equally between branches, so each ONU receives a \(1/K\) share.
 
-\subsection{Minimum Required SNR}
+\subsubsection{Minimum Required SNR}
 The CPON standard specifies a maximum pre-FEC bit-error rate (BER) of \(10^{-2}\) that must not be exceeded for the forward error-correction (FEC) scheme to function correctly. Each receiver implementation therefore has a minimum required SNR to meet this FEC threshold. This SNR, together with the noise characteristics of the optical network, determines the minimum transmitter power.
 
-\subsection{Noise}
+\subsubsection{Noise}
 % \subsubsection{Shot Noise}
 The relationship between SNR and transmitter power \(P_\mathrm{tx}\) depends on the dominant source of noise in the network. Optical access networks typically operate over short lengths at low power, so amplifiers can be omitted and non-linear noise neglected, leaving shot noise as the dominant impairment. The shot noise power referred to the optical input of a balanced coherent receiver is \(2h\nu B_\mathrm{eff}\), where the factor of 2 captures the contributions from the signal and LO arms of the balanced detector summed in quadrature, and \(B_\mathrm{eff}\) is the receiver electrical bandwidth, set equal to the symbol rate by a matched bandpass filter after the 1:\(K\) splitter in \cref{fig:pon_intro}. The power per polarisation received by each ONU is \(P_\mathrm{tx}/2\Gamma K\), where $\Gamma$ is the loss from OLT to ONU. This gives a per-ONU NSR of
 \begin{equation}
@@ -229,7 +232,7 @@ Assuming Nyquist pulse-shaping and matched bandpass filtering at the receiver ($
 \end{equation}
 
 
-\section{Combined Energy}
+\subsection{Combined Energy}
 Before calculating a combined energy contribution, the transmitted optical energy in \cref{eq:tx_bit_energy} must be converted into an energy drawn from the electrical power supply by estimating the efficiencies of the transmitting laser and the modulator. The dual-polarisation modulator (\cref{fig:mzm}) consists of two nested-Mach-Zehnder IQ modulators sharing a common laser through a polarisation beam splitter, with their outputs recombined by a polarisation beam combiner. Each IQ modulator has the transfer function \cite{Mello;21}
 \begin{equation}
     \frac{E_\mathrm{output}(t)}{E_\mathrm{input}(t)} = \frac{1}{2}\cos\left[\frac{v_I(t)\pi}{2V_\pi}\right] + \frac{j}{2}\cos\left[\frac{v_Q(t)\pi}{2V_\pi}\right].
@@ -271,7 +274,7 @@ Chromatic dispersion is a static, all-pass impairment and is removed by an equal
     H_\mathrm{eq}(\omega) = \exp\!\left(-j\,\frac{D\lambda^2}{4\pi c}\,L\,\omega^2\right),
     \label{eq:cd_tf}
 \end{equation}
-whose inverse Fourier transform gives the continuous-time impulse response
+whose inverse Fourier transform gives a chirp impulse response
 \begin{equation}
     h(t) = \sqrt{\frac{c}{j D \lambda^2 L}}\;\exp\!\left(j\,\frac{\pi c\,t^2}{D\lambda^2 L}\right).
     \label{eq:cd_ir}
@@ -279,26 +282,17 @@ whose inverse Fourier transform gives the continuous-time impulse response
 In the time domain the equaliser is a single FIR filter per polarisation whose taps are \cref{eq:cd_ir} sampled at the receiver period \(T\) and truncated to \(N_\mathrm{CD}\) coefficients. Alternatively, \cref{eq:cd_tf} can be applied directly in the frequency domain. As the data stream is continuous, the filter is applied block-by-block by overlap-save: each block of \(N\) samples is transformed with an FFT, multiplied by the precomputed samples of \(H_\mathrm{eq}\), and inverse transformed, discarding the first \(N_\mathrm{CD}-1\) samples of every block to remove the circular-convolution wrap-around. This leaves \(N - N_\mathrm{CD} + 1\) valid output samples per block.
 
 \subsection{Filter Length}
-The equaliser must span the channel memory introduced by dispersion. The pulse spread across the signal bandwidth is \(\Delta\tau = D\,\Delta\lambda\,L\), so the number of taps required is
+The equaliser must span the channel memory introduced by dispersion so the number of taps required is at least
 \begin{equation}
-    N_\mathrm{CD} = \frac{\Delta\tau}{T} + 1,
+    N_\mathrm{DS} = \lceil\frac{DL\Delta\lambda}{T}\rceil = \lceil\frac{2\pi|\beta_2|L\Delta f}{T}\rceil.
     \label{eq:cd_len}
 \end{equation}
-where \(T\) is the receiver sampling period. With an oversampling rate of 2, \cref{tab:cd_taps} lists the taps needed for the two networks of \cref{chapter:energy}.
+where \(T\) is the receiver sampling period. RRC pulse shaping will limit the signal bandwidth such that $\Delta f \approx R_s$. The filter length needed to remove all inter-symbol interference (ISI) from chromatic dispersion is longer than in \cref{eq:cd_len} to account for the effects of pulse shaping \cite{Rozental;15}. An experimentally verified value for several pulse shapes is given by \cite{Ezra;07}
+\begin{equation}
+    N_\mathrm{CD} = \lceil\frac{6.67|\beta_2|LR_s}{T}\rceil.
+\end{equation}
+Thus the filter lengths for the 20 km and 80 km networks with an oversampling rate of 2 are 6 and 22 respectively.
 
-\begin{table}[H]
-    \centering
-    \caption{Taps to compensate chromatic dispersion for both network models.}
-    \label{tab:cd_taps}
-    \begin{tabular}{lcc}
-        \toprule
-        $L$ (km) & $\Delta\tau$ (ps) & $N_\mathrm{CD}$ \\
-        \midrule
-        20 & 83  & 6 \\
-        80 & 332 & 21 \\
-        \bottomrule
-    \end{tabular}
-\end{table}
 
 \subsection{Computational Complexity}
 A radix-2 FFT of size \(N\) decomposes into \(\log_2 N\) stages, each containing \(N/2\) butterflies. Each butterfly applies one twiddle-factor complex multiplication followed by a complex addition and a complex subtraction. With 4 real multiplications and 2 real additions per complex multiplication, and 2 real additions per complex addition, a butterfly costs 4 real multiplications and \(2 + 2\times 2 = 6\) real additions. The full transform therefore requires
@@ -330,20 +324,20 @@ The FFT can be simplified by rounding all twiddle-factors to a power of 2. This 
     \caption{Per-symbol computational cost of the time-domain and overlap-save chromatic dispersion equalisers, including overlap-save with twiddle factors rounded to a power of 2.}
     \label{tab:cd_cost}
 \end{table}
-Evaluating these expressions with the \(N_\mathrm{CD}\) of \cref{tab:cd_taps} gives the per-symbol operation counts for each network in \cref{tab:cd_cost_eval} with 2 samples per symbol.
+Evaluating these expressions for the two networks with 2 samples per symbol gives the per-symbol operation counts in \cref{tab:cd_cost_eval}, where the FFT size \(N\) is chosen as the power of 2 that minimises the overlap-save multiplication count.
 \begin{table}[H]
     \centering
-    \begin{tabular}{lccccccc}
+    \begin{tabular}{lcccccccc}
         \toprule
-        & & \multicolumn{2}{c}{Time-domain} & \multicolumn{2}{c}{Overlap-save} & \multicolumn{2}{c}{Overlap-save (\(2^k\) twiddle)} \\
-        \cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}
-        \(L\) (km) & \(N\) & RM & RA & RM & RA & RM & RA \\
+        & & & \multicolumn{2}{c}{Time-domain} & \multicolumn{2}{c}{Overlap-save} & \multicolumn{2}{c}{Overlap-save (\(2^k\) twiddle)} \\
+        \cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}
+        \(L\) (km) & \(N_\mathrm{CD}\) & \(N\) & RM & RA & RM & RA & RM & RA \\
         \midrule
-        20 & 32 & 48 & 44 & 56.9 & 75.9 & 9.48 & 75.9 \\
-        80 & 128 & 168 & 164 & 75.9 & 104.3 & 9.48 & 104.3 \\
+        20 & 6  & 32  & 48  & 44  & 56.9 & 75.9  & 9.48 & 75.9  \\
+        80 & 22 & 128 & 176 & 172 & 76.6 & 105.3 & 9.57 & 105.3 \\
         \bottomrule
     \end{tabular}
-    \caption{Real multiplications (RM) and real additions (RA) per symbol for each chromatic dispersion equaliser implementation and the optimum FFT size $N$, evaluated with the \(N_\mathrm{CD}\) of \cref{tab:cd_taps}.}
+    \caption{Filter length \(N_\mathrm{CD}\), optimum FFT size \(N\), and real multiplications (RM) and real additions (RA) per symbol for each chromatic dispersion equaliser implementation on the 20\,km and 80\,km networks.}
     \label{tab:cd_cost_eval}
 \end{table}
 
@@ -379,7 +373,7 @@ There must be sufficient taps in the filter to cover the channel memory introduc
 \end{equation}
 The number of taps can be found for a given outage probability from \cref{eq:maxwellian} as
 \begin{equation}
-    N = \frac{x}{T} + 1
+    N = \lceil\frac{x}{T}\rceil
     \label{eq:aeq_taps}
 \end{equation}
 where $T$ is the sampling period of the receiver. For an access network where $L \leq 80$ km, and a typical DGD parameter $D = 0.1$ ps/$\sqrt{\mathrm{km}}$ then $\langle\Delta\tau\rangle \leq 0.9$ ps. With an oversampling rate of 2, the sampling period $T = 16.4$ ps. Given that an outage probability of $10^{-12}$ only requires $x = 4.81\langle\Delta\tau\rangle = 4.3$ ps, few taps will be needed for reliable performance.
@@ -467,7 +461,45 @@ where $s$ and $\hat{s}$ are the transmitted and estimated pilot symbols at the s
     \caption{Total real additions and multiplications per symbol for each algorithm at $N = 1$ tap and $P = 32$ lanes, including output formation, error terms and weight update.}
     \label{tab:adaptive_cost_total}
 \end{table}
-
+\Cref{fig:aeq_energy} shows the corresponding energy per bit for each combination as fixed point precision varies. Direct CMA uses $\approx 2 \times$ the energy of sign-sign CMA, which in turn uses $\approx 1.5 \times$ the energy of the pilot-based updates when fixed-point precision is equal.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{aeq_energy.png}
+    \caption{Energy per bit as fixed point precision of the input, output, and error terms vary for each adaptive equalisation implementation.}
+    \label{fig:aeq_energy}
+\end{figure}
+The FEC SNR of each implementation is shown in \cref{fig:aeq_fec_snr_20km,fig:aeq_fec_snr_80km}.The direct, pilot-based update shows the best performance at all precisions and works for a gradient estimate with only 2 bits of precision. Only using the sign of the error with pilots significantly degrades performance with negligible energy savings so is not viable for adaptive equalisation. Sign-sign CMA exhibits better performance than the direct version and can operate at 4 bits of precision without a significant increase in FEC SNR. Thus the two most promising implementations are direct pilot-based updates with 2 bits of precision or sign-sign CMA with 4 bits of precision which are compared in \cref{tab:aeq_summary}. Direct, pilot-based updates appear to outperform sign-sign CMA in energy consumption and FEC SNR but this ignores the effects of CFO and phase error on equaliser performance. CMA is inherently robust to these effects as it computes the error from the modulus of the estimated symbol while the direct LMS estimate from the pilots can become very inaccurate. To realise the potential benefits of the pilot-based updates, there must be feedback from the carrier recovery section to allow the equaliser to operate on phase-corrected symbols. This is investigated in \cref{chapter:full_pipeline}.
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lccc}
+        \toprule
+        Combination & Precision / bits & Energy (fJ/bit) & FEC SNR (dB) \\
+        \midrule
+        Pilot, direct     & 2 &  34.97 & $4.37 \pm 0.05$ \\
+        CMA, sign-sign    & 4 & 168.60 & $5.01 \pm 0.82$ \\
+        \bottomrule
+    \end{tabular}
+    \caption{Energy per bit and FEC SNR (mean $\pm$ std over trials) of the two most promising adaptive equalisation operating points on the 20 km network at $N = 1$ tap.}
+    \label{tab:aeq_summary}
+\end{table}
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.7\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{fec_snr_20km.png}
+        \caption{20 km network}
+        \label{fig:aeq_fec_snr_20km}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.7\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{fec_snr_80km.png}
+        \caption{80 km network}
+        \label{fig:aeq_fec_snr_80km}
+    \end{subfigure}
+    \caption{FEC SNR vs fixed-point precision of the input, output, and error terms for each adaptive equalisation implementation on the 20 km and 80 km networks.}
+    \label{fig:aeq_fec_snr}
+\end{figure}
 \subsection{Combined Performance}
 - results for combined equalisation, FEC SNR vs fxp.
 
@@ -753,6 +785,6 @@ Blind Rife \& Boorstyn and differential phase and Kay with pilots-only phase rec
 \section{Conclusions}
 The robustness to both additive and phase noise of QPSK allows the phase recovery block of a coherent receiver to be dramatically simplified by just using pilot symbols with no noticeable drop in performance, resulting in considerable energy savings. Frequency recovery can also be implemented with simple algorithms to save energy; however, the efficacy of doing so depends on how often the CFO must be estimated.
 
-\chapter{Full DSP Pipeline}
+\chapter{Full DSP Pipeline}\label{chapter:full_pipeline}
 \printbibliography
 \end{document}

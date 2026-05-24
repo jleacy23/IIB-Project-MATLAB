@@ -33,6 +33,7 @@ function build_cd_eq_equalize_td_fxp_mex(P, cfg)
         double(P.Rs), ...                   % Rs
         double(P.N_pol), ...                % NPol
         double(P.SpS), ...                  % SpSIn
+        double(0), ...                      % NTap (runtime-variable)
         T_cd};                              % T
 
     codegen('-config', cfg, ...

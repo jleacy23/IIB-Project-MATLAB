@@ -19,12 +19,19 @@ function process_adaptive_eq_grid_sweep(varargin)
 %            = mean across trials, error bar = std.  Requires the sweep
 %            to have logged the 'sign_only' dimension; if absent only
 %            the two direct-update lines are drawn.
+%   Plot 3 — Energy per bit vs FL at NTaps = 1, one figure per network,
+%            same 4 lines as Plot 2.  Per-symbol RM/RA counts are taken
+%            from report tab:adaptive_cost_total; energy is computed via
+%            src/+energy/receiver.m with E_A = EAdd*n, E_M = EMult*n^2
+%            (horowitz2014computing), matching process_cd_eq_precision_sweep.
 %
 %   Name/Value options
 %     'MatFile'  - path to the .mat (default: adaptive_eq_grid_sweep.mat
 %                  in this file's folder)
 %     'FL'       - fractional bit width for the Plot 1 BER curves (default 16)
 %     'FECBER'   - FEC threshold to mark (default 2e-2)
+%     'EAdd'     - per-bit add-energy coefficient [fJ] (default 3.16/4)
+%     'EMult'    - per-bit multiply-energy coefficient [fJ] (default 3.03/4)
 
     %% --- Parse args -----------------------------------------------------
     here = fileparts(mfilename('fullpath'));
@@ -32,10 +39,14 @@ function process_adaptive_eq_grid_sweep(varargin)
     p.addParameter('MatFile', fullfile(here, 'adaptive_eq_grid_sweep.mat'));
     p.addParameter('FL',      12);
     p.addParameter('FECBER',  2e-2);
+    p.addParameter('EAdd',    3.16/4);   % fJ per add per bit (horowitz2014)
+    p.addParameter('EMult',   3.03/4);   % fJ per mult per bit (horowitz2014)
     p.parse(varargin{:});
     matFile  = p.Results.MatFile;
     flTarget = p.Results.FL;
     fecBer   = p.Results.FECBER;
+    EAdd     = p.Results.EAdd;
+    EMult    = p.Results.EMult;
 
     %% --- Load ----------------------------------------------------------
     if ~isfile(matFile)
@@ -196,12 +207,145 @@ function process_adaptive_eq_grid_sweep(varargin)
         legend('show', 'Location', 'best');
         xticks(sort(unique(tbl.fl)));
     end
+
+    %% =================================================================
+    %  Plot 3: Energy per bit vs FL at NTaps = 1, one figure per network,
+    %          same 4 combos as Plot 2.
+    %  =================================================================
+    %  Per-symbol RM/RA counts come from report tab:adaptive_cost_total
+    %  (N = 1 tap, P = 32 lanes).  Energy is computed via
+    %  energy.receiver(NA, NM, EAdd, EMult, M=4, Oversampling=1, n=FL),
+    %  which already accounts for both polarisations and converts to
+    %  energy per bit.
+    M_qam  = 4;
+    flAxis = sort(unique(tbl.fl));
+    for ni = 1:numel(netsAll)
+        netName = netsAll(ni);
+        subN = tbl((tbl.network == netName) & (tbl.ntaps == ntapsTarget), :);
+        if isempty(subN), continue; end
+
+        L_km_  = subN.L_km(1);
+        split_ = subN.splitting(1);
+
+        figure('Name', sprintf('AEQ Energy/bit vs FL  Net %s  N=%d', ...
+                               netName, ntapsTarget), ...
+               'Position', [340 + (ni-1)*60, 280, 760, 560]);
+        hold on; grid on;
+        set(gca, 'YScale', 'log');
+
+        cmap = lines(nCombo);
+        for ci = 1:nCombo
+            modeName = combos{ci, 1};
+            signFlag = combos{ci, 2};
+            labelStr = combos{ci, 3};
+            lineSpec = combos{ci, 4};
+
+            [NM, NA] = reportOpsPerSymbol(modeName, signFlag);
+            if isnan(NM), continue; end
+
+            E_per_bit = arrayfun(@(n) ...
+                energy.receiver(NA, NM, EAdd, EMult, M_qam, 1, n), flAxis);
+
+            plot(flAxis, E_per_bit, lineSpec, ...
+                 'Color', cmap(ci, :), ...
+                 'MarkerSize', 6, 'LineWidth', 1.4, ...
+                 'DisplayName', sprintf('%s  (RM=%.3g, RA=%.3g)', ...
+                                        labelStr, NM, NA));
+        end
+
+        xlabel('Gradient FL (fractional bits)');
+        ylabel('Energy per bit  [fJ]');
+        title(sprintf(['Net %s   L = %d km   split %s   |   ', ...
+                       'N_{taps} = %d   |   ', ...
+                       'E\\_A = %.2f\\cdot n   E\\_M = %.2f\\cdot n^2 fJ'], ...
+                      netName, L_km_, split_, ntapsTarget, EAdd, EMult));
+        legend('show', 'Location', 'best');
+        xticks(flAxis);
+    end
+
+    %% =================================================================
+    %  Summary table: pilot/direct @ FL=2  vs  CMA/sign-sign @ FL=4
+    %  =================================================================
+    %  One MATLAB table per network printed to the command window, with
+    %  energy/bit and FEC SNR (mean +/- std across trials) for the two
+    %  recommended low-precision operating points.
+    summaryPicks = { ...
+        'pilot', false, 2, 'pilot, direct  @ FL=2'; ...
+        'CMA',   true,  4, 'CMA, sign-sign @ FL=4'};
+    if ~haveSign
+        summaryPicks = summaryPicks(~cell2mat(summaryPicks(:,2)), :);
+    end
+
+    for ni = 1:numel(netsAll)
+        netName = netsAll(ni);
+        subN = tbl((tbl.network == netName) & (tbl.ntaps == ntapsTarget), :);
+        if isempty(subN), continue; end
+
+        nPick      = size(summaryPicks, 1);
+        Combo      = strings(nPick, 1);
+        FL         = zeros(nPick, 1);
+        RM         = zeros(nPick, 1);
+        RA         = zeros(nPick, 1);
+        Energy_fJ  = nan(nPick, 1);
+        FEC_SNR_dB = nan(nPick, 1);
+        FEC_Std_dB = nan(nPick, 1);
+
+        for pi = 1:nPick
+            modeName = summaryPicks{pi, 1};
+            signFlag = summaryPicks{pi, 2};
+            flPick   = summaryPicks{pi, 3};
+            label    = summaryPicks{pi, 4};
+
+            rows = subN(subN.mode == string(modeName) & subN.fl == flPick, :);
+            if haveSign
+                rows = rows(rows.sign_only == signFlag, :);
+            end
+            Combo(pi) = string(label);
+            FL(pi)    = flPick;
+            [nm, na]  = reportOpsPerSymbol(modeName, signFlag);
+            RM(pi)    = nm;
+            RA(pi)    = na;
+            if isempty(rows), continue; end
+
+            Energy_fJ(pi)  = energy.receiver(na, nm, EAdd, EMult, M_qam, 1, flPick);
+            trialSNR       = fecCrossingsAll(SNR_dB, rows.ber{1}, fecBer);
+            FEC_SNR_dB(pi) = mean(trialSNR, 'omitnan');
+            FEC_Std_dB(pi) = std (trialSNR, 'omitnan');
+        end
+
+        T = table(Combo, FL, RM, RA, Energy_fJ, FEC_SNR_dB, FEC_Std_dB);
+        fprintf('\n=== Summary  Net %s  L = %d km  split %s  (N_taps = %d) ===\n', ...
+                netName, subN.L_km(1), subN.splitting(1), ntapsTarget);
+        disp(T);
+    end
 end
 
 
 %% =====================================================================
 %  Local helpers
 %  =====================================================================
+
+function [NM, NA] = reportOpsPerSymbol(modeName, signOnly)
+% REPORTOPSPERSYMBOL  Per-symbol RM/RA counts from report
+% tab:adaptive_cost_total (N = 1 tap, P = 32 lanes).
+%
+%       Combination       | RM    | RA
+%       CMA, direct       | 20    | 15
+%       CMA, sign-sign    | 10    | 15
+%       Pilot, direct     |  8.25 |  6.3125
+%       Pilot, sign-sign  |  8    |  6.3125
+    NM = NaN; NA = NaN;
+    switch lower(string(modeName))
+        case "cma"
+            if signOnly, NM = 10;   NA = 15;
+            else,        NM = 20;   NA = 15;
+            end
+        case "pilot"
+            if signOnly, NM =  8;    NA = 6.3125;
+            else,        NM =  8.25; NA = 6.3125;
+            end
+    end
+end
 
 function tf = hasSignOnly(tbl)
 % HASSIGNONLY  True if the results table carries the sign_only column.

@@ -373,8 +373,10 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
             rxSig_fi = cast(rxSig, 'like', T.x);
 
             % --- Time-domain CD Equalizer (fxp MEX) ---
+            NTap  = cd_eq.computeOverlap(testCase.D, testCase.L, testCase.CWL, ...
+                testCase.Rs, testCase.SpS, testCase.NFFT);
             eqSig = cd_eq.equalize_td_fxp_mex(rxSig_fi, testCase.D, testCase.L, ...
-                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, T);
+                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, NTap, T);
 
             % --- BER ---
             eqSymbols   = double(eqSig(1:testCase.SpS:end, :));
@@ -410,13 +412,15 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
                 testCase.L, testCase.SpS, testCase.Rs, testCase.D, testCase.CWL);
 
             % --- Time-domain float reference (same algorithm) ---
+            NTap  = cd_eq.computeOverlap(testCase.D, testCase.L, testCase.CWL, ...
+                testCase.Rs, testCase.SpS, testCase.NFFT);
             eqRef = cd_eq.equalize_td(rxSig, testCase.D, testCase.L, ...
-                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS);
+                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, NTap);
 
             % --- Time-domain FXP (MEX) ---
             rxSig_fi = cast(rxSig, 'like', T.x);
             eqFxp    = cd_eq.equalize_td_fxp_mex(rxSig_fi, testCase.D, testCase.L, ...
-                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, T);
+                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, NTap, T);
 
             % --- NRMSE (quantization error only) ---
             nrmse = norm(double(eqFxp) - eqRef) / norm(eqRef);
@@ -447,8 +451,10 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
                 testCase.NFFT);
 
             % --- Time-domain float (FIR) ---
+            NTap = cd_eq.computeOverlap(testCase.D, testCase.L, testCase.CWL, ...
+                testCase.Rs, testCase.SpS, testCase.NFFT);
             eqTD = cd_eq.equalize_td(rxSig, testCase.D, testCase.L, ...
-                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS);
+                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, NTap);
 
             % --- NRMSE between the two algorithms ---
             nrmse = norm(eqTD - eqFD) / norm(eqFD);
@@ -479,12 +485,14 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
             rxSig_fi = cast(rxSig, 'like', T.x);
 
             % --- MATLAB fxp ---
-            eqML = cd_eq.equalize_td_fxp(rxSig_fi, testCase.D, testCase.L, ...
-                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, T);
+            NTap  = cd_eq.computeOverlap(testCase.D, testCase.L, testCase.CWL, ...
+                testCase.Rs, testCase.SpS, testCase.NFFT);
+            eqML  = cd_eq.equalize_td_fxp(rxSig_fi, testCase.D, testCase.L, ...
+                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, NTap, T);
 
             % --- MEX fxp ---
             eqMEX = cd_eq.equalize_td_fxp_mex(rxSig_fi, testCase.D, testCase.L, ...
-                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, T);
+                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, NTap, T);
 
             % --- Verify bit-exact ---
             testCase.verifyEqual(double(eqMEX), double(eqML), ...
@@ -522,8 +530,10 @@ classdef test_CDEqualizer < matlab.unittest.TestCase
 
             % --- Time-domain fxp (MEX) ---
             rxSig_td = cast(rxSig, 'like', T_td.x);
+            NTap = cd_eq.computeOverlap(testCase.D, testCase.L, testCase.CWL, ...
+                testCase.Rs, testCase.SpS, testCase.NFFT);
             eqTD = cd_eq.equalize_td_fxp_mex(rxSig_td, testCase.D, testCase.L, ...
-                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, T_td);
+                testCase.CWL, testCase.Rs, testCase.N_pol, testCase.SpS, NTap, T_td);
 
             % --- BER for each ---
             txRefBits = modem.symbolsToBits(symbols);

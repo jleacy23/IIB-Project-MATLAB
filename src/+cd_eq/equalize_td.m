@@ -1,7 +1,7 @@
-function Out = equalize_td(In, D, L, CLambda, Rs, NPol, SpSIn)
+function Out = equalize_td(In, D, L, CLambda, Rs, NPol, SpSIn, NTap)
 %EQUALIZE_TD  Time-domain (FIR) CD compensation — floating-point reference.
 %
-%   Out = equalize_td(In, D, L, CLambda, Rs, NPol, SpSIn)
+%   Out = equalize_td(In, D, L, CLambda, Rs, NPol, SpSIn, NTap)
 %
 %   Floating-point reference for equalize_td_fxp.  Instead of overlap-save
 %   frequency-domain compensation (see equalize.m), this convolves the
@@ -28,6 +28,9 @@ function Out = equalize_td(In, D, L, CLambda, Rs, NPol, SpSIn)
 %     Rs       - symbol rate [GBd]
 %     NPol     - number of polarizations (1 or 2)
 %     SpSIn    - samples per symbol
+%     NTap     - FIR length (use cd_eq.computeOverlap to size to the signal
+%                bandwidth).  The symmetric chirp window uses the largest
+%                odd value not exceeding NTap, i.e. 2*floor((NTap-1)/2)+1.
 %
 %   The input is treated as periodic (circular convolution), matching the
 %   cyclic extension used by the overlap-save reference and the fixed-point
@@ -53,12 +56,10 @@ function Out = equalize_td(In, D, L, CLambda, Rs, NPol, SpSIn)
     end
 
     %% CD impulse response (FIR taps)
-    %  Dimensioned to the signal bandwidth B = Rs (Nyquist pulse-shaping):
-    %  the dispersive memory over that band is Delta_tau/Ts = |A|*Rs^2*SpS
-    %  samples, matching the report's N_CD = Delta_tau/T + 1.  The chirp's
-    %  instantaneous frequency m*Ts/A reaches the band edge Rs/2 at |m| = K.
-    NspanSamp = abs(A) * Rs_si^2 * SpSIn;        % delay spread Delta_tau/Ts
-    K     = floor(NspanSamp / 2);
+    %  The FIR length is supplied by the caller (typically via
+    %  cd_eq.computeOverlap, which sizes the support to the signal band).
+    %  The symmetric chirp window has 2K+1 = closest odd value <= NTap.
+    K     = floor((NTap - 1) / 2);
     K     = min(K, floor((NIn - 1) / 2));        % cannot exceed signal length
     m     = (-K:K).';                        % tap lags (column)
     alpha = Ts / sqrt(1i * A);               % unit-gain normalisation

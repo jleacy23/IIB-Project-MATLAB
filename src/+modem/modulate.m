@@ -8,7 +8,8 @@ function [symbols, pilots, training, nSubframes] = modulate(bits)
 %     - Block 1: TS1..TS11 (training), then 21 data symbols.
 %       TS1 also serves as pilot index 1.
 %     - Blocks 2-116: 31 data symbols + 1 pilot at position 32.
-%     - Pilots are at +/-3 +/-3j (amplitude 3), generated from PRBS10.
+%     - Pilots are at +/-1 +/-1j (unit amplitude, matching data symbols),
+%       generated from PRBS10.
 %     - Data symbols are at +/-1 +/-1j (standard QPSK).
 %
 %   Bit-to-symbol mapping (per the CPON spec, for symbol index i):
@@ -25,8 +26,8 @@ function [symbols, pilots, training, nSubframes] = modulate(bits)
 %     symbols    - [Nsym x 2] complex QPSK symbols (X-pol, Y-pol) with
 %                  pilots and training already inserted
 %     pilots     - [116 x 2] pilot symbols for one subframe (same every
-%                  subframe; amplitude 3)
-%     training   - [11 x 2] training symbols (amplitude 3)
+%                  subframe; amplitude 1)
+%     training   - [11 x 2] training symbols (amplitude 1)
 %     nSubframes - number of complete subframes generated
 
     %% ------------------------------------------------------------------
@@ -43,17 +44,17 @@ function [symbols, pilots, training, nSubframes] = modulate(bits)
     %  Training symbols (fixed, from spec Table 6.1)
     % -------------------------------------------------------------------
     training = [ ...
-        -3+3j, -3-3j; ...   % TS1  (also pilot index 1)
-        +3+3j, -3-3j; ...   % TS2
-        -3+3j, +3-3j; ...   % TS3
-        +3+3j, -3+3j; ...   % TS4
-        -3-3j, -3+3j; ...   % TS5
-        +3+3j, +3+3j; ...   % TS6
-        -3-3j, -3-3j; ...   % TS7
-        -3-3j, -3+3j; ...   % TS8
-        +3+3j, +3-3j; ...   % TS9
-        +3-3j, +3+3j; ...   % TS10
-        +3-3j, +3-3j; ...   % TS11
+        -1+1j, -1-1j; ...   % TS1  (also pilot index 1)
+        +1+1j, -1-1j; ...   % TS2
+        -1+1j, +1-1j; ...   % TS3
+        +1+1j, -1+1j; ...   % TS4
+        -1-1j, -1+1j; ...   % TS5
+        +1+1j, +1+1j; ...   % TS6
+        -1-1j, -1-1j; ...   % TS7
+        -1-1j, -1+1j; ...   % TS8
+        +1+1j, +1-1j; ...   % TS9
+        +1-1j, +1+1j; ...   % TS10
+        +1-1j, +1-1j; ...   % TS11
     ];   % [11 x 2]
 
     %% ------------------------------------------------------------------
@@ -143,7 +144,7 @@ function pilots = generatePilots(nPilots)
 %GENERATEPILOTS  Produce nPilots QPSK pilot symbols for X-pol and Y-pol
 %   using the CPON PRBS10 generator (polynomial x^10+x^8+x^4+x^3+1).
 %
-%   Each pilot is at +/-3 +/-3j.
+%   Each pilot is at +/-1 +/-1j (unit amplitude, matching data symbols).
 
     % Seeds (10-bit, MSB-first)
     seedX = bitand(uint16(hex2dec('19E')), uint16(1023));
@@ -158,8 +159,8 @@ function pilots = generatePilots(nPilots)
         ix = 2*(k-1) + 1;
         Ix = 2*bitsX(ix)   - 1;   Qx = 2*bitsX(ix+1) - 1;
         Iy = 2*bitsY(ix)   - 1;   Qy = 2*bitsY(ix+1) - 1;
-        pilots(k, 1) = complex(3*Ix, 3*Qx);
-        pilots(k, 2) = complex(3*Iy, 3*Qy);
+        pilots(k, 1) = complex(Ix, Qx);
+        pilots(k, 2) = complex(Iy, Qy);
     end
 end
 

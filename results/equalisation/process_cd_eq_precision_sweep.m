@@ -105,56 +105,56 @@ function process_cd_eq_precision_sweep(varargin)
     end
 
     %% =================================================================
-    %  Plot 2: Energy per bit vs FL, one figure per network, line per cfg
+    %  Table: Energy/bit and FEC SNR for selected operating points
     %  =================================================================
-    %  Per-symbol RM/RA counts from report tab:cd_cost_eval (full.tex).
-    %  Energy = energy.receiver(NA, NM, EAdd, EMult, M=4, Oversampling=1, n=FL).
-    %  The receiver function already includes the 2x for both polarisations
-    %  and converts to energy per bit via 1/log2(M).
+    %  Selected operating points (minimum FL that meets FEC threshold):
+    %    time_domain      @ FL = 8
+    %    overlap_save     @ FL = 4
+    %    overlap_save_po2 @ FL = 4
+    selPoints = { ...
+        'time_domain',      8; ...
+        'overlap_save',     4; ...
+        'overlap_save_po2', 4};
+
     M_qam = 4;
+    colW  = 90;
+    fprintf('\n%s\n', repmat('=', 1, colW));
+    fprintf('%-12s  %-22s  %4s  %16s  %13s  %10s\n', ...
+            'Network', 'Config', 'FL', 'Energy/bit (fJ)', 'FEC SNR (dB)', 'Std (dB)');
+    fprintf('%s\n', repmat('-', 1, colW));
+
     for ni = 1:numel(nets)
         netName = nets(ni);
-        subN = tbl(tbl.network == netName, :);
+        subN    = tbl(tbl.network == netName, :);
         if isempty(subN), continue; end
+        L_km_ = subN.L_km(1);
 
-        L_km_  = subN.L_km(1);
-        split_ = subN.splitting(1);
-        n_fft_ = subN.n_fft(1);
-        ncd_   = subN.ncd_report(1);
+        for si = 1:size(selPoints, 1)
+            cfgName = selPoints{si, 1};
+            fl_sel  = selPoints{si, 2};
 
-        figure('Name', sprintf('CD Energy / bit vs FL  Net %s', netName), ...
-               'Position', [340, 240, 720, 540]);
-        hold on; grid on;
-        set(gca, 'YScale', 'log');
-
-        flAxis = sort(unique(tbl.fl));
-        nCfg   = numel(cfgOrder);
-        cmap   = lines(nCfg);
-        for ci = 1:nCfg
-            cfgName = cfgOrder{ci};
             [NM, NA] = reportOpsPerSymbol(cfgName, L_km_);
-            if isnan(NM), continue; end
+            if isnan(NM)
+                E_bit = NaN;
+            else
+                E_bit = energy.receiver(NA, NM, EAdd, EMult, M_qam, 1, fl_sel);
+            end
 
-            E_per_bit = arrayfun(@(n) ...
-                energy.receiver(NA, NM, EAdd, EMult, M_qam, 1, n), flAxis);
+            rows = subN(subN.config == string(cfgName) & subN.fl == fl_sel, :);
+            if isempty(rows)
+                meanFEC = NaN;  stdFEC = NaN;
+            else
+                trialSNR = fecCrossingsAll(SNR_dB, rows.ber{1}, fecBer);
+                meanFEC  = mean(trialSNR, 'omitnan');
+                stdFEC   = std (trialSNR, 'omitnan');
+            end
 
-            labelStr = sprintf('%s  (RM=%.3g, RA=%.3g)', ...
-                               strrep(cfgName, '_', '\_'), NM, NA);
-            plot(flAxis, E_per_bit, 'o-', ...
-                 'Color', cmap(ci, :), ...
-                 'MarkerSize', 6, 'LineWidth', 1.4, ...
-                 'DisplayName', labelStr);
+            fprintf('%-12s  %-22s  %4d  %16.3f  %13.3f  %10.3f\n', ...
+                    netName, cfgName, fl_sel, E_bit, meanFEC, stdFEC);
         end
-
-        xlabel('Gradient FL (fractional bits)');
-        ylabel('Energy per bit  [fJ]');
-        title(sprintf(['Net %s   L = %d km   split %s   |   ', ...
-                       'N\\_FFT = %d   N\\_CD = %d   |   ', ...
-                       'E\\_A = %.2f\\cdot n   E\\_M = %.2f\\cdot n^2 fJ'], ...
-                      netName, L_km_, split_, n_fft_, ncd_, EAdd, EMult));
-        legend('show', 'Location', 'best');
-        xticks(flAxis);
+        fprintf('%s\n', repmat('-', 1, colW));
     end
+    fprintf('%s\n', repmat('=', 1, colW));
 end
 
 

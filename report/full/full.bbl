@@ -439,6 +439,58 @@
       \verb 10.1109/MSP.2007.361611
       \endverb
     \endentry
+    \entry{Liu;09}{inproceedings}{}{}
+      \name{author}{6}{}{%
+        {{hash=1c17a20c4acfa6f32b73321fc505433b}{%
+           family={Liu},
+           familyi={L\bibinitperiod},
+           given={Ling},
+           giveni={L\bibinitperiod}}}%
+        {{hash=227bb9bc1ae4b3c85067d92a7db7d9d9}{%
+           family={Tao},
+           familyi={T\bibinitperiod},
+           given={Zhenning},
+           giveni={Z\bibinitperiod}}}%
+        {{hash=5aa80bb85331cf1b04b856214763a7eb}{%
+           family={Yan},
+           familyi={Y\bibinitperiod},
+           given={Weizhen},
+           giveni={W\bibinitperiod}}}%
+        {{hash=9cbae5506b54922fa278988b711c3314}{%
+           family={Oda},
+           familyi={O\bibinitperiod},
+           given={Shoichiro},
+           giveni={S\bibinitperiod}}}%
+        {{hash=ca968bfa0ab00025e03c29920dfbeba7}{%
+           family={Hoshida},
+           familyi={H\bibinitperiod},
+           given={Takeshi},
+           giveni={T\bibinitperiod}}}%
+        {{hash=123687b5353c59e67d28bd6d2b17c845}{%
+           family={Rasmussen},
+           familyi={R\bibinitperiod},
+           given={Jens\bibnamedelima C.},
+           giveni={J\bibinitperiod\bibinitdelim C\bibinitperiod}}}%
+      }
+      \strng{namehash}{017adced1571e7ceee64961e2eee3f90}
+      \strng{fullhash}{eebe7b338bd733aebeedad2b1a2aa012}
+      \strng{fullhashraw}{eebe7b338bd733aebeedad2b1a2aa012}
+      \strng{bibnamehash}{017adced1571e7ceee64961e2eee3f90}
+      \strng{authorbibnamehash}{017adced1571e7ceee64961e2eee3f90}
+      \strng{authornamehash}{017adced1571e7ceee64961e2eee3f90}
+      \strng{authorfullhash}{eebe7b338bd733aebeedad2b1a2aa012}
+      \strng{authorfullhashraw}{eebe7b338bd733aebeedad2b1a2aa012}
+      \field{sortinit}{L}
+      \field{sortinithash}{7c47d417cecb1f4bd38d1825c427a61a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{2009 Conference on Optical Fiber Communication}
+      \field{title}{Initial tap setup of constant modulus algorithm for polarization de-multiplexing in optical coherent receivers}
+      \field{year}{2009}
+      \field{pages}{1\bibrangedash 3}
+      \range{pages}{3}
+      \keyw{Optical receivers;Optical polarization;Finite impulse response filter;Optical fiber polarization;Optical filters;Research and development;Poles and towers;Oceans;Chaotic communication;Laboratories;(060.1660) Coherent communications;(060.2360) Fiber optics links and subsystems}
+    \endentry
     \entry{Mantzoukis:11}{article}{}{}
       \name{author}{5}{}{%
         {{hash=4f624857b30c34e3cdb3c835650eb3d4}{%

@@ -325,6 +325,14 @@ INPUT ./MZM.jpeg
 INPUT ./MZM.jpeg
 INPUT ./MZM.jpeg
 INPUT ./MZM.jpeg
+INPUT ../equalisation/cd_fec_snr_20km.png
+INPUT ../equalisation/cd_fec_snr_20km.png
+INPUT ../equalisation/cd_fec_snr_20km.png
+INPUT ../equalisation/cd_fec_snr_20km.png
+INPUT ../equalisation/cd_fec_snr_80km.png
+INPUT ../equalisation/cd_fec_snr_80km.png
+INPUT ../equalisation/cd_fec_snr_80km.png
+INPUT ../equalisation/cd_fec_snr_80km.png
 INPUT ../equalisation/aeq_cma_taps.png
 INPUT ../equalisation/aeq_cma_taps.png
 INPUT ../equalisation/aeq_cma_taps.png
@@ -369,10 +377,6 @@ INPUT ../frequency_recovery/CR_precision_comparison.png
 INPUT ../frequency_recovery/CR_precision_comparison.png
 INPUT ../frequency_recovery/CR_precision_comparison.png
 INPUT ../frequency_recovery/CR_precision_comparison.png
-INPUT ../frequency_recovery/CR_precision_energy.png
-INPUT ../frequency_recovery/CR_precision_energy.png
-INPUT ../frequency_recovery/CR_precision_energy.png
-INPUT ../frequency_recovery/CR_precision_energy.png
 INPUT ../frequency_recovery/blind_data.png
 INPUT ../frequency_recovery/blind_data.png
 INPUT ../frequency_recovery/blind_data.png
@@ -395,7 +399,6 @@ INPUT full.aux
 INPUT full.run.xml
 OUTPUT full.run.xml
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb
-INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx8.pfb
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmcsc10.pfb
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb

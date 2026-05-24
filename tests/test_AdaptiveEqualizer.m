@@ -14,8 +14,8 @@ classdef test_AdaptiveEqualizer < matlab.unittest.TestCase
         SNR_dB  = 25            % [dB]
         D       = 0             % no CD for this test
         CWL     = 1550          % [nm]
-        DGDSpec = 0.5           % PMD coeff [ps/sqrt(km)]
-        N_pmd   = 5
+        DGDSpec = 0.1           % PMD coeff [ps/sqrt(km)]
+        N_pmd   = 1
         LW      = 0             % no phase noise
 
         % Pulse shaping

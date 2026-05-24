@@ -9,9 +9,10 @@ function process_adaptive_eq_grid_sweep(varargin)
 %   produces two sets of plots:
 %
 %   Plot 1 — BER vs SNR for the CMA equaliser at the requested gradient
-%            precision (default FL = 16), one figure per network, one
-%            line per NTaps (direct-update CMA only).  Each line is the
-%            mean BER across trials; BER = 0 is mapped to the BER floor.
+%            precision (default FL = 16), one figure per network and
+%            update variant ({direct, sign-sign}), one line per NTaps.
+%            Each line is the mean BER across trials; BER = 0 is mapped
+%            to the BER floor.
 %   Plot 2 — FEC SNR vs FL at NTaps = 1, one figure per network, with one
 %            line for each of the 4 combinations of {CMA, pilot} x
 %            {direct, sign-sign}.  FEC SNR per trial is found by linear
@@ -71,63 +72,81 @@ function process_adaptive_eq_grid_sweep(varargin)
     totalBitsPerTr   = mPerPol * params.N_pol * 2;
     berFloor         = 1 / totalBitsPerTr;
 
-    %% --- Plot 1: CMA (direct), FL = flTarget, line per NTaps -----------
-    sel = (tbl.fl == flTarget) & (tbl.mode == "CMA");
+    %% --- Plot 1: CMA BER vs SNR, FL = flTarget, line per NTaps ----------
+    %  Both update variants are plotted when the sweep logged them: one
+    %  figure per (network, variant).  When the sweep predates the
+    %  sign_only column only the direct-update figures are drawn.
     if hasSignOnly(tbl)
-        sel = sel & (tbl.sign_only == false);
+        plot1Variants = [false, true];
+    else
+        plot1Variants = false;
     end
-    sub = tbl(sel, :);
-    if isempty(sub)
-        error('process_adaptive_eq_grid_sweep:noRows', ...
-              'No CMA rows at FL = %d in %s.', flTarget, matFile);
-    end
-    nets = unique(sub.network, 'stable');
+    for vi = 1:numel(plot1Variants)
+        signFlag1 = plot1Variants(vi);
+        variantTag = ternaryStr(signFlag1, 'sign-sign', 'direct');
 
-    for ni = 1:numel(nets)
-        netName = nets(ni);
-        subN    = sub(sub.network == netName, :);
-        L_km_   = subN.L_km(1);
-        split_  = subN.splitting(1);
-
-        figure('Name', sprintf('CMA BER vs SNR  FL=%d  Net %s', ...
-                               flTarget, netName), ...
-               'Position', [100 + (ni-1)*60, 100, 720, 540]);
-        hold on; grid on;
-        set(gca, 'YScale', 'log');
-
-        ntapsVec = sort(unique(subN.ntaps));
-        cmap     = lines(numel(ntapsVec));
-
-        for ti = 1:numel(ntapsVec)
-            nt     = ntapsVec(ti);
-            rowi   = find(subN.ntaps == nt, 1);
-            berMat = subN.ber{rowi};   % [NTrials x NSNR]
-
-            % Floor every per-trial BER first so trials with zero errors
-            % still contribute a finite (floor-valued) point to the mean.
-            berClamped = max(berMat, berFloor);
-
-            meanBER = mean(berClamped, 1, 'omitnan');
-
-            plot(SNR_dB, meanBER, 'o-', ...
-                 'Color', cmap(ti, :), ...
-                 'MarkerSize', 5, 'LineWidth', 1.4, ...
-                 'DisplayName', sprintf('N_{taps} = %d', nt));
+        sel = (tbl.fl == flTarget) & (tbl.mode == "CMA");
+        if hasSignOnly(tbl)
+            sel = sel & (tbl.sign_only == signFlag1);
         end
+        sub = tbl(sel, :);
+        if isempty(sub)
+            error('process_adaptive_eq_grid_sweep:noRows', ...
+                  'No CMA (%s) rows at FL = %d in %s.', ...
+                  variantTag, flTarget, matFile);
+        end
+        nets = unique(sub.network, 'stable');
 
-        yline(fecBer, 'r--', 'LineWidth', 1.2, ...
-              'DisplayName', sprintf('FEC limit (%.0e)', fecBer));
-        yline(berFloor, 'k:', 'LineWidth', 1.0, ...
-              'DisplayName', sprintf('BER floor (1 / %d bits)', totalBitsPerTr));
+        for ni = 1:numel(nets)
+            netName = nets(ni);
+            subN    = sub(sub.network == netName, :);
+            L_km_   = subN.L_km(1);
+            split_  = subN.splitting(1);
 
-        xlabel('SNR (dB)');
-        ylabel('BER');
-        title(sprintf(['Net %s   L = %d km   split %s   |   CMA   |   ', ...
-                       'FL = %d (gradient)   |   mean over %d trials'], ...
-                      netName, L_km_, split_, flTarget, params.NTrials));
-        ylim([berFloor / 3, 1]);
-        xlim([min(SNR_dB), max(SNR_dB)]);
-        legend('show', 'Location', 'southwest');
+            figure('Name', sprintf('CMA %s BER vs SNR  FL=%d  Net %s', ...
+                                   variantTag, flTarget, netName), ...
+                   'Position', [100 + (ni-1)*60 + (vi-1)*30, ...
+                                100 + (vi-1)*30, 720, 540]);
+            hold on; grid on;
+            set(gca, 'YScale', 'log');
+
+            ntapsVec = sort(unique(subN.ntaps));
+            cmap     = lines(numel(ntapsVec));
+
+            for ti = 1:numel(ntapsVec)
+                nt     = ntapsVec(ti);
+                rowi   = find(subN.ntaps == nt, 1);
+                berMat = subN.ber{rowi};   % [NTrials x NSNR]
+
+                % Floor every per-trial BER first so trials with zero
+                % errors still contribute a finite (floor-valued) point
+                % to the mean.
+                berClamped = max(berMat, berFloor);
+
+                meanBER = mean(berClamped, 1, 'omitnan');
+
+                plot(SNR_dB, meanBER, 'o-', ...
+                     'Color', cmap(ti, :), ...
+                     'MarkerSize', 5, 'LineWidth', 1.4, ...
+                     'DisplayName', sprintf('N_{taps} = %d', nt));
+            end
+
+            yline(fecBer, 'r--', 'LineWidth', 1.2, ...
+                  'DisplayName', sprintf('FEC limit (%.0e)', fecBer));
+            yline(berFloor, 'k:', 'LineWidth', 1.0, ...
+                  'DisplayName', sprintf('BER floor (1 / %d bits)', totalBitsPerTr));
+
+            xlabel('SNR (dB)');
+            ylabel('BER');
+            title(sprintf(['Net %s   L = %d km   split %s   |   ', ...
+                           'CMA (%s)   |   FL = %d (gradient)   |   ', ...
+                           'mean over %d trials'], ...
+                          netName, L_km_, split_, variantTag, ...
+                          flTarget, params.NTrials));
+            ylim([berFloor / 3, 1]);
+            xlim([min(SNR_dB), max(SNR_dB)]);
+            legend('show', 'Location', 'southwest');
+        end
     end
 
     %% =================================================================
@@ -345,6 +364,11 @@ function [NM, NA] = reportOpsPerSymbol(modeName, signOnly)
             else,        NM =  8.25; NA = 6.3125;
             end
     end
+end
+
+function s = ternaryStr(cond, ifTrue, ifFalse)
+% TERNARYSTR  Inline string ternary for figure / title labels.
+    if cond, s = ifTrue; else, s = ifFalse; end
 end
 
 function tf = hasSignOnly(tbl)

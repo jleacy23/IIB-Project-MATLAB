@@ -71,7 +71,7 @@ classdef adaptive_eq_grid_sweep < matlab.unittest.TestCase
         Span      = 10
 
         % Monte-Carlo
-        NTrials   = 100
+        NTrials   = 20
         NSub      = 8            % CPON subframes per realisation
 
         % SNR sweep [dB]
@@ -95,9 +95,21 @@ classdef adaptive_eq_grid_sweep < matlab.unittest.TestCase
         % Adaptive-EQ fixed settings
         %   PLanes / BlockLen are set per mode in runAEQ
         %   (CMA -> 32/32 parallel; pilot -> 1/32 LMS).
-        Mu          = 1e-3
+        %
+        % Mu_vec / N1_vec are [NTaps x NSignOnly] matrices so each
+        % (tap length, update strategy) pair can use its own step size
+        % and re-init iteration.  Columns align with SignOnly_vec
+        % (col 1 = direct, col 2 = sign-sign); rows align with NTaps_vec.
+        % adaptive_eq_convergence_sweep populates the best (Mu, N1) for
+        % each tap length; update these matrices after running that sweep.
+        %               direct     sign-sign
+        Mu_vec      = [9.766e-4,  9.766e-4;   % NTaps = 1
+                       6.104e-5,  9.766e-4;   % NTaps = 3
+                       6.104e-5,  9.766e-4]   % NTaps = 5
+        N1_vec      = [2000,  1000;
+                       2000,  1000;
+                       2000,  1000]
         SingleSpike = true
-        N1          = 2000       % y-pol re-init iteration
         NOut        = 4000       % discarded transient symbols
         UpdateStep  = 1
 
@@ -132,7 +144,13 @@ classdef adaptive_eq_grid_sweep < matlab.unittest.TestCase
             signs = testCase.SignOnly_vec;
             FLs   = testCase.FL_vec;
             taps  = testCase.NTaps_vec;
+            mus   = testCase.Mu_vec;
+            n1s   = testCase.N1_vec;
             NSNR  = numel(P.SNR_dB_vec);
+
+            assert(size(mus,1) == numel(taps) && size(mus,2) == numel(signs) && ...
+                   size(n1s,1) == numel(taps) && size(n1s,2) == numel(signs), ...
+                   'Mu_vec and N1_vec must be [NTaps x NSignOnly].');
 
             NFL   = numel(FLs);
             NNET  = numel(nets);
@@ -186,9 +204,14 @@ classdef adaptive_eq_grid_sweep < matlab.unittest.TestCase
                             for mi = 1:NMODE
                                 for ti = 1:NTAP
                                     for so = 1:NSIGN
+                                        % Per-(tap, sign_only) step size and
+                                        % re-init point from Mu_vec/N1_vec.
+                                        Pr     = P;
+                                        Pr.Mu  = mus(ti, so);
+                                        Pr.N1  = n1s(ti, so);
                                         eqSym = adaptive_eq_grid_sweep.runAEQ( ...
                                             modes{mi}, rxSig, PilotsAll, taps(ti), ...
-                                            signs(so), P, T);
+                                            signs(so), Pr, T);
                                         berCells{mi, ti, so}(tr, si) = ...
                                             adaptive_eq_grid_sweep.computeBER( ...
                                                 eqSym, symbols, P.NOut);
@@ -261,9 +284,13 @@ classdef adaptive_eq_grid_sweep < matlab.unittest.TestCase
             P.NTaps_vec    = tc.NTaps_vec;
             P.Modes        = tc.Modes;
             P.SignOnly_vec = tc.SignOnly_vec;
-            P.Mu          = tc.Mu;
+            P.Mu_vec      = tc.Mu_vec;
+            P.N1_vec      = tc.N1_vec;
+            % Scalar Mu / N1 are runtime-only build prototypes for codegen;
+            % the test loop overrides them per (tap, sign_only) from Mu_vec/N1_vec.
+            P.Mu          = tc.Mu_vec(1, 1);
+            P.N1          = tc.N1_vec(1, 1);
             P.SingleSpike = tc.SingleSpike;
-            P.N1          = tc.N1;
             P.NOut        = tc.NOut;
             P.UpdateStep  = tc.UpdateStep;
         end
@@ -301,12 +328,10 @@ classdef adaptive_eq_grid_sweep < matlab.unittest.TestCase
         end
 
         function [rxSig, symbols, PilotsAll] = buildChannel(P, net, SNR_dB, trialSeed)
-            % CPON-framed DP-QPSK through AWGN + PMD for one network/SNR,
-            % using the canonical RRC+RRC Nyquist split: RRC pulse-shaping at
-            % the transmitter, RRC matched filter at the receiver before the
-            % adaptive equaliser.  The combined Tx*Rx response is a full
-            % raised cosine (Nyquist), so the equaliser sees an ISI-free
-            % (apart from PMD) input and the matched filter maximises SNR.
+            % CPON-framed DP-QPSK through AWGN + PMD for one network/SNR.
+            % RRC pulse-shaping is applied at the transmitter; the matched
+            % filter is omitted so the adaptive equaliser sees the raw
+            % oversampled signal.
             rng(1000 * trialSeed + round(SNR_dB) + 7 * double(net.L));
 
             DATA_PER_SUBFRAME = 3586;
@@ -320,8 +345,6 @@ classdef adaptive_eq_grid_sweep < matlab.unittest.TestCase
             rxSig = channel.add_awgn(txSig, SNR_dB);
             rxSig = channel.add_pmd(rxSig, net.L, P.SpS, P.Rs, ...
                         P.DGDSpec, P.N_pmd);
-            rxSig = modem.matched_filter(rxSig, P.SpS, 'rrc', ...
-                        P.Rolloff, P.Span);
         end
 
         function eqSym = runAEQ(mode, rxSig, PilotsAll, ntaps, signOnly, P, T)

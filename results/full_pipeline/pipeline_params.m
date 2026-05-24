@@ -30,6 +30,9 @@ function P = pipeline_params()
     % ---- CD Equalizer -----------------------------------------------
     P.NFFT    = 2^9;          % FFT block size (power of 2)
 
+    % ---- Clock Recovery (Modified Godard) ---------------------------
+    P.CR_NFFT = 2^8;          % MG FFT block size (power of 2)
+
     % ---- Adaptive Equalizer -----------------------------------------
     P.AEQ_NTaps      = 15;
     P.AEQ_Mu         = 2e-9;
@@ -53,6 +56,7 @@ function P = pipeline_params()
     P.FxpConfig_AEQ  = 'fixed16';  % Adaptive EQ:   'fixed16' | 'fixed32'
     P.FxpConfig_VV   = 'fixed16';  % VV carrier recovery: 'fixed16' | 'fixed32'
     P.FxpConfig_BPS  = 'fixed16';  % BPS carrier recovery: 'fixed16' | 'fixed32'
+    P.FxpConfig_CR   = 'fixed32';  % Godard clock recovery: 'fixed16' | 'fixed32'
     P.po2Twiddle     = false;      % power-of-2 twiddle factors in FFT
 
     % ---- Output / display --------------------------------------------

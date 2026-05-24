@@ -21,6 +21,9 @@ classdef test_ClockRecovery < matlab.unittest.TestCase
         ki = 1e-4
         kp = 5e-3
 
+        % Modified Godard estimator parameters (feedforward — no loop filter)
+        N_fft = 256
+
         % Pass/fail
         BER_THRESHOLD = 1e-2
     end
@@ -140,6 +143,123 @@ classdef test_ClockRecovery < matlab.unittest.TestCase
                 'Clock-recovery output contains NaN/Inf.');
             testCase.verifyLessThan(BER, testCase.BER_THRESHOLD, ...
                 sprintf('SFO BER %.2e exceeds threshold.', BER));
+        end
+
+        % -------- Modified Godard: constant timing offset -----------
+        function testGodardConstantTimingOffset(testCase)
+            SpS_hi_ = testCase.SpS_hi;
+            SpS_    = testCase.SpS;
+            Ns_     = testCase.Ns;
+
+            % --- Tx: generate symbols & pulse-shape at high SpS ---
+            Nbits  = 2 * Ns_;              % QPSK: 2 bits/sym, single pol
+            txBits = modem.randomBits(Nbits);
+            symbols = modem.modulate(txBits);
+            symbols = symbols(:, 1);        % single pol
+
+            txHi = modem.rrcPulse(symbols, SpS_hi_, testCase.Rolloff, testCase.Span);
+
+            % --- Matched filter at high SpS ---
+            rxHi = modem.matched_filter(txHi, SpS_hi_, 'rrc', ...
+                testCase.Rolloff, testCase.Span);
+
+            % --- Introduce a constant timing offset ---
+            timingOffset = 3;   % samples at SpS_hi
+            rxShifted = circshift(rxHi, timingOffset);
+
+            % --- Decimate to 2 Sa/symbol ---
+            decFactor = SpS_hi_ / SpS_;
+            rx2 = rxShifted(1:decFactor:end, :);
+
+            % --- Clock recovery (Modified Godard, feedforward) ---
+            crOut = clk_recovery.recovery_godard(rx2, Ns_, ...
+                testCase.N_fft, testCase.Rolloff);
+
+            % --- Downsample to symbol rate & demodulate ---
+            crSym = crOut(1:SpS_:end);
+
+            % Discard half a block at each end (extrapolation region)
+            skipSym  = ceil(testCase.N_fft / (2 * SpS_));
+            crSymBER = crSym(skipSym+1:end-skipSym);
+
+            % Resolve phase ambiguity (BER on settled portion only)
+            txRefBits = modem.symbolsToBits(symbols);
+            skipBits  = skipSym * 2;        % QPSK: 2 bits per symbol
+            [BER, crSymBER] = bestRotationBER(testCase, crSymBER, ...
+                txRefBits(skipBits+1:end-skipBits));
+
+            fprintf('Godard constant offset BER = %.2e\n', BER);
+
+            % --- Plot ---
+            rxSym = rx2(1:SpS_:end);
+            plotBeforeAfter(testCase, rxSym, crSymBER, ...
+                'Godard Constant Timing Offset', BER);
+
+            % --- Verify ---
+            testCase.verifyTrue(all(isfinite(crSym(:))), ...
+                'Clock-recovery output contains NaN/Inf.');
+            testCase.verifyLessThan(BER, testCase.BER_THRESHOLD, ...
+                sprintf('Godard constant-offset BER %.2e exceeds threshold.', BER));
+        end
+
+        % -------- Modified Godard: sampling-frequency offset --------
+        function testGodardSamplingFrequencyOffset(testCase)
+            SpS_hi_ = testCase.SpS_hi;
+            SpS_    = testCase.SpS;
+            Ns_     = testCase.Ns;
+
+            % --- Tx ---
+            Nbits  = 2 * Ns_;              % QPSK: 2 bits/sym, single pol
+            txBits = modem.randomBits(Nbits);
+            symbols = modem.modulate(txBits);
+            symbols = symbols(:, 1);        % single pol
+
+            txHi = modem.rrcPulse(symbols, SpS_hi_, testCase.Rolloff, testCase.Span);
+
+            % --- Matched filter at high SpS ---
+            rxHi = modem.matched_filter(txHi, SpS_hi_, 'rrc', ...
+                testCase.Rolloff, testCase.Span);
+
+            % --- Introduce a sampling-frequency offset ---
+            ppm = 100;                           % parts per million
+            Nhi = size(rxHi, 1);
+            tOrig    = (0:Nhi-1).';
+            tSkewed  = tOrig * (1 + ppm*1e-6);
+            rxSkewed = interp1(tOrig, rxHi, tSkewed, 'spline', 0);
+
+            % --- Decimate to 2 Sa/symbol ---
+            decFactor = SpS_hi_ / SpS_;
+            rx2 = rxSkewed(1:decFactor:end, :);
+
+            % --- Clock recovery (Modified Godard, feedforward) ---
+            crOut = clk_recovery.recovery_godard(rx2, Ns_, ...
+                testCase.N_fft, testCase.Rolloff);
+
+            % --- Downsample to symbol rate & demodulate ---
+            crSym = crOut(1:SpS_:end);
+
+            % Discard half a block at each end (extrapolation region)
+            skipSym  = ceil(testCase.N_fft / (2 * SpS_));
+            crSymBER = crSym(skipSym+1:end-skipSym);
+
+            % Resolve phase ambiguity (BER on settled portion only)
+            txRefBits = modem.symbolsToBits(symbols);
+            skipBits  = skipSym * 2;        % QPSK: 2 bits per symbol
+            [BER, crSymBER] = bestRotationBER(testCase, crSymBER, ...
+                txRefBits(skipBits+1:end-skipBits));
+
+            fprintf('Godard SFO (%d ppm) BER = %.2e\n', ppm, BER);
+
+            % --- Plot ---
+            rxSym = rx2(1:SpS_:end);
+            plotBeforeAfter(testCase, rxSym, crSymBER, ...
+                sprintf('Godard SFO %d ppm', ppm), BER);
+
+            % --- Verify ---
+            testCase.verifyTrue(all(isfinite(crSym(:))), ...
+                'Clock-recovery output contains NaN/Inf.');
+            testCase.verifyLessThan(BER, testCase.BER_THRESHOLD, ...
+                sprintf('Godard SFO BER %.2e exceeds threshold.', BER));
         end
 
     end

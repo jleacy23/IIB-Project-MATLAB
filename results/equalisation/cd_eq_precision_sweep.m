@@ -69,7 +69,7 @@ classdef cd_eq_precision_sweep < matlab.unittest.TestCase
         Span      = 10
 
         % Monte-Carlo
-        NTrials   = 10
+        NTrials   = 20
         Ns        = 8192         % symbols per polarisation per trial
 
         % SNR sweep [dB]

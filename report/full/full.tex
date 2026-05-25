@@ -23,6 +23,7 @@
 \addbibresource{../energy/ref.bib}
 \addbibresource{../frequency_recovery/ref.bib}
 \addbibresource{../equalisation/ref.bib}
+\addbibresource{../clk_recovery/ref.bib}
 \addbibresource{ref.bib}
 
 \title{Energy-Efficient 200 Gbit/s Transceivers for Optical Access Networks}
@@ -178,7 +179,7 @@ The energy consumption of the receiver can be estimated from the number of real 
     \end{tabular}
 \end{table}
 
-\subsubsection{Dependence on Word Length}
+\paragraph{Dependence on Word Length}
 A ripple-carry adder performs \(n\) bit-wise additions on words of length \(n\), so its energy scales linearly with \(n\). A shift-and-add multiplier accumulates \(n\) partial products of length \(n\) and so scales as \(n^2\). Modern adders and multipliers (e.g.\ carry-lookahead, Booth/Wallace) reduce these costs by a constant factor or to $n\log n$, so the scalings used here are upper bounds; comparisons between algorithms remain valid because all are penalised equally. The proportionality constants are calibrated by a least-squares fit through the origin to the two data points of \cref{tab:energy}, giving
 \begin{equation}
     E_A(n) = 3.16\,n \mathrm{\ fJ}, \qquad E_M(n) = 3.03\,n^2 \mathrm{\ fJ}.
@@ -189,10 +190,10 @@ Energy consumption for arithmetic operations in modern process nodes is not wide
     E_A(n) = 0.79\,n \mathrm{\ fJ}, \qquad E_M(n) = 0.76\,n^2 \mathrm{\ fJ}.
     \label{eq:arithmetic_14}
 \end{equation}
-\subsubsection{Amortisation}
+\paragraph{Amortisation}
 Some DSP algorithms perform computations that are reused over multiple symbols. For example, carrier frequency offset (CFO) varies much slower than the symbol rate so can be estimated less frequently. For a computation that requires \(N_M\) multiplications and \(N_A\) additions and is used by \(S\) symbols, the operations per symbol would be \(N_M / S\) and \(N_A / S\).
 
-\subsubsection{Total Energy and Power}
+\paragraph{Total Energy and Power}
 Many DSP blocks operate on complex-valued data; each complex multiplication is counted as 4 real multiplications and 2 real additions, and each complex addition as 2 real additions. The energy per symbol for the entire receiver is then
 \begin{equation}
     E_{\mathrm{rx},s} = \sum_{k=1}^{L} 2 \left[ N_{A,k}E_A(n_k) + N_{M,k}E_M(n_k) \right],
@@ -211,11 +212,11 @@ where \(M\) is the modulation order.
 \subsection{Transmitter Energy}
 The downstream link considered here consists of a single OLT transmitting through a 1:\(K\) passive splitter to \(K\) ONUs, as shown in \cref{fig:pon_intro}. The OLT power is divided equally between branches, so each ONU receives a \(1/K\) share.
 
-\subsubsection{Minimum Required SNR}
+\paragraph{Minimum Required SNR}
 The CPON standard specifies a maximum pre-FEC bit-error rate (BER) of \(10^{-2}\) that must not be exceeded for the forward error-correction (FEC) scheme to function correctly. Each receiver implementation therefore has a minimum required SNR to meet this FEC threshold. This SNR, together with the noise characteristics of the optical network, determines the minimum transmitter power.
 
-\subsubsection{Noise}
-% \subsubsection{Shot Noise}
+\paragraph{Noise}
+% \paragraph{Shot Noise}
 The relationship between SNR and transmitter power \(P_\mathrm{tx}\) depends on the dominant source of noise in the network. Optical access networks typically operate over short lengths at low power, so amplifiers can be omitted and non-linear noise neglected, leaving shot noise as the dominant impairment. The shot noise power referred to the optical input of a balanced coherent receiver is \(2h\nu B_\mathrm{eff}\), where the factor of 2 captures the contributions from the signal and LO arms of the balanced detector summed in quadrature, and \(B_\mathrm{eff}\) is the receiver electrical bandwidth, set equal to the symbol rate by a matched bandpass filter after the 1:\(K\) splitter in \cref{fig:pon_intro}. The power per polarisation received by each ONU is \(P_\mathrm{tx}/2\Gamma K\), where $\Gamma$ is the loss from OLT to ONU. This gives a per-ONU NSR of
 \begin{equation}
     \mathrm{NSR} = \frac{4\Gamma K h\nu B_\mathrm{eff}}{P_\mathrm{tx}} + \mathrm{NSR}_0,
@@ -267,7 +268,7 @@ This does not give the total energy consumed by the optical network, but a diffe
 \chapter{Equalisation}\label{chapter:equalisation}
 
 \section{Introduction}
-The receiver compensates two distinct channel impairments with two distinct equalisers. Chromatic dispersion is static and accurately characterised by the fibre parameters, so it is removed by a fixed filter derived analytically from the channel model. Polarisation-mode dispersion varies on millisecond timescales and is unknown a priori, so it is tracked by an adaptive equaliser that also absorbs residual ISI from pulse shaping. This chapter derives both stages and quantifies their per-symbol computational cost.
+The receiver compensates two distinct channel impairments with two distinct equalisers. Chromatic dispersion is static and accurately characterised by the fibre parameters, so it is removed by a fixed filter derived analytically from the channel model. Polarisation-mode dispersion varies on millisecond timescales and is unknown a priori, so it is tracked by an adaptive equaliser that also absorbs residual ISI from pulse shaping. This chapter derives both stages and quantifies their per-symbol computational cost, then evaluates their fixed-point implementations in isolation and in cascade to compare the energy consumption and FEC SNR across combinations of algorithm, tap count, and precision.
 
 \section{Static Equalisation}
 \subsection{Equalisation Procedure}
@@ -363,7 +364,7 @@ The filter weights are then updated as
     \end{aligned}
     \label{eq:adaptive_update}
 \end{equation}
-where the convergence parameter $\mu$ is chosen to be a power of 2 for hardware simplicity. CMA suffers from the well-known singularity problem, in which both outputs converge to the same input signal. To avoid this, $\mathbf{h}_{xx}$ and $\mathbf{h}_{xy}$ are initialised with a single one at the centre tap; then, once $x_\mathrm{out}$ has converged, the weights producing $y_\mathrm{out}$ are initialised as $\mathbf{h}_{yx}[n] = \mathbf{h}_{xx}^*[-n]$ and $\mathbf{h}_{yy}[n] = -\mathbf{h}_{xy}^*[-n]$ \cite{Liu;09}.
+where the step size $\mu$ is chosen to be a power of 2 for hardware simplicity. CMA suffers from the well-known singularity problem, in which both outputs converge to the same input signal. To avoid this, $\mathbf{h}_{xx}$ and $\mathbf{h}_{xy}$ are initialised with a single one at the centre tap; then, once $x_\mathrm{out}$ has converged, the weights producing $y_\mathrm{out}$ are initialised as $\mathbf{h}_{yx}[n] = \mathbf{h}_{xx}^*[-n]$ and $\mathbf{h}_{yy}[n] = -\mathbf{h}_{xy}^*[-n]$ \cite{Liu;09}.
 
 Because the output terms are complex, the standard sign function generalises to a complex signum
 \begin{equation}
@@ -372,7 +373,7 @@ Because the output terms are complex, the standard sign function generalises to 
 Retaining only $\operatorname{sgn}(e)$ and $\operatorname{csgn}(x_\mathrm{out})$ in \cref{eq:adaptive_update} eliminates every multiplication from the weight update at no performance penalty \cite{Cardenas:14}.
 
 \subsection{Filter Length}
-The filter must span the channel memory introduced by PMD. The mean differential group delay (DGD) is \(\langle\Delta \tau\rangle = D\sqrt{L}\), where \(D\) is the DGD parameter and \(L\) is the link length. The instantaneous DGD is modelled by a Maxwellian distribution \cite{Mantzoukis:11}
+The filter must span the channel memory introduced by PMD. The mean differential group delay (DGD) is \(\langle\Delta \tau\rangle = D_\mathrm{DGD}\sqrt{L}\), where \(D_\mathrm{DGD}\) is the DGD parameter of \cref{tab:network_params} and \(L\) is the link length. The instantaneous DGD is modelled by a Maxwellian distribution \cite{Mantzoukis:11}
 \begin{equation}
     \mathbb{P}[\Delta \tau > x] \approx \frac{4}{\pi}\frac{x}{\langle\Delta \tau \rangle}\exp\left(-\frac{4x^2}{\pi {\langle\Delta\tau\rangle}^2}\right).
     \label{eq:maxwellian}
@@ -390,7 +391,7 @@ where $T$ is the receiver sampling period. The relevant values for the access ne
         Quantity & Value \\
         \midrule
         Link length $L$                            & $\leq 80$\,km \\
-        DGD parameter $D$                          & $0.1$\,ps$/\sqrt{\mathrm{km}}$ \\
+        DGD parameter $D_\mathrm{DGD}$             & $0.1$\,ps$/\sqrt{\mathrm{km}}$ \\
         Mean DGD $\langle\Delta\tau\rangle$        & $\leq 0.9$\,ps \\
         Outage target                              & $10^{-12}$ \\
         Required span $x = 4.81\langle\Delta\tau\rangle$ & $4.3$\,ps \\
@@ -404,7 +405,7 @@ where $T$ is the receiver sampling period. The relevant values for the access ne
 
 
 \subsection{Computational Complexity}
-The per-symbol cost splits into three stages: forming the filter outputs, forming the error terms, and updating the weights. Forming the outputs evaluates the four $N$-tap FIR filters of \cref{eq:adaptive_output}, and the four $N$-tap weight vectors are updated according to \cref{eq:adaptive_update}. The sign-sign variant retains only $\operatorname{csgn}(e)$ and $\operatorname{csgn}(x_\mathrm{out})$ \cite{Cardenas:14}, eliminating every multiplication in the update at no performance penalty. To support the 30.5\,GBd symbol rate the equaliser is parallelised across $P$ lanes, the input vector of lane $p$ being
+The per-symbol cost splits into three stages: forming the filter outputs via the four $N$-tap FIR filters of \cref{eq:adaptive_output}, forming the error terms, and updating the weights via \cref{eq:adaptive_update}. The sign-sign variant retains only the sign of the error and the complex signum of $x_\mathrm{out}$ in the update \cite{Cardenas:14}, eliminating every multiplication at no performance penalty. To support the 30.5\,GBd symbol rate, the equaliser is parallelised across $P$ lanes, the input vector of lane $p$ being
 \begin{equation}
     \mathbf{x}_p = \left[\mathbf{x}[mP + p], \mathbf{x}[mP + p - 1], \dots, \mathbf{x}[mP + p - (N - 1)]\right].
 \end{equation}
@@ -452,31 +453,19 @@ where $s$ and $\hat{s}$ are the transmitted and estimated pilot symbols at the s
     \label{tab:adaptive_cost_pilot}
 \end{table}
 \section{Methodology}
--rrc pulse shaping
--monte carlo
--application of CD and PMD
-- convergence parameter size and number of symbols before single spike and number of symbols discarded
+Both equalisers are evaluated by simulation in MATLAB. Each fixed-point block uses \texttt{fi} arithmetic and is compiled to a MEX binary via MATLAB Coder, so the algorithm exercised in the sweeps is bit-identical to a fixed-point hardware target.
+
+\subsection{Simulation Pipeline}
+Symbols are oversampled by a factor of 2 and pulse-shaped with a root-raised-cosine filter. All the algorithms discussed work at lower oversampling rates, which is investigated in \cref{chapter:full_pipeline}. AWGN is applied to all tests. Chromatic dispersion and PMD are applied either in isolation for individual equaliser tests or together for the combined test.
+
+\subsection{Adaptive Equaliser Convergence}
+The CMA singularity is avoided by initialising $\mathbf{h}_{xx}$ and $\mathbf{h}_{xy}$ with a single one at the centre tap and updating only the $x$-output filter at first; once $N_1$ symbols have elapsed and the $x$ filter has converged, $\mathbf{h}_{yx}$ and $\mathbf{h}_{yy}$ are seeded from the conjugate-symmetric relation in \cref{eq:adaptive_update} and updates are extended to both polarisations. The step size $\mu$ and re-initialisation point $N_1$ are tuned per (algorithm, tap count, update variant) by a separate convergence sweep, with $\mu$ restricted to powers of 2 for hardware simplicity. The first $N_\mathrm{out} = 4000$ symbols of every realisation are discarded before any BER measurement so that the convergence transient does not contaminate the steady-state estimate.
+
+\subsection{Performance Evaluation}
+Each operating point is evaluated by Monte Carlo over independent realisations of the channel and an SNR sweep from 0 to 30\,dB in 2\,dB steps. The BER per trial is computed against the transmitted reference with an exhaustive search over the 32 multiples of $\pi/16$ phase rotation and the polarisation swap that resolve the residual ambiguities left by CMA. The FEC SNR is then defined as the SNR at which the trial's BER curve crosses the FEC threshold, located by linear interpolation between adjacent samples; the mean and standard deviation across trials are reported.
 \section{Results \& Discussion}
 \subsection{Static Equalisation}
-\Cref{fig:cd_fec_snr_20km,fig:cd_fec_snr_80km} compare the performance of each CD equaliser implementation for the 20 km and 80 km networks. The time domain equaliser performs far worse on the 20 km network with 6 taps than on the 80 km network and exhibits a sharp increase in FEC SNR below 8 bits of precision. This suggests the time domain FIR is highly sensitive to quantisation noise and coarse taps. Overlap-save has similar performance on both networks and shows little change in FEC SNR down to 4 bits of precision but was not able to achieve the FEC limit at 2 bits of precision. Rounding twiddle factors to a power of 2 had less impact on performance for the 20 km network but was more costly for 80km. The energy and FEC SNR at the lowest precision before performance drops for each equaliser implementation are summarised in \cref{tab:cd_eq_summary}. The time domain equaliser is not viable.
-\begin{table}[H]
-    \centering
-    \begin{tabular}{llccc}
-        \toprule
-        Network & Implementation & FL (bits) & Energy (fJ/bit) & FEC SNR (dB) \\
-        \midrule
-        \multirow{3}{*}{20\,km} & Time-domain                  & 8 & 2605 & $12.95 \pm 0.13$ \\
-                                 & Overlap-save                 & 4 &  929 & $ 4.81 \pm 0.05$ \\
-                                 & Overlap-save ($2^k$ twiddle) & 4 &  355 & $ 5.91 \pm 0.05$ \\
-        \midrule
-        \multirow{3}{*}{80\,km} & Time-domain                  & 8 & 9181 & $ 6.80 \pm 0.07$ \\
-                                 & Overlap-save                 & 4 & 1249 & $ 4.89 \pm 0.05$ \\
-                                 & Overlap-save ($2^k$ twiddle) & 4 &  444 & $ 8.36 \pm 0.12$ \\
-        \bottomrule
-    \end{tabular}
-    \caption{Energy per bit and FEC SNR (mean $\pm$ std over trials) for the minimum fixed-point precision that meets the FEC threshold: time-domain at FL\,=\,8 and overlap-save at FL\,=\,4.}
-    \label{tab:cd_eq_summary}
-\end{table}
+\Cref{fig:cd_fec_snr_20km,fig:cd_fec_snr_80km} compare the FEC SNR of each CD equaliser as fixed-point precision is reduced. The time-domain FIR is highly sensitive to quantisation: it fails to reach the FEC limit at 20\,km even with 6 taps, and its FEC SNR rises sharply below 8 bits on both networks. Overlap-save performs comparably on both networks and is robust down to 4 bits, but cannot meet the FEC limit at 2 bits. Rounding the twiddle factors to the nearest power of 2 incurs a small penalty at 20\,km and a larger one at 80\,km, but remains viable at 4 bits in both cases. The time-domain equaliser is therefore discarded; both overlap-save variants are carried forward to the combined analysis at 4 bits of precision.
 \begin{figure}[H]
     \centering
     \begin{subfigure}{0.7\textwidth}
@@ -492,78 +481,92 @@ where $s$ and $\hat{s}$ are the transmitted and estimated pilot symbols at the s
         \caption{80 km}
         \label{fig:cd_fec_snr_80km}
     \end{subfigure}
-    \caption{FEC SNR of each CD equaliser implementation as fixed point precision varies for the 20 km and 80 km networks.}
+    \caption{FEC SNR of each CD equaliser implementation as fixed-point precision varies for the 20\,km and 80\,km networks.}
     \label{fig:cd_20km}
 \end{figure}
 
 \subsection{Adaptive Equalisation}
-\subsubsection{Filter Length}
-\Cref{eq:aeq_taps} predicts an adaptive filter length of 1 tap for both the 20 km and 80 km networks. \Cref{fig:aeq_taps_ber} indicates that increasing the tap length degrades performance such that the FEC threshold is not achieved. Adding more taps increases the dimension of the gradient descent in \cref{eq:adaptive_update} which can cause slower convergence to the minimum error, so this loss in performance is likely a failure to converge before the single spike reinitialisation. 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.7\textwidth]{aeq_cma_taps.png}
-    \caption{BER vs SNR for adaptive equaliser tap lengths of 1,3,5 using CMA and direct update at 16 bits of precision.}
-    \label{fig:aeq_taps_ber}
-\end{figure}
-\subsubsection{Algorithm Comparison}
-\Cref{tab:adaptive_cost_total} totals the per-symbol real additions and multiplications of the output formation, error and weight-update stages for $N = 1$ tap and $P = 32$ lanes, the operating point used in the fixed-point sweep. The pilot variants are roughly half the multiplications and a quarter of the additions of CMA, since their error and update stages do not scale with $P$. The sign-sign variant of CMA halves the multiplication count without changing the additions, while the pilot sign-sign variant saves only the $16N = 16$ multiplications of the update.
+\paragraph{Algorithm selection}
+\Cref{tab:cma_fec_snr_fl12} compares the update variants at high precision. The pilot update lacks any averaging and is therefore dominated by additive noise, giving a much higher FEC SNR and large variance on both networks; it is discarded despite its lower complexity. Direct and sign-sign CMA perform similarly at $N=1$ but diverge as taps are added: sign-sign improves at $N=3$, where the filter can act as both a matched filter and a PMD compensator, and gains a further marginal improvement at $N=5$. Direct CMA degrades from $N=1$ to $N=3$, likely due to slow convergence. Although the standalone gain from $N=3$ to $N=5$ is small, the extra taps span enough symbol periods to absorb residual CD that the upstream equaliser may leave behind -- particularly with the power-of-2 twiddle variant -- so all three sign-sign lengths are taken forward to the combined analysis.
 \begin{table}[H]
     \centering
-    \begin{tabular}{lcc}
+    \small
+    \begin{tabular}{lllcc}
         \toprule
-        Combination & Real mult. & Real add. \\
+        Network & Algorithm & Variant & $N$ & FEC SNR (dB) \\
         \midrule
-        CMA, direct        & 20 & 15 \\
-        CMA, sign-sign     &  10 & 15 \\
-        Pilot, direct      &  8.25 & 6.3125 \\
-        Pilot, sign-sign   &  8 & 6.3125 \\
+        \multirow{12}{*}{20\,km} & \multirow{6}{*}{CMA}   & \multirow{3}{*}{Direct}    & 1 & $6.12  \pm 0.09$ \\
+                                  &                        &                            & 3 & $7.03  \pm 1.54$ \\
+                                  &                        &                            & 5 & $6.99  \pm 1.54$ \\
+                                  \cmidrule(l){3-5}
+                                  &                        & \multirow{3}{*}{Sign-sign} & 1 & $6.40  \pm 0.36$ \\
+                                  &                        &                            & 3 & $4.18  \pm 0.35$ \\
+                                  &                        &                            & 5 & $4.06  \pm 0.37$ \\
+                                  \cmidrule(l){2-5}
+                                  & \multirow{6}{*}{Pilot} & \multirow{3}{*}{Direct}    & 1 & $19.48 \pm 6.49$ \\
+                                  &                        &                            & 3 & $13.57 \pm 3.89$ \\
+                                  &                        &                            & 5 & $13.57 \pm 3.89$ \\
+                                  \cmidrule(l){3-5}
+                                  &                        & \multirow{3}{*}{Sign-sign} & 1 & $18.29 \pm 6.67$ \\
+                                  &                        &                            & 3 & $17.54 \pm 6.06$ \\
+                                  &                        &                            & 5 & $16.72 \pm 6.51$ \\
+        \midrule
+        \multirow{12}{*}{80\,km} & \multirow{6}{*}{CMA}   & \multirow{3}{*}{Direct}    & 1 & $6.12  \pm 0.08$ \\
+                                  &                        &                            & 3 & $7.13  \pm 1.52$ \\
+                                  &                        &                            & 5 & $7.11  \pm 1.52$ \\
+                                  \cmidrule(l){3-5}
+                                  &                        & \multirow{3}{*}{Sign-sign} & 1 & $6.38  \pm 0.36$ \\
+                                  &                        &                            & 3 & $4.34  \pm 0.49$ \\
+                                  &                        &                            & 5 & $4.14  \pm 0.44$ \\
+                                  \cmidrule(l){2-5}
+                                  & \multirow{6}{*}{Pilot} & \multirow{3}{*}{Direct}    & 1 & $16.50 \pm 5.38$ \\
+                                  &                        &                            & 3 & $13.08 \pm 3.85$ \\
+                                  &                        &                            & 5 & $13.08 \pm 3.85$ \\
+                                  \cmidrule(l){3-5}
+                                  &                        & \multirow{3}{*}{Sign-sign} & 1 & $15.77 \pm 6.09$ \\
+                                  &                        &                            & 3 & $17.27 \pm 6.32$ \\
+                                  &                        &                            & 5 & $16.95 \pm 5.88$ \\
         \bottomrule
     \end{tabular}
-    \caption{Total real additions and multiplications per symbol for each algorithm at $N = 1$ tap and $P = 32$ lanes, including output formation, error terms and weight update.}
-    \label{tab:adaptive_cost_total}
+    \caption{FEC SNR (mean $\pm$ std over 20 trials) at 12 bits of gradient precision for the 20\,km (1:512 split) and 80\,km (1:16 split) networks, across algorithm (CMA, pilot), update variant and number of taps.}
+    \label{tab:cma_fec_snr_fl12}
 \end{table}
-\Cref{fig:aeq_energy} shows the corresponding energy per bit for each combination as fixed point precision varies. Direct CMA uses $\approx 2 \times$ the energy of sign-sign CMA, which in turn uses $\approx 1.5 \times$ the energy of the pilot-based updates when fixed-point precision is equal.
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.7\textwidth]{aeq_energy.png}
-    \caption{Energy per bit as fixed point precision of the input, output, and error terms vary for each adaptive equalisation implementation.}
-    \label{fig:aeq_energy}
-\end{figure}
-The FEC SNR of each implementation is shown in \cref{fig:aeq_fec_snr_20km,fig:aeq_fec_snr_80km}.The direct, pilot-based update shows the best performance at all precisions and works for a gradient estimate with only 2 bits of precision. Only using the sign of the error with pilots significantly degrades performance with negligible energy savings so is not viable for adaptive equalisation. Sign-sign CMA exhibits better performance than the direct version and can operate at 4 bits of precision without a significant increase in FEC SNR. Thus the two most promising implementations are direct pilot-based updates with 2 bits of precision or sign-sign CMA with 4 bits of precision which are compared in \cref{tab:aeq_summary}. Direct, pilot-based updates appear to outperform sign-sign CMA in energy consumption and FEC SNR but this ignores the effects of CFO and phase error on equaliser performance. CMA is inherently robust to these effects as it computes the error from the modulus of the estimated symbol while the direct LMS estimate from the pilots can become very inaccurate. To realise the potential benefits of the pilot-based updates, there must be feedback from the carrier recovery section to allow the equaliser to operate on phase-corrected symbols. This is investigated in \cref{chapter:full_pipeline}.
-\begin{table}[H]
-    \centering
-    \begin{tabular}{lccc}
-        \toprule
-        Combination & Precision / bits & Energy (fJ/bit) & FEC SNR (dB) \\
-        \midrule
-        Pilot, direct     & 2 &  34.97 & $4.37 \pm 0.05$ \\
-        CMA, sign-sign    & 4 & 168.60 & $5.01 \pm 0.82$ \\
-        \bottomrule
-    \end{tabular}
-    \caption{Energy per bit and FEC SNR (mean $\pm$ std over trials) of the two most promising adaptive equalisation operating points on the 20 km network at $N = 1$ tap.}
-    \label{tab:aeq_summary}
-\end{table}
-\begin{figure}[H]
-    \centering
-    \begin{subfigure}{0.7\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{fec_snr_20km.png}
-        \caption{20 km network}
-        \label{fig:aeq_fec_snr_20km}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}{0.7\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{fec_snr_80km.png}
-        \caption{80 km network}
-        \label{fig:aeq_fec_snr_80km}
-    \end{subfigure}
-    \caption{FEC SNR vs fixed-point precision of the input, output, and error terms for each adaptive equalisation implementation on the 20 km and 80 km networks.}
-    \label{fig:aeq_fec_snr}
-\end{figure}
 \subsection{Combined Performance}
-- results for combined equalisation, FEC SNR vs fxp.
+The sweep over the precision of the adaptive equaliser found that the combined FEC SNR is unchanged for adaptive equaliser precisions of 4 bits or more across both overlap-save variants and all three filter lengths. The performance of each combination at 4 bits of precision is shown in \cref{tab:combined_eq_summary}, from which two observations can be made:
 
+\paragraph{Cascaded quantisation noise} The FEC SNR of standalone overlap-save compensating only chromatic dispersion is $\approx 4.8$\,dB on both the 20\,km and 80\,km networks. Cascading the two equalisers would be expected to compound their quantisation noise contributions; however, for $N=3$ and $5$ taps the combined FEC SNR is at or below $4.8$\,dB. The adaptive equaliser is therefore able to compensate for the quantisation noise introduced by the static equaliser, outweighing its own quantisation noise contribution.
+
+\paragraph{Residual chromatic dispersion} For overlap-save with exact twiddles the move from $N=3$ to $N=5$ buys a negligible performance improvement at either reach. The exception is the $2^k$-twiddle variant at 80\,km, where the coarse CD stage leaves a substantial residual dispersion that the adaptive equaliser must absorb: $N=5$ recovers a further $0.6$\,dB over $N=3$. At 20\,km the residual is small enough that $N=3$ is sufficient. The same effect is evident in the single-tap performance, where the greater residual left by the $2^k$-twiddle variant pushes the FEC SNR far higher than the standalone tests would predict.
+
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabular}{llcrrrc}
+        \toprule
+        Network & CD implementation & $N$ & $E_\mathrm{CD}$ & $E_\mathrm{AEQ}$ & $E_\mathrm{total}$ & FEC SNR (dB) \\
+                &                   &     & (fJ/bit)        & (fJ/bit)         & (fJ/bit)           &              \\
+        \midrule
+        \multirow{6}{*}{20\,km} & \multirow{3}{*}{Overlap-save}                 & 1 &  929 & 169 & 1098 & $ 7.09 \pm 0.25$ \\
+                                 &                                              & 3 &  929 & 438 & 1367 & $ 4.69 \pm 0.57$ \\
+                                 &                                              & 5 &  929 & 708 & 1637 & $ 4.42 \pm 0.49$ \\
+                                 \cmidrule(l){2-7}
+                                 & \multirow{3}{*}{Overlap-save ($2^k$ twiddle)} & 1 &  355 & 169 &  524 & $10.02 \pm 0.58$ \\
+                                 &                                              & 3 &  355 & 438 &  793 & $ 5.68 \pm 0.21$ \\
+                                 &                                              & 5 &  355 & 708 & 1063 & $ 5.53 \pm 0.23$ \\
+        \midrule
+        \multirow{6}{*}{80\,km} & \multirow{3}{*}{Overlap-save}                 & 1 & 1261 & 169 & 1430 & $ 7.11 \pm 0.26$ \\
+                                 &                                              & 3 & 1261 & 438 & 1699 & $ 4.64 \pm 0.28$ \\
+                                 &                                              & 5 & 1261 & 708 & 1969 & $ 4.78 \pm 1.12$ \\
+                                 \cmidrule(l){2-7}
+                                 & \multirow{3}{*}{Overlap-save ($2^k$ twiddle)} & 1 &  449 & 169 &  618 & $14.72 \pm 1.32$ \\
+                                 &                                              & 3 &  449 & 438 &  887 & $ 8.60 \pm 0.74$ \\
+                                 &                                              & 5 &  449 & 708 & 1157 & $ 8.00 \pm 0.63$ \\
+        \bottomrule
+    \end{tabular}
+    \caption{End-to-end energy per bit and FEC SNR (mean $\pm$ std over 10 trials) for the cascaded CD + sign-sign CMA operating points at 4 bits of precision in both stages.}
+    \label{tab:combined_eq_summary}
+\end{table}
+The optimal choice of equaliser depends on the network length. At 20\,km, a 3-tap adaptive equaliser is optimal, with the choice of overlap-save variant depending on whether equalisation limits the receiver SNR and on the balance between transmitter and receiver energy. At 80\,km, standard overlap-save should be paired with a 3-tap equaliser; switching to the $2^k$-twiddle variant is less favourable given the higher FEC SNR penalty.
 % =====================================================================
 \chapter{Carrier Recovery}\label{chapter:carrier_recovery}
 % =====================================================================
@@ -572,9 +575,9 @@ The FEC SNR of each implementation is shown in \cref{fig:aeq_fec_snr_20km,fig:ae
 
 A coherent receiver recovers the transmitted symbols by mixing the incoming optical signal with a local oscillator (LO) laser, allowing the amplitude and phase of each symbol to be extracted directly. However, the transmitter and LO lasers will in general have different centre frequencies and independent phase trajectories, producing a carrier frequency offset (CFO) and accumulated phase noise on the received symbols. Carrier recovery is the DSP stage responsible for estimating and removing these impairments before symbol decisions are made.
 
-Carrier recovery is divided into two sequential stages. Frequency recovery performs a coarse estimate of the CFO and corrects it so that only slow residual phase variations remain. Phase recovery then tracks and removes these residual phase errors on a block-by-block basis. The algorithm chosen for each stage determines both the minimum achievable SNR and the receiver DSP energy, making algorithm selection central to the system-level energy comparison of \cref{chapter:energy}.
+Carrier recovery is divided into two sequential stages. Frequency recovery performs a coarse estimate of the CFO and corrects it so that only slow residual phase variations remain. Phase recovery then tracks and removes these residual phase errors on a block-by-block basis.
 
-This chapter describes the Rife \& Boorstyn (R\&B) and differential phase and Kay frequency recovery algorithms, and the Viterbi \& Viterbi (V\&V) and pilots-only phase recovery algorithms, analysing their estimation accuracy and computational complexity. Suitable candidates for an energy-efficient receiver are identified and the criteria for selecting the most energy-efficient implementation are outlined.
+Two common carrier recovery algorithms, Rife \& Boorstyn and Viterbi \& Viterbi, are compared against low-complexity alternatives to quantify the trade-offs between energy consumption and performance in an energy-efficient carrier recovery block.
 
 \section{Frequency Recovery}
 \subsection{Isolating CFO}
@@ -831,8 +834,34 @@ Blind Rife \& Boorstyn and differential phase and Kay with pilots-only phase rec
     \caption{Combined energy and FEC SNR of the differential phase and Kay estimator and blind Rife \& Boorstyn, both using pilots-only phase recovery.}
     \label{tab:cr_energy_breakdown}
 \end{table}
-\section{Conclusions}
-The robustness to both additive and phase noise of QPSK allows the phase recovery block of a coherent receiver to be dramatically simplified by just using pilot symbols with no noticeable drop in performance, resulting in considerable energy savings. Frequency recovery can also be implemented with simple algorithms to save energy; however, the efficacy of doing so depends on how often the CFO must be estimated.
+
+\chapter{Clock Recovery}
+\section{Introduction}
+\section{Godard Timing Recovery}
+\paragraph{Timing error estimate}
+A common timing error detector (TED) is the Gardner algorithm which computes an error term from samples $x[n]$ as \cite{Zhou;10}
+\begin{equation}
+    e[k] = \Re\left\{x^*[2k-1](x[2k]-x[2k-2])\right\}
+\end{equation}
+which is then fed through a digital phase-locked loop (DPLL) and interpolator to correct timing errors. However, this requites 2 samples per symbol which is prohibitive for modern coherent receivers which operate at low oversampling rates to reduce complexity. The signal can be upsampled inside the clock recovery block to apply Gardner but a more energy-efficient approach is to use the Godard TED \cite{Godard;78}. An RRC pulse has a bandwidth of $\frac{1+\beta}{T}$ where $\beta$ is the rolloff factor and $T$ is the symbol period, so for the Fourier transform of the input signal $X(f)$, $C(f) = X(f)X^*(f-\frac{1}{T})$ is non-zero where the spectra overlap. It is also real-valued in this region due to the symmetry of the RRC spectrum. A timing offset $\tau$ introduces a phase ramp in  the frequency domain so the overlap becomes
+\begin{equation}
+    C(f) = X(f)X^*(f-\frac{1}{T})e^{-j2\pi f\tau}e^{j2\pi (f-1/T)\tau} = X(f)X^*(f-\frac{1}{T})e^{-2\pi\tau / T}.
+\end{equation}
+Thus the timing offset $\tau$ can be recovered from the phase of $C(f)$, which is independent of $f$. A discrete equivalent is given by \cite{Han;11}
+\begin{equation}
+    C[k] = X[k]X^*[k+N/2].
+\end{equation}
+The independence of the phase of $C[k]$ on $k$ allows a more robust estimate of $\tau$ to be calculated from
+\begin{equation}
+    S = \sum_{k=0}^{N/2-1}C[k].
+\end{equation}
+The standard Godard TED also appears to require 2 samples per symbol, but a modified version for arbitrary oversampling rates $\eta$ is given by \cite{Josten;17}
+\begin{equation}
+    S = \sum_{k=\frac{1-\beta}{2\eta}N}^{\frac{1+\beta}{2\eta}N} X[k]X^*[k+(1 - 1/\eta)N].
+\end{equation}
+
+\paragraph{Timing correction}
+The Godard estimate can be used in a feedforward architecure or in a DPLL. For feedforward,
 
 \chapter{Full DSP Pipeline}\label{chapter:full_pipeline}
 \printbibliography

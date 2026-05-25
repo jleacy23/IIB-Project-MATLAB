@@ -1,0 +1,9 @@
+[0] Config.pm:328> INFO - This is Biber 2.21
+[0] Config.pm:331> INFO - Logfile is 'clk_recovery.blg'
+[136] biber-MSWIN64:342> INFO - === 
+[193] Biber.pm:421> INFO - Reading 'clk_recovery.bcf'
+[343] Biber.pm:1002> INFO - Found 0 citekeys in bib section 0
+[358] bbl.pm:676> INFO - Writing 'clk_recovery.bbl' with encoding 'UTF-8'
+[359] bbl.pm:779> INFO - Output to clk_recovery.bbl
+[359] Biber.pm:132> WARN - The file 'clk_recovery.bcf' does not contain any citations!
+[359] Biber.pm:134> INFO - WARNINGS: 1

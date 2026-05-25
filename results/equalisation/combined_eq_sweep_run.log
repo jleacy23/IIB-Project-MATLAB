@@ -1,0 +1,100 @@
+Running combined_eq_sweep
+=== CD FL =  4  (WL = 20)  [1/2] : building CD MEX ===
+'cd_eq_equalize_fxp_mex.bat' is not recognized as an internal or external command, 
+operable program or batch file. 
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+Build error: C compiler produced errors. See the Build Log for further details.
+helpview('coder','msginfo_Coder_FE_TargetBuildError');
+
+Code generation failed: To view the report, open('codegen\mex\cd_eq_equalize_fxp\html\report.mldatx')
+
+
+================================================================================
+Error occurred in combined_eq_sweep/test_combined_sweep and it did not run to completion.
+    ---------
+    Error ID:
+    ---------
+    'emlc:compilationError'
+    --------------
+    Error Details:
+    --------------
+    Error using codegen
+    
+    
+    Error in build_cd_eq_equalize_fxp_mex (line 40)
+        codegen('-config', cfg, ...
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    Error in combined_eq_sweep.buildCDMex (line 365)
+                build_cd_eq_equalize_fxp_mex(B, cfg);
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    Error in combined_eq_sweep/test_combined_sweep (line 197)
+                    combined_eq_sweep.buildCDMex(P, cdFxp);
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+================================================================================
+.
+Done combined_eq_sweep
+__________
+
+Failure Summary:
+
+     Name                                   Failed  Incomplete  Reason(s)
+    ======================================================================
+     combined_eq_sweep/test_combined_sweep    X         X       Errored.
+  TestResult with properties:
+
+          Name: 'combined_eq_sweep/test_combined_sweep'
+        Passed: 0
+        Failed: 1
+    Incomplete: 1
+      Duration: 26.0408
+       Details: [11 struct]
+
+Totals:
+   0 Passed, 1 Failed, 1 Incomplete.
+   26.0408 seconds testing time.
+
+
+=== Combined CD + AEQ FEC SNR  Net A  L = 20 km  split 1:512  (FEC BER = 2e-02, mean +/- std over 3 trials) ===
+          CD_Cfg          AEQ_Mode      Variant      NTaps    CD_FL    AEQ_FL    FEC_SNR_dB    FEC_Std_dB
+    __________________    ________    ___________    _____    _____    ______    __________    __________
+
+    "overlap_save"         "CMA"      "sign-sign"      1        4        4         7.1273       0.19938  
+    "overlap_save"         "CMA"      "sign-sign"      1        4        6         7.1273       0.19938  
+    "overlap_save"         "CMA"      "sign-sign"      1        6        4         7.4804        1.1023  
+    "overlap_save"         "CMA"      "sign-sign"      1        6        6         6.6278       0.28643  
+    "overlap_save"         "CMA"      "sign-sign"      3        4        4          5.056        0.8618  
+    "overlap_save"         "CMA"      "sign-sign"      3        4        6          5.056        0.8618  
+    "overlap_save"         "CMA"      "sign-sign"      3        6        4         4.4962       0.36418  
+    "overlap_save"         "CMA"      "sign-sign"      3        6        6         4.6273         0.681  
+    "overlap_save_po2"     "CMA"      "sign-sign"      1        4        4         10.168       0.41732  
+    "overlap_save_po2"     "CMA"      "sign-sign"      1        4        6         10.168       0.41732  
+    "overlap_save_po2"     "CMA"      "sign-sign"      1        6        4         10.965        1.4121  
+    "overlap_save_po2"     "CMA"      "sign-sign"      1        6        6         10.163       0.85343  
+    "overlap_save_po2"     "CMA"      "sign-sign"      3        4        4         5.7603       0.20359  
+    "overlap_save_po2"     "CMA"      "sign-sign"      3        4        6         5.7603       0.20359  
+    "overlap_save_po2"     "CMA"      "sign-sign"      3        6        4         5.9818       0.54987  
+    "overlap_save_po2"     "CMA"      "sign-sign"      3        6        6         5.7802       0.40538  
+
+
+=== Combined CD + AEQ FEC SNR  Net B  L = 80 km  split 1:16  (FEC BER = 2e-02, mean +/- std over 3 trials) ===
+          CD_Cfg          AEQ_Mode      Variant      NTaps    CD_FL    AEQ_FL    FEC_SNR_dB    FEC_Std_dB
+    __________________    ________    ___________    _____    _____    ______    __________    __________
+
+    "overlap_save"         "CMA"      "sign-sign"      1        4        4         7.2582        0.1696  
+    "overlap_save"         "CMA"      "sign-sign"      1        4        6         7.2582        0.1696  
+    "overlap_save"         "CMA"      "sign-sign"      1        6        4         7.0735       0.32442  
+    "overlap_save"         "CMA"      "sign-sign"      1        6        6         6.6676       0.26885  
+    "overlap_save"         "CMA"      "sign-sign"      3        4        4         4.6966       0.23492  
+    "overlap_save"         "CMA"      "sign-sign"      3        4        6         4.6966       0.23492  
+    "overlap_save"         "CMA"      "sign-sign"      3        6        4         4.4754       0.38333  
+    "overlap_save"         "CMA"      "sign-sign"      3        6        6          4.143       0.17315  
+    "overlap_save_po2"     "CMA"      "sign-sign"      1        4        4         15.049        1.0015  
+    "overlap_save_po2"     "CMA"      "sign-sign"      1        4        6         15.049        1.0015  
+    "overlap_save_po2"     "CMA"      "sign-sign"      1        6        4         14.556        1.1668  
+    "overlap_save_po2"     "CMA"      "sign-sign"      1        6        6         14.478         1.201  
+    "overlap_save_po2"     "CMA"      "sign-sign"      3        4        4         8.1797       0.17083  
+    "overlap_save_po2"     "CMA"      "sign-sign"      3        4        6         8.1797       0.17083  
+    "overlap_save_po2"     "CMA"      "sign-sign"      3        6        4         8.4696       0.34629  
+    "overlap_save_po2"     "CMA"      "sign-sign"      3        6        6         7.9142       0.10769  
+

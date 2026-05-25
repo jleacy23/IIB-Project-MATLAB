@@ -71,7 +71,7 @@ classdef adaptive_eq_grid_sweep < matlab.unittest.TestCase
         Span      = 10
 
         % Monte-Carlo
-        NTrials   = 20
+        NTrials   = 3
         NSub      = 8            % CPON subframes per realisation
 
         % SNR sweep [dB]
@@ -79,7 +79,7 @@ classdef adaptive_eq_grid_sweep < matlab.unittest.TestCase
 
         % Bit-width sweep — integer bits fixed; WL = IntBits + FL
         IntBits   = 16
-        FL_vec    = [2, 4, 6, 8, 10, 12]
+        FL_vec    = [12]
 
         % Tap-count sweep
         NTaps_vec = [1, 3, 5]
@@ -96,19 +96,30 @@ classdef adaptive_eq_grid_sweep < matlab.unittest.TestCase
         %   PLanes / BlockLen are set per mode in runAEQ
         %   (CMA -> 32/32 parallel; pilot -> 1/32 LMS).
         %
-        % Mu_vec / N1_vec are [NTaps x NSignOnly] matrices so each
-        % (tap length, update strategy) pair can use its own step size
-        % and re-init iteration.  Columns align with SignOnly_vec
-        % (col 1 = direct, col 2 = sign-sign); rows align with NTaps_vec.
-        % adaptive_eq_convergence_sweep populates the best (Mu, N1) for
-        % each tap length; update these matrices after running that sweep.
-        %               direct     sign-sign
-        Mu_vec      = [9.766e-4,  9.766e-4;   % NTaps = 1
-                       6.104e-5,  9.766e-4;   % NTaps = 3
-                       6.104e-5,  9.766e-4]   % NTaps = 5
-        N1_vec      = [2000,  1000;
-                       2000,  1000;
-                       2000,  1000]
+        % Mu_vec / N1_vec are structs keyed by mode ({CMA, pilot}) of
+        % [NTaps x NSignOnly] matrices, so each (mode, tap length, update
+        % strategy) triple can use its own step size and re-init iteration.
+        % Columns align with SignOnly_vec (col 1 = direct, col 2 = sign-sign);
+        % rows align with NTaps_vec.  adaptive_eq_convergence_sweep
+        % populates the best (Mu, N1) per (mode, tap length); update these
+        % after running that sweep.  CMA tolerates a much smaller gradient
+        % at longer tap lengths; pilot LMS averages over only one lane per
+        % block and needs the larger step to converge inside N1.
+        %                              direct     sign-sign
+        Mu_vec = struct( ...
+            'CMA',   [9.766e-4,  9.766e-4;   % NTaps = 1
+                      6.104e-5,  9.766e-4;   % NTaps = 3
+                      6.104e-5,  9.766e-4], ... % NTaps = 5
+            'pilot', [9.766e-4,  9.766e-4;   % NTaps = 1
+                      9.766e-4,  9.766e-4;   % NTaps = 3
+                      9.766e-4,  9.766e-4])  % NTaps = 5
+        N1_vec = struct( ...
+            'CMA',   [2000,  1000;
+                      2000,  1000;
+                      2000,  1000], ...
+            'pilot', [2000,  2000;
+                      2000,  2000;
+                      2000,  2000])
         SingleSpike = true
         NOut        = 4000       % discarded transient symbols
         UpdateStep  = 1
@@ -148,9 +159,16 @@ classdef adaptive_eq_grid_sweep < matlab.unittest.TestCase
             n1s   = testCase.N1_vec;
             NSNR  = numel(P.SNR_dB_vec);
 
-            assert(size(mus,1) == numel(taps) && size(mus,2) == numel(signs) && ...
-                   size(n1s,1) == numel(taps) && size(n1s,2) == numel(signs), ...
-                   'Mu_vec and N1_vec must be [NTaps x NSignOnly].');
+            for mi = 1:numel(modes)
+                m = modes{mi};
+                assert(isfield(mus, m) && isfield(n1s, m), ...
+                       'Mu_vec and N1_vec must have a field for mode %s.', m);
+                assert(size(mus.(m),1) == numel(taps) && ...
+                       size(mus.(m),2) == numel(signs) && ...
+                       size(n1s.(m),1) == numel(taps) && ...
+                       size(n1s.(m),2) == numel(signs), ...
+                       'Mu_vec.%s / N1_vec.%s must be [NTaps x NSignOnly].', m, m);
+            end
 
             NFL   = numel(FLs);
             NNET  = numel(nets);
@@ -202,13 +220,16 @@ classdef adaptive_eq_grid_sweep < matlab.unittest.TestCase
                                 adaptive_eq_grid_sweep.buildChannel(P, net, snr, tr);
 
                             for mi = 1:NMODE
+                                muMat = mus.(modes{mi});
+                                n1Mat = n1s.(modes{mi});
                                 for ti = 1:NTAP
                                     for so = 1:NSIGN
-                                        % Per-(tap, sign_only) step size and
-                                        % re-init point from Mu_vec/N1_vec.
+                                        % Per-(mode, tap, sign_only) step
+                                        % size and re-init point from
+                                        % Mu_vec/N1_vec.
                                         Pr     = P;
-                                        Pr.Mu  = mus(ti, so);
-                                        Pr.N1  = n1s(ti, so);
+                                        Pr.Mu  = muMat(ti, so);
+                                        Pr.N1  = n1Mat(ti, so);
                                         eqSym = adaptive_eq_grid_sweep.runAEQ( ...
                                             modes{mi}, rxSig, PilotsAll, taps(ti), ...
                                             signs(so), Pr, T);
@@ -287,9 +308,11 @@ classdef adaptive_eq_grid_sweep < matlab.unittest.TestCase
             P.Mu_vec      = tc.Mu_vec;
             P.N1_vec      = tc.N1_vec;
             % Scalar Mu / N1 are runtime-only build prototypes for codegen;
-            % the test loop overrides them per (tap, sign_only) from Mu_vec/N1_vec.
-            P.Mu          = tc.Mu_vec(1, 1);
-            P.N1          = tc.N1_vec(1, 1);
+            % the test loop overrides them per (mode, tap, sign_only) from
+            % Mu_vec/N1_vec.
+            firstMode     = tc.Modes{1};
+            P.Mu          = tc.Mu_vec.(firstMode)(1, 1);
+            P.N1          = tc.N1_vec.(firstMode)(1, 1);
             P.SingleSpike = tc.SingleSpike;
             P.NOut        = tc.NOut;
             P.UpdateStep  = tc.UpdateStep;

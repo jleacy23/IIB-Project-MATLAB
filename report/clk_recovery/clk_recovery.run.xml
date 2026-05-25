@@ -44,10 +44,10 @@
   <internal package="biblatex" priority="9" active="0">
     <generic>latex</generic>
     <provides type="dynamic">
-      <file>full.bcf</file>
+      <file>clk_recovery.bcf</file>
     </provides>
     <requires type="dynamic">
-      <file>full.bbl</file>
+      <file>clk_recovery.bbl</file>
     </requires>
     <requires type="static">
       <file>blx-dm.def</file>
@@ -64,25 +64,21 @@
     <generic>biber</generic>
     <cmdline>
       <binary>biber</binary>
-      <infile>full</infile>
+      <infile>clk_recovery</infile>
     </cmdline>
     <input>
-      <file>full.bcf</file>
+      <file>clk_recovery.bcf</file>
     </input>
     <output>
-      <file>full.bbl</file>
+      <file>clk_recovery.bbl</file>
     </output>
     <provides type="dynamic">
-      <file>full.bbl</file>
+      <file>clk_recovery.bbl</file>
     </provides>
     <requires type="dynamic">
-      <file>full.bcf</file>
+      <file>clk_recovery.bcf</file>
     </requires>
     <requires type="editable">
-      <file>../energy/ref.bib</file>
-      <file>../frequency_recovery/ref.bib</file>
-      <file>../equalisation/ref.bib</file>
-      <file>../clk_recovery/ref.bib</file>
       <file>ref.bib</file>
     </requires>
   </external>

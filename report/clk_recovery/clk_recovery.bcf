@@ -2370,38 +2370,9 @@
   <!-- CITATION DATA -->
   <!-- SECTION 0 -->
   <bcf:bibdata section="0">
-    <bcf:datasource type="file" datatype="bibtex" glob="false">../energy/ref.bib</bcf:datasource>
-    <bcf:datasource type="file" datatype="bibtex" glob="false">../frequency_recovery/ref.bib</bcf:datasource>
-    <bcf:datasource type="file" datatype="bibtex" glob="false">../equalisation/ref.bib</bcf:datasource>
-    <bcf:datasource type="file" datatype="bibtex" glob="false">../clk_recovery/ref.bib</bcf:datasource>
     <bcf:datasource type="file" datatype="bibtex" glob="false">ref.bib</bcf:datasource>
   </bcf:bibdata>
   <bcf:section number="0">
-    <bcf:citekey order="1" intorder="1">Faruk;21</bcf:citekey>
-    <bcf:citekey order="2" intorder="1">CPON_PMD_2025</bcf:citekey>
-    <bcf:citekey order="3" intorder="1">Mello;21</bcf:citekey>
-    <bcf:citekey order="4" intorder="1">CPON_PMD_2025</bcf:citekey>
-    <bcf:citekey order="5" intorder="1">horowitz2014computing</bcf:citekey>
-    <bcf:citekey order="6" intorder="1">horowitz2014computing</bcf:citekey>
-    <bcf:citekey order="7" intorder="1">Esmaeilzadeh;11</bcf:citekey>
-    <bcf:citekey order="8" intorder="1">Shahidi;19</bcf:citekey>
-    <bcf:citekey order="9" intorder="1">Mello;21</bcf:citekey>
-    <bcf:citekey order="10" intorder="1">Rozental;15</bcf:citekey>
-    <bcf:citekey order="11" intorder="1">Ezra;07</bcf:citekey>
-    <bcf:citekey order="12" intorder="1">coherent_receivers</bcf:citekey>
-    <bcf:citekey order="13" intorder="1">Liu;09</bcf:citekey>
-    <bcf:citekey order="14" intorder="1">Cardenas:14</bcf:citekey>
-    <bcf:citekey order="15" intorder="1">Mantzoukis:11</bcf:citekey>
-    <bcf:citekey order="16" intorder="1">Ezra;07</bcf:citekey>
-    <bcf:citekey order="17" intorder="1">Cardenas:14</bcf:citekey>
-    <bcf:citekey order="18" intorder="1">Savory;08</bcf:citekey>
-    <bcf:citekey order="19" intorder="1">Jacobsen2007</bcf:citekey>
-    <bcf:citekey order="20" intorder="1">Andrea1994</bcf:citekey>
-    <bcf:citekey order="21" intorder="1">Cheng2013PilotCycleSlip</bcf:citekey>
-    <bcf:citekey order="22" intorder="1">Zhou;10</bcf:citekey>
-    <bcf:citekey order="23" intorder="1">Godard;78</bcf:citekey>
-    <bcf:citekey order="24" intorder="1">Han;11</bcf:citekey>
-    <bcf:citekey order="25" intorder="1">Josten;17</bcf:citekey>
   </bcf:section>
   <!-- SORTING TEMPLATES -->
   <bcf:sortingtemplate name="nty">
@@ -2433,14 +2404,4 @@
     </bcf:sort>
   </bcf:sortingtemplate>
   <!-- DATALISTS -->
-  <bcf:datalist section="0"
-                name="nty/global//global/global/global"
-                type="entry"
-                sortingtemplatename="nty"
-                sortingnamekeytemplatename="global"
-                labelprefix=""
-                uniquenametemplatename="global"
-                labelalphanametemplatename="global"
-                namehashtemplatename="global">
-  </bcf:datalist>
 </bcf:controlfile>

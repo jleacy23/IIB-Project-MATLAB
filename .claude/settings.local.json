@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(xargs -I {} wc -l {})",
-      "Bash(pdflatex -interaction=nonstopmode -halt-on-error energy.tex)"
+      "Bash(pdflatex -interaction=nonstopmode -halt-on-error energy.tex)",
+      "Bash(matlab -batch:*)"
     ]
   }
 }

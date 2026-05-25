@@ -34,13 +34,16 @@ function build_clk_recovery_recovery_godard_fxp_mex(P, cfg)
 
     % ----------------------------------------------------------------
     % Argument list — must match recovery_godard_fxp signature:
-    %   (In, NSymb, N, beta, po2Twiddle, T)
+    %   (In, NSymb, N, beta, G, po2Twiddle, T)
     % ----------------------------------------------------------------
+    G_default = round(P.CR_NFFT / 4);      % overlap-save guard per edge
+
     args = { ...
         In_cr_type, ...                    % In           [Nsamp x 1]  fi complex
         double(P.Ns), ...                  % NSymb        scalar       double
         double(P.CR_NFFT), ...             % N            scalar       double  (power of 2)
         double(P.Rolloff), ...             % beta         scalar       double
+        double(G_default), ...             % G            scalar       double
         logical(P.po2Twiddle), ...         % po2Twiddle   scalar       logical
         T_cr};                             % T            struct of fi prototypes
 

@@ -336,6 +336,38 @@
       \endverb
       \keyw{Physical layer;Optics;Passive optical networks;Next generation networking}
     \endentry
+    \entry{Godard;78}{article}{}{}
+      \name{author}{1}{}{%
+        {{hash=78c0e006e43abe733d3ba3334dc4d48c}{%
+           family={Godard},
+           familyi={G\bibinitperiod},
+           given={D.},
+           giveni={D\bibinitperiod}}}%
+      }
+      \strng{namehash}{78c0e006e43abe733d3ba3334dc4d48c}
+      \strng{fullhash}{78c0e006e43abe733d3ba3334dc4d48c}
+      \strng{fullhashraw}{78c0e006e43abe733d3ba3334dc4d48c}
+      \strng{bibnamehash}{78c0e006e43abe733d3ba3334dc4d48c}
+      \strng{authorbibnamehash}{78c0e006e43abe733d3ba3334dc4d48c}
+      \strng{authornamehash}{78c0e006e43abe733d3ba3334dc4d48c}
+      \strng{authorfullhash}{78c0e006e43abe733d3ba3334dc4d48c}
+      \strng{authorfullhashraw}{78c0e006e43abe733d3ba3334dc4d48c}
+      \field{sortinit}{G}
+      \field{sortinithash}{32d67eca0634bf53703493fb1090a2e8}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{IEEE Transactions on Communications}
+      \field{number}{5}
+      \field{title}{Passband Timing Recovery in an All-Digital Modem Receiver}
+      \field{volume}{26}
+      \field{year}{1978}
+      \field{pages}{517\bibrangedash 523}
+      \range{pages}{7}
+      \verb{doi}
+      \verb 10.1109/TCOM.1978.1094107
+      \endverb
+      \keyw{Passband;Timing;Modems;Adaptive equalizers;Transversal filters;Performance gain;Sampling methods;Signal analysis;Amplitude modulation;Digital modulation}
+    \endentry
     \entry{horowitz2014computing}{inproceedings}{}{}
       \name{author}{1}{}{%
         {{hash=2c9d1aa766759ce8abffd16d2a35689e}{%
@@ -437,6 +469,67 @@
       \range{pages}{3}
       \verb{doi}
       \verb 10.1109/MSP.2007.361611
+      \endverb
+    \endentry
+    \entry{Josten;17}{article}{}{}
+      \name{author}{6}{}{%
+        {{hash=ec1e099d62b01ca9253da1aa1a1e64c0}{%
+           family={Josten},
+           familyi={J\bibinitperiod},
+           given={Arne},
+           giveni={A\bibinitperiod}}}%
+        {{hash=d294c020da441e430089a6e0903d1342}{%
+           family={Baeuerle},
+           familyi={B\bibinitperiod},
+           given={Benedikt},
+           giveni={B\bibinitperiod}}}%
+        {{hash=4d9e746a0d4ac97195b43aab765a1c32}{%
+           family={Dornbierer},
+           familyi={D\bibinitperiod},
+           given={Edwin},
+           giveni={E\bibinitperiod}}}%
+        {{hash=1c19a4c915293d7c24ceee4a5321b922}{%
+           family={Boesser},
+           familyi={B\bibinitperiod},
+           given={Jonathan},
+           giveni={J\bibinitperiod}}}%
+        {{hash=e6b0fc7e7ddc96f025113db6f07e82ba}{%
+           family={Hillerkuss},
+           familyi={H\bibinitperiod},
+           given={David},
+           giveni={D\bibinitperiod}}}%
+        {{hash=48ab19cd55b6c58b20daec11f32ae9db}{%
+           family={Leuthold},
+           familyi={L\bibinitperiod},
+           given={Juerg},
+           giveni={J\bibinitperiod}}}%
+      }
+      \strng{namehash}{a90391ff5622ba3696dbc40203b4e65b}
+      \strng{fullhash}{284912821d0e4e4796136ceded13de3d}
+      \strng{fullhashraw}{284912821d0e4e4796136ceded13de3d}
+      \strng{bibnamehash}{a90391ff5622ba3696dbc40203b4e65b}
+      \strng{authorbibnamehash}{a90391ff5622ba3696dbc40203b4e65b}
+      \strng{authornamehash}{a90391ff5622ba3696dbc40203b4e65b}
+      \strng{authorfullhash}{284912821d0e4e4796136ceded13de3d}
+      \strng{authorfullhashraw}{284912821d0e4e4796136ceded13de3d}
+      \field{sortinit}{J}
+      \field{sortinithash}{b2f54a9081ace9966a7cb9413811edb4}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{issn}{2076-3417}
+      \field{journaltitle}{Applied Sciences}
+      \field{number}{7}
+      \field{title}{Modified Godard Timing Recovery for Non Integer Oversampling Receivers}
+      \field{volume}{7}
+      \field{year}{2017}
+      \verb{doi}
+      \verb 10.3390/app7070655
+      \endverb
+      \verb{urlraw}
+      \verb https://www.mdpi.com/2076-3417/7/7/655
+      \endverb
+      \verb{url}
+      \verb https://www.mdpi.com/2076-3417/7/7/655
       \endverb
     \endentry
     \entry{Liu;09}{inproceedings}{}{}
@@ -730,6 +823,95 @@
       \verb 10.1109/ACCESS.2018.2885895
       \endverb
       \keyw{Bridge circuits;Frequency measurement;CMOS technology;Microprocessors;Benchmark testing;Capacitance;High frequency;Computer performance;CMOS scaling;FinFET;Moore’s law;MOSFET;power dissipation;scaling;technology node}
+    \endentry
+    \entry{Han;11}{inproceedings}{}{}
+      \name{author}{2}{}{%
+        {{hash=6eb242d795bf30c2fa2f55b1c9d339e2}{%
+           family={Sun},
+           familyi={S\bibinitperiod},
+           given={Han},
+           giveni={H\bibinitperiod}}}%
+        {{hash=cf5e580c6f41ec4271f6ba81e4f6a273}{%
+           family={Wu},
+           familyi={W\bibinitperiod},
+           given={Kuang-Tsan},
+           giveni={K\bibinithyphendelim T\bibinitperiod}}}%
+      }
+      \strng{namehash}{72b14d43168836beb98c33dd0cae8e17}
+      \strng{fullhash}{72b14d43168836beb98c33dd0cae8e17}
+      \strng{fullhashraw}{72b14d43168836beb98c33dd0cae8e17}
+      \strng{bibnamehash}{72b14d43168836beb98c33dd0cae8e17}
+      \strng{authorbibnamehash}{72b14d43168836beb98c33dd0cae8e17}
+      \strng{authornamehash}{72b14d43168836beb98c33dd0cae8e17}
+      \strng{authorfullhash}{72b14d43168836beb98c33dd0cae8e17}
+      \strng{authorfullhashraw}{72b14d43168836beb98c33dd0cae8e17}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{2011 Optical Fiber Communication Conference and Exposition and the National Fiber Optic Engineers Conference}
+      \field{title}{A novel dispersion and PMD tolerant clock phase detector for coherent transmission systems}
+      \field{year}{2011}
+      \field{pages}{1\bibrangedash 3}
+      \range{pages}{3}
+      \keyw{Detectors;Sensitivity;Clocks;Optical fibers;Dispersion;Optical distortion;Optical sensors}
+    \endentry
+    \entry{Zhou;10}{article}{}{}
+      \name{author}{6}{}{%
+        {{hash=a5f8e1b0d717fc18be0700fc36a18da3}{%
+           family={Zhou},
+           familyi={Z\bibinitperiod},
+           given={Xian},
+           giveni={X\bibinitperiod}}}%
+        {{hash=3ce6a3f9286ea3b0873b6583cf3b8faf}{%
+           family={Chen},
+           familyi={C\bibinitperiod},
+           given={Xue},
+           giveni={X\bibinitperiod}}}%
+        {{hash=00cd857b6558a9af3f6a92fcc7b9419a}{%
+           family={Zhou},
+           familyi={Z\bibinitperiod},
+           given={Weiqing},
+           giveni={W\bibinitperiod}}}%
+        {{hash=fbb6eedcbfcee0cecd84932778de87f4}{%
+           family={Fan},
+           familyi={F\bibinitperiod},
+           given={Yangyang},
+           giveni={Y\bibinitperiod}}}%
+        {{hash=68612ec39f81e0e4757f6e5654a2b2ab}{%
+           family={Zhu},
+           familyi={Z\bibinitperiod},
+           given={Hai},
+           giveni={H\bibinitperiod}}}%
+        {{hash=76d91ddea92f0e40b009e79e10ea64a6}{%
+           family={Li},
+           familyi={L\bibinitperiod},
+           given={Zhiyu},
+           giveni={Z\bibinitperiod}}}%
+      }
+      \strng{namehash}{01ff5fe7e0789ef9e1ad814951e6bd51}
+      \strng{fullhash}{153a5d5e014b13c1fddaf99236098273}
+      \strng{fullhashraw}{153a5d5e014b13c1fddaf99236098273}
+      \strng{bibnamehash}{01ff5fe7e0789ef9e1ad814951e6bd51}
+      \strng{authorbibnamehash}{01ff5fe7e0789ef9e1ad814951e6bd51}
+      \strng{authornamehash}{01ff5fe7e0789ef9e1ad814951e6bd51}
+      \strng{authorfullhash}{153a5d5e014b13c1fddaf99236098273}
+      \strng{authorfullhashraw}{153a5d5e014b13c1fddaf99236098273}
+      \field{sortinit}{Z}
+      \field{sortinithash}{96892c0b0a36bb8557c40c49813d48b3}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Journal of Optical Communications and Networking}
+      \field{number}{11}
+      \field{title}{All-Digital Timing Recovery and Adaptive Equalization for 112 Gbit/s POLMUX-NRZ-DQPSK Optical Coherent Receivers}
+      \field{volume}{2}
+      \field{year}{2010}
+      \field{pages}{984\bibrangedash 990}
+      \range{pages}{7}
+      \verb{doi}
+      \verb 10.1364/JOCN.2.000984
+      \endverb
+      \keyw{Synchronization;Equalizers;Optical receivers;Dispersion;Joints;All-digital timing recovery;Adaptive digital equalization;Polarization multiplexing (POLMUX);Coherent receiver}
     \endentry
   \enddatalist
 \endrefsection

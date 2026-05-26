@@ -20,98 +20,34 @@
 
 \maketitle
 
-\section{Modified Godard Timing Recovery}
-
-The transmitter and receiver clocks are not aligned: the ADC samples at times \(t_n = n T_s + \tau\), but the symbols sit at \(n T_s\) (where \(T_s = T/\eta\) is the input sample period and \(\eta\) is the input oversampling, \(\eta = 2\) here). The timing offset \(\tau\) drifts slowly with the sampling-frequency offset (SFO) and must be removed before symbol decisions can be made. The Modified Godard algorithm of Josten et al.\ both estimates and corrects \(\tau\) entirely in the frequency domain, so it sits naturally next to the CD equalizer where the signal is already in FFT bins.
-
-\subsection{Why the Estimator Works: the Clock Tone}
-
-A pulse-shaped signal with root-raised-cosine spectrum and roll-off \(\beta\) extends from \(-\frac{1+\beta}{2T}\) to \(+\frac{1+\beta}{2T}\). Its spectrum has support over a band of width \(\frac{1+\beta}{T}\), which is wider than \(\frac{1}{T}\) by exactly \(\frac{\beta}{T}\) --- the \emph{excess bandwidth}. This means that if you take the spectrum \(Y(f)\) and overlay the shifted copy \(Y(f - \frac{1}{T})\), the two pieces overlap in two narrow bands of width \(\frac{\beta}{T}\) sitting on the upper and lower spectral shoulders. Inside these overlap bands, both factors are non-zero; outside, at least one is zero.
-
-Now introduce a timing offset \(\tau\). A delay in time multiplies the spectrum by a linear phase,
+\chapter{Clock Recovery}
+\section{Introduction}
+\section{Godard Timing Recovery}
+\paragraph{Timing error estimate}
+A common timing error detector (TED) is the Gardner algorithm which computes an error term from samples $x[n]$ as \cite{Zhou;10}
 \begin{equation}
-    Y_\tau(f) \;=\; Y(f)\,e^{-j 2\pi f \tau}.
+    e[k] = \Re\left\{x^*[2k-1](x[2k]-x[2k-2])\right\}
 \end{equation}
-Form the product of the upper-shoulder bin with the conjugate of the lower-shoulder bin --- equivalently, multiply \(R(k)\) (the FFT bin at frequency \(f_k\)) by \(R^*(k + N/2)\) (the bin shifted by \(1/T\), which is \(N/2\) bins for \(\eta=2\)):
+which is then fed through a digital phase-locked loop (DPLL) and interpolator to correct timing errors. However, this requites 2 samples per symbol which is prohibitive for modern coherent receivers which operate at low oversampling rates to reduce complexity. The signal can be upsampled inside the clock recovery block to apply Gardner but a more energy-efficient approach is to use the Godard TED \cite{Godard;78}. An RRC pulse has a bandwidth of $\frac{1+\beta}{T}$ where $\beta$ is the rolloff factor and $T$ is the symbol period, so for the Fourier transform of the input signal $X(f)$, $C(f) = X(f)X^*(f-\frac{1}{T})$ is non-zero where the spectra overlap. It is also real-valued in this region due to the symmetry of the RRC spectrum. A timing offset $\tau$ introduces a phase ramp in  the frequency domain so the overlap becomes
 \begin{equation}
-    R(k)\,R^*\!\left(k + \tfrac{N}{2}\right)
-    \;=\; Y(f_k)\,Y^{*}\!\left(f_k - \tfrac{1}{T}\right) \cdot
-    e^{-j 2\pi f_k \tau} \cdot e^{+j 2\pi (f_k - 1/T) \tau}.
+    C(f) = X(f)X^*(f-\frac{1}{T})e^{-j2\pi f\tau}e^{j2\pi (f-1/T)\tau} = X(f)X^*(f-\frac{1}{T})e^{-2\pi\tau / T}.
 \end{equation}
-The two timing-offset phases combine to leave a single factor that depends only on \(\tau\):
+Thus the timing offset $\tau$ can be recovered from the phase of $C(f)$, which is independent of $f$. A discrete equivalent is given by \cite{Han;11}
 \begin{equation}
-    R(k)\,R^*\!\left(k + \tfrac{N}{2}\right)
-    \;=\; \underbrace{Y(f_k)\,Y^{*}\!\left(f_k - \tfrac{1}{T}\right)}_{\text{real}\,\ge 0 \text{ in the overlap}}
-    \;\cdot\; e^{-j 2\pi \tau / T}.
-    \label{eq:term}
+    C[k] = X[k]X^*[k+N/2].
 \end{equation}
-This is the key fact. The pulse-shape factor is real and positive on the spectral shoulders (because \(Y\) and the shifted \(Y^*\) are matched RRC skirts that combine to a non-negative real number), so it just acts as a positive weight. Every term in the overlap band has the same complex phase \(-2\pi\tau/T\) --- the so-called \emph{clock tone}. Summing across the overlap band coherently combines the signal energy without altering this phase:
+The independence of the phase of $C[k]$ on $k$ allows a more robust estimate of $\tau$ to be calculated from
 \begin{equation}
-    S \;=\; \sum_{k \in \mathcal{B}} R(k)\, R^{*}\!\left(k + \tfrac{N}{2}\right)
-    \;\approx\; A\,e^{-j 2\pi \tau / T},
-    \qquad
-    \mathcal{B} = \left\{ k : \tfrac{(1-\beta)N}{2\eta} \le k < \tfrac{(1+\beta)N}{2\eta} \right\},
-    \label{eq:mg-sum}
+    S = \sum_{k=0}^{N/2-1}C[k].
 \end{equation}
-where \(A > 0\) is the in-band signal energy. Bins outside \(\mathcal{B}\) are excluded because one factor is essentially zero there, so they would add only noise without contributing signal phase. The timing offset falls straight out of the argument:
+The standard Godard TED also appears to require 2 samples per symbol, but a modified version for arbitrary oversampling rates $\eta$ is given by \cite{Josten;17}
 \begin{equation}
-    \boxed{\;\hat{\tau}/T \;=\; -\frac{1}{2\pi}\arg(S)\;}
-    \label{eq:tau-est}
+    S = \sum_{k=\frac{1-\beta}{2\eta}N}^{\frac{1+\beta}{2\eta}N} X[k]X^*[k+(1 - 1/\eta)N].
 \end{equation}
-(The sign is convention-dependent --- in the code the sign is absorbed into the phase-ramp formula.) Because \(\arg\) lives on \((-\pi, \pi]\), each per-block estimate is in \((-T/2, T/2]\); a running unwrap across blocks recovers SFO drift larger than \(T/2\) over the record.
-
-\paragraph{Why \(\arg\) rather than \(\operatorname{Im}\).}
-The original Godard derivation uses \(\operatorname{Im}\{S\} = A\sin(2\pi\tau/T)\) as a feedback error signal. That works in a closed loop because the loop drives \(\tau\) toward zero where \(\sin(2\pi\tau/T) \approx 2\pi\tau/T\) and the small-angle approximation holds. In a feedforward architecture there is no loop --- the value you compute is what gets applied directly. \(\operatorname{Im}\{S\}\) is non-linear in \(\tau\) (it folds back past \(\pm T/4\) and saturates), and its magnitude scales with the signal power \(A\). \(\arg(S)/(2\pi)\) is linear in \(\tau\) over the entire \((-T/2, T/2]\) period and discards \(A\), so it can be used directly without a loop filter.
-
-\subsection{Applying the Correction: Frequency-Domain Phase Ramp}
-
-Once \(\hat{\tau}\) is known, the correction reuses the same block FFT. From the Fourier shift theorem,
+The timing error estimate normalised to the sampling period is then
 \begin{equation}
-    \mathcal{F}\!\left\{ x(t - \hat{\tau}) \right\}(f) \;=\; X(f)\,e^{-j 2\pi f \hat{\tau}},
-    \label{eq:shift}
+    \hat{\tau}_s = \frac{\eta\hat{\tau}}{T} = -\frac{\eta}{2\pi}\arg(S).
+    \label{eq:godard_est}
 \end{equation}
-so resampling at \(t = nT_s - \hat{\tau}\) corresponds to multiplying every FFT bin by a linear phase ramp. Discretising for an \(N\)-point DFT with sample period \(T_s\), the frequencies are \(f_k = k/(N T_s)\) and the delay in input samples is \(\hat{\tau}_s = \hat{\tau}/T_s = \eta\,(\hat{\tau}/T)\). The correction is therefore one complex multiply per bin,
-\begin{equation}
-    \boxed{\;R_\text{corr}(k) \;=\; R(k)\,\exp\!\left( -j\,\frac{2\pi\,k_\text{idx}\,\hat{\tau}_s}{N} \right)\;}
-    \label{eq:phase-ramp}
-\end{equation}
-followed by an IFFT to return to the time domain.
-
-\paragraph{Signed bin index.} \(k_\text{idx}\) in \cref{eq:phase-ramp} is the \emph{signed} FFT bin index
-\begin{equation}
-    k_\text{idx} \;=\; \begin{cases} k & 0 \le k < N/2 \\ k - N & N/2 \le k < N \end{cases}
-\end{equation}
-not the raw index \(0, 1, \dots, N-1\). Using the raw index gives a circular shift, which is exact only for integer \(\hat{\tau}_s\); for fractional delays it adds a Hilbert-transform-like artifact to the negative-frequency content. The signed-index ramp is the band-limited (sinc-interpolated) delay, which is what we want.
-
-\paragraph{One FFT, two uses.} The same block FFT \(R(k)\) feeds both the estimator (\cref{eq:mg-sum}) and the corrector (\cref{eq:phase-ramp}). The correction adds only one complex multiply per bin plus an IFFT, so apart from a small per-block sin/cos lookup it is essentially free given the FFT that has already been computed for CD equalisation.
-
-\subsection{Block Boundaries and Overlap-Save}
-
-The phase-ramp correction in \cref{eq:phase-ramp} is a \emph{circular} shift, not a linear one. The DFT treats the block as one period of an infinitely repeating sequence, so shifting by \(\hat{\tau}_s\) samples means the IFFT output is
-\begin{equation}
-    \text{outBlk}[n] \;=\; \text{block}\!\big[(n - \hat{\tau}_s) \bmod N\big].
-\end{equation}
-For a positive integer shift of \(\hat{\tau}_s\) samples, the first \(\hat{\tau}_s\) output samples come from the end of the input block (they wrapped around); for fractional shifts the same thing happens, just smeared across a few samples. These wrap-around samples are not the correctly-delayed signal --- they are garbage stitched in from elsewhere. With consecutive blocks pasted edge-to-edge the result is a band of corrupted samples at every block boundary.
-
-For a static offset, \(\hat{\tau}_s\) is small (\(< 1\) input sample for our test) so the corrupted band is a single sample and barely affects BER. With SFO, the cumulative unwrapped \(\hat{\tau}_s\) grows linearly with the record: for SFO \(\Delta f / f\) over \(L\) input samples,
-\begin{equation}
-    \max|\hat{\tau}_s| \;\approx\; L \cdot \tfrac{\Delta f}{f}
-    \quad\text{input samples},
-\end{equation}
-which can be tens or hundreds of samples for long records. Without protection, every block boundary corrupts \(\sim |\hat{\tau}_s|\) samples and the BER floor is dominated by these wrap artifacts.
-
-\paragraph{Overlap-save.} The fix is to discard the corrupted boundary samples from every block and replace them with the clean middle of an adjacent block. The construction is:
-\begin{enumerate}
-    \item Pad the input with \(G\) zeros at each end so that output sample 1 corresponds to input sample 1 and the final block does not run past the record.
-    \item Read blocks of \(N\) samples, stepping the read pointer by \(M = N - 2G\) samples each block. Adjacent input blocks overlap by \(2G\) samples.
-    \item In every IFFT output of length \(N\), discard the first \(G\) and last \(G\) samples; keep the middle \(M\). Write those \(M\) samples to the output, also stepping by \(M\).
-\end{enumerate}
-Because each IFFT-output discard region is replaced by the middle of the neighbouring block (which is shifted from a different chunk of input where its own discard region sits), the assembled output has no wrap-around contamination anywhere.
-
-\paragraph{Choosing \(G\).} The guard must be larger than the worst-case wrap. After the running unwrap, \(\hat{\tau}_s\) grows monotonically with the SFO drift across the record, so the binding constraint is
-\begin{equation}
-    G \;\ge\; \max_b |\hat{\tau}_s(b)| \;\approx\; L \cdot \tfrac{\Delta f}{f}.
-\end{equation}
-There is a throughput cost: each block of \(N\) samples produces only \(M = N - 2G\) useful outputs, so the FFT work per output sample is inflated by \(N/M = N/(N - 2G)\). Picking \(G = N/4\) (the default) wastes 50\% of the FFT work but tolerates a cumulative drift of up to a quarter of the block size; for 100~ppm SFO over a record of \(2^{18}\) symbols (\(\eta L = 2^{19}\) samples) the maximum drift is \(\approx 52\) samples, comfortably under \(G = 64\) for \(N = 256\). For longer records or larger SFO either grow \(N\) (so \(G = N/4\) is still enough) or pass a larger explicit \(G\); for very large drifts the more efficient option is to split \(\hat{\tau}_s\) into an integer part absorbed into the input read pointer and a fractional part applied via the phase ramp, leaving only a \(G\) of \(\sim 1\) sample.
 
 \end{document}

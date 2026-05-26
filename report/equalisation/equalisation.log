@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.4)  22 MAY 2026 10:20
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.4)  26 MAY 2026 19:13
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -647,7 +647,7 @@ Package: cleveref 2018/03/27 v0.21.4 Intelligent cross-referencing
 ==> First Aid for cleveref.sty applied!
 \@quotelevel=\count457
 \@quotereset=\count458
-(./equalisation.aux)
+No file equalisation.aux.
 \openout1 = `equalisation.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 19.
@@ -664,7 +664,6 @@ LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 19.
 LaTeX Font Info:    ... okay on input line 19.
 LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 19.
 LaTeX Font Info:    ... okay on input line 19.
-
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
 *geometry* verbose mode - [ preamble ] result:
@@ -740,30 +739,333 @@ File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 LaTeX Font Info:    Trying to load font information for U+msb on input line 21.
  (c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
-) [1
+)
+c:/Users/joele/Downloads/iib_project/report/equalisation/equalisation.tex:23: Undefined control sequence.
+l.23 \chapter
+             {Equalisation}\label{chapter:equalisation}
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
 
-{c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map}] [2] [3] (./equalisation.aux)
+
+LaTeX Warning: Reference `chapter:energy' on page 1 undefined on input line 30.
+
+
+LaTeX Warning: Reference `eq:cd_ir' on page 1 undefined on input line 40.
+
+[1
+
+{c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
+
+LaTeX Warning: Reference `eq:cd_len' on page 1 undefined on input line 48.
+
+
+LaTeX Warning: Citation 'Rozental;15' on page 2 undefined on input line 48.
+
+
+LaTeX Warning: Citation 'Ezra;07' on page 2 undefined on input line 48.
+
+
+LaTeX Warning: Reference `tab:cd_cost_eval' on page 1 undefined on input line 71.
+
+[2]
+
+LaTeX Warning: Reference `tab:cd_cost_eval' on page 1 undefined on input line 85.
+
+
+LaTeX Warning: Citation 'Liu;09' on page 3 undefined on input line 122.
+
+[3]
+
+LaTeX Warning: Reference `eq:adaptive_update' on page 1 undefined on input line 128.
+
+
+LaTeX Warning: Reference `tab:network_params' on page 1 undefined on input line 131.
+
+
+LaTeX Warning: Reference `tab:pmd_budget' on page 1 undefined on input line 141.
+
+
+LaTeX Warning: Citation 'Ezra;07' on page 4 undefined on input line 141.
+
+
+LaTeX Warning: Reference `eq:adaptive_output' on page 1 undefined on input line 163.
+
+
+LaTeX Warning: Reference `eq:adaptive_update' on page 1 undefined on input line 163.
+
+[4]
+
+LaTeX Warning: Reference `eq:cma_error' on page 1 undefined on input line 170.
+
+
+LaTeX Warning: Reference `tab:adaptive_cost_cma' on page 1 undefined on input line 174.
+
+
+LaTeX Warning: Citation 'Savory;08' on page 5 undefined on input line 191.
+
+
+LaTeX Warning: Reference `eq:adaptive_output' on page 1 undefined on input line 195.
+
+
+LaTeX Warning: Reference `tab:adaptive_cost_pilot' on page 1 undefined on input line 195.
+
+
+LaTeX Warning: Reference `chapter:full_pipeline' on page 1 undefined on input line 214.
+
+[5]
+
+LaTeX Warning: Reference `eq:adaptive_update' on page 1 undefined on input line 217.
+
+
+LaTeX Warning: Reference `fig:cd_fec_snr_80km' on page 1 undefined on input line 223.
+
+
+LaTeX Warning: Reference `fig:cd_fec_snr_20km' on page 1 undefined on input line 223.
+
+<cd_fec_snr_20km.png, id=32, 457.2282pt x 365.6862pt>
+File: cd_fec_snr_20km.png Graphic file (type png)
+<use cd_fec_snr_20km.png>
+Package pdftex.def Info: cd_fec_snr_20km.png  used on input line 228.
+(pdftex.def)             Requested size: 318.66948pt x 254.86818pt.
+<cd_fec_snr_80km.png, id=33, 457.2282pt x 365.6862pt>
+File: cd_fec_snr_80km.png Graphic file (type png)
+<use cd_fec_snr_80km.png>
+Package pdftex.def Info: cd_fec_snr_80km.png  used on input line 235.
+(pdftex.def)             Requested size: 318.66948pt x 254.86818pt.
+[6]
+
+LaTeX Warning: Reference `tab:cma_fec_snr_fl12' on page 1 undefined on input line 245.
+
+c:/Users/joele/Downloads/iib_project/report/equalisation/equalisation.tex:253: Undefined control sequence.
+<recently read> \multirow 
+                          
+l.253         \multirow
+                       {12}{*}{20\,km} & \multirow{6}{*}{CMA}   & \multirow{...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+c:/Users/joele/Downloads/iib_project/report/equalisation/equalisation.tex:253: Undefined control sequence.
+l.253         \multirow{12}{*}{20\,km} & \multirow
+                                                  {6}{*}{CMA}   & \multirow{...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+c:/Users/joele/Downloads/iib_project/report/equalisation/equalisation.tex:253: Undefined control sequence.
+l.253 ...,km} & \multirow{6}{*}{CMA}   & \multirow
+                                                  {3}{*}{Direct}    & 1 & $6...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+c:/Users/joele/Downloads/iib_project/report/equalisation/equalisation.tex:257: Undefined control sequence.
+l.257 ...     &                        & \multirow
+                                                  {3}{*}{Sign-sign} & 1 & $6...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+c:/Users/joele/Downloads/iib_project/report/equalisation/equalisation.tex:261: Undefined control sequence.
+l.261 ...                              & \multirow
+                                                  {6}{*}{Pilot} & \multirow{...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+c:/Users/joele/Downloads/iib_project/report/equalisation/equalisation.tex:261: Undefined control sequence.
+l.261 ...     & \multirow{6}{*}{Pilot} & \multirow
+                                                  {3}{*}{Direct}    & 1 & $1...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+c:/Users/joele/Downloads/iib_project/report/equalisation/equalisation.tex:265: Undefined control sequence.
+l.265 ...     &                        & \multirow
+                                                  {3}{*}{Sign-sign} & 1 & $1...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+c:/Users/joele/Downloads/iib_project/report/equalisation/equalisation.tex:269: Undefined control sequence.
+<recently read> \multirow 
+                          
+l.269         \multirow
+                       {12}{*}{80\,km} & \multirow{6}{*}{CMA}   & \multirow{...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+c:/Users/joele/Downloads/iib_project/report/equalisation/equalisation.tex:269: Undefined control sequence.
+l.269         \multirow{12}{*}{80\,km} & \multirow
+                                                  {6}{*}{CMA}   & \multirow{...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+c:/Users/joele/Downloads/iib_project/report/equalisation/equalisation.tex:269: Undefined control sequence.
+l.269 ...,km} & \multirow{6}{*}{CMA}   & \multirow
+                                                  {3}{*}{Direct}    & 1 & $6...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+c:/Users/joele/Downloads/iib_project/report/equalisation/equalisation.tex:273: Undefined control sequence.
+l.273 ...     &                        & \multirow
+                                                  {3}{*}{Sign-sign} & 1 & $6...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+c:/Users/joele/Downloads/iib_project/report/equalisation/equalisation.tex:277: Undefined control sequence.
+l.277 ...                              & \multirow
+                                                  {6}{*}{Pilot} & \multirow{...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+c:/Users/joele/Downloads/iib_project/report/equalisation/equalisation.tex:277: Undefined control sequence.
+l.277 ...     & \multirow{6}{*}{Pilot} & \multirow
+                                                  {3}{*}{Direct}    & 1 & $1...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+c:/Users/joele/Downloads/iib_project/report/equalisation/equalisation.tex:281: Undefined control sequence.
+l.281 ...     &                        & \multirow
+                                                  {3}{*}{Sign-sign} & 1 & $1...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+[7 <./cd_fec_snr_20km.png (PNG copy)> <./cd_fec_snr_80km.png (PNG copy)>]
+
+LaTeX Warning: Reference `tab:combined_eq_summary' on page 1 undefined on input line 290.
+
+[8]
+c:/Users/joele/Downloads/iib_project/report/equalisation/equalisation.tex:304: Undefined control sequence.
+<recently read> \multirow 
+                          
+l.304         \multirow
+                       {6}{*}{20\,km} & \multirow{3}{*}{Overlap-save}       ...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+c:/Users/joele/Downloads/iib_project/report/equalisation/equalisation.tex:304: Undefined control sequence.
+l.304         \multirow{6}{*}{20\,km} & \multirow
+                                                 {3}{*}{Overlap-save}       ...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+c:/Users/joele/Downloads/iib_project/report/equalisation/equalisation.tex:308: Undefined control sequence.
+l.308                                  & \multirow
+                                                  {3}{*}{Overlap-save ($2^k$...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+c:/Users/joele/Downloads/iib_project/report/equalisation/equalisation.tex:312: Undefined control sequence.
+<recently read> \multirow 
+                          
+l.312         \multirow
+                       {6}{*}{80\,km} & \multirow{3}{*}{Overlap-save}       ...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+c:/Users/joele/Downloads/iib_project/report/equalisation/equalisation.tex:312: Undefined control sequence.
+l.312         \multirow{6}{*}{80\,km} & \multirow
+                                                 {3}{*}{Overlap-save}       ...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+c:/Users/joele/Downloads/iib_project/report/equalisation/equalisation.tex:316: Undefined control sequence.
+l.316                                  & \multirow
+                                                  {3}{*}{Overlap-save ($2^k$...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+[9] [10] (./equalisation.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
  ***********
+
+
+LaTeX Warning: There were undefined references.
+
+
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
+
+
+Package biblatex Warning: Please (re)run Biber on the file:
+(biblatex)                equalisation
+(biblatex)                and rerun LaTeX afterwards.
+
 Package logreq Info: Writing requests to 'equalisation.run.xml'.
 \openout1 = `equalisation.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 25338 strings out of 469515
- 521813 string characters out of 5467663
- 1302359 words of memory out of 5000000
- 53641 multiletter control sequences out of 15000+600000
- 637922 words of font info for 79 fonts, out of 8000000 for 9000
+ 25408 strings out of 469515
+ 523317 string characters out of 5467663
+ 1309813 words of memory out of 5000000
+ 53712 multiletter control sequences out of 15000+600000
+ 639778 words of font info for 86 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 84i,10n,104p,1315b,1272s stack positions out of 10000i,1000n,20000p,200000b,200000s
-<c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmcsc10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb>
-Output written on equalisation.pdf (3 pages, 159255 bytes).
+ 84i,13n,104p,981b,1274s stack positions out of 10000i,1000n,20000p,200000b,200000s
+<c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmcsc10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb><c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb>
+Output written on equalisation.pdf (10 pages, 288433 bytes).
 PDF statistics:
- 87 PDF objects out of 1000 (max. 8388607)
- 53 compressed objects within 1 object stream
+ 117 PDF objects out of 1000 (max. 8388607)
+ 72 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
- 13 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 23 words of extra memory for PDF output out of 10000 (max. 10000000)
 

@@ -20,74 +20,308 @@
 
 \maketitle
 
+\chapter{Equalisation}\label{chapter:equalisation}
+
 \section{Introduction}
+The receiver compensates two distinct channel impairments with two distinct equalisers. Chromatic dispersion is static and accurately characterised by the fibre parameters, so it is removed by a fixed filter derived analytically from the channel model. Polarisation-mode dispersion varies on millisecond timescales and is unknown a priori, so it is tracked by an adaptive equaliser that also absorbs residual ISI from pulse shaping. This chapter derives both stages and quantifies their per-symbol computational cost, then evaluates their fixed-point implementations in isolation and in cascade to compare the energy consumption and FEC SNR across combinations of algorithm, tap count, and precision.
+
 \section{Static Equalisation}
-Chromatic dispersion can be corrected with a static equaliser either in the time domain or in the frequency domain using e.g. overlap-save. 
+\subsection{Equalisation Procedure}
+Chromatic dispersion is a static, all-pass impairment; the receiver compensates it by applying the inverse of the channel transfer function. From the channel model of \cref{chapter:energy}, this is
+\begin{equation}
+    H_\mathrm{eq}(\omega) = \exp\!\left(-j\,\frac{D\lambda^2}{4\pi c}\,L\,\omega^2\right),
+    \label{eq:cd_tf}
+\end{equation}
+whose inverse Fourier transform is a finite-energy chirp
+\begin{equation}
+    h(t) = \sqrt{\frac{c}{j D \lambda^2 L}}\;\exp\!\left(j\,\frac{\pi c\,t^2}{D\lambda^2 L}\right).
+    \label{eq:cd_ir}
+\end{equation}
+The equaliser may be realised either as a time-domain FIR per polarisation, with taps obtained by sampling \cref{eq:cd_ir} at the receiver period \(T\) and truncating to \(N_\mathrm{CD}\) coefficients, or in the frequency domain. As the data stream is continuous, the frequency-domain filter is applied block-by-block by overlap-save: each block of \(N\) samples is transformed with an FFT, multiplied by the precomputed samples of \(H_\mathrm{eq}\), and inverse transformed. Discarding the first \(N_\mathrm{CD}-1\) samples of every block removes the circular-convolution wrap-around, leaving \(N - N_\mathrm{CD} + 1\) valid output samples per block.
+
+\subsection{Filter Length}
+The equaliser must span the channel memory introduced by dispersion. With RRC pulse shaping the signal bandwidth is $\Delta f \approx R_s$, and the minimum length needed to capture the dispersive impulse response is
+\begin{equation}
+    N_\mathrm{DS} = \left\lceil\frac{DL\Delta\lambda}{T}\right\rceil = \left\lceil\frac{2\pi|\beta_2|L\Delta f}{T}\right\rceil,
+    \label{eq:cd_len}
+\end{equation}
+where \(T\) is the receiver sampling period. The length required to also remove inter-symbol interference (ISI) from the pulse shape is longer than \cref{eq:cd_len} \cite{Rozental;15}; an experimentally verified value for several pulse shapes is given by \cite{Ezra;07}
+\begin{equation}
+    N_\mathrm{CD} = \left\lceil\frac{6.67|\beta_2|LR_s}{T}\right\rceil.
+\end{equation}
+With an oversampling rate of 2, this gives filter lengths of 6 and 22 taps for the 20\,km and 80\,km networks, respectively.
+
+
+\subsection{Computational Complexity}
+A radix-2 FFT of size \(N\) decomposes into \(\log_2 N\) stages of \(N/2\) butterflies. Each butterfly costs 4 real multiplications and 6 real additions, giving
+\begin{equation}
+    N_M^\mathrm{FFT} = 2N\log_2 N, \qquad N_A^\mathrm{FFT} = 3N\log_2 N.
+\end{equation}
+Each overlap-save block needs a forward FFT, an inverse FFT of equal cost, and \(N\) complex multiplications by the precomputed filter spectrum (the filter FFT is computed once offline because the channel is static). This is \(2N_M^\mathrm{FFT} + 4N\) real multiplications and \(2N_A^\mathrm{FFT} + 2N\) real additions per block, shared over the \(N - N_\mathrm{CD} + 1\) valid outputs. Scaling by the oversampling ratio \(S = f/R_s\) to express the cost per symbol gives
+\begin{equation}
+\begin{aligned}
+    N_{M,\mathrm{OS}} &= S\,\frac{4N\log_2 N + 4N}{N - N_\mathrm{CD} + 1}, \\[2pt]
+    N_{A,\mathrm{OS}} &= S\,\frac{6N\log_2 N + 2N}{N - N_\mathrm{CD} + 1}.
+\end{aligned}
+\end{equation}
+In the time domain, direct convolution with the \(N_\mathrm{CD}\)-tap complex filter costs \(N_\mathrm{CD}\) complex multiplications and \(N_\mathrm{CD}-1\) complex additions per output sample. Converting to real operations and scaling by \(S\), the per-symbol cost is
+\begin{equation}
+    N_{M,\mathrm{TD}} = 4 S N_\mathrm{CD}, \qquad N_{A,\mathrm{TD}} = S\left(4N_\mathrm{CD} - 2\right).
+\end{equation}
+The FFT can be simplified further by rounding each twiddle factor to the nearest signed power of two in its real and imaginary parts, replacing every twiddle multiplication with a pair of bit-shifts and eliminating the real multiplications inside the FFT and IFFT entirely. As shown by the rightmost column of \cref{tab:cd_cost_eval}, this reduces the multiplication count by roughly an order of magnitude at no additional cost in additions.
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lccc}
+        \toprule
+        Operation & Time-domain & Overlap-save & Overlap-save (\(2^k\) twiddle) \\
+        \midrule
+        Real multiplications & \(4 S N_\mathrm{CD}\)        & \(S\dfrac{4N\log_2 N + 4N}{N - N_\mathrm{CD} + 1}\) & \(S\dfrac{4N}{N - N_\mathrm{CD} + 1}\) \\[8pt]
+        Real additions       & \(S\left(4N_\mathrm{CD}-2\right)\) & \(S\dfrac{6N\log_2 N + 2N}{N - N_\mathrm{CD} + 1}\) & \(S\dfrac{6N\log_2 N + 2N}{N - N_\mathrm{CD} + 1}\) \\
+        \bottomrule
+    \end{tabular}
+    \caption{Per-symbol computational cost of the time-domain and overlap-save chromatic dispersion equalisers, including overlap-save with twiddle factors rounded to a power of 2.}
+    \label{tab:cd_cost}
+\end{table}
+Evaluating these expressions for the two networks with 2 samples per symbol gives the per-symbol operation counts in \cref{tab:cd_cost_eval}, where the FFT size \(N\) is chosen as the power of 2 that minimises the overlap-save multiplication count.
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lcccccccc}
+        \toprule
+        & & & \multicolumn{2}{c}{Time-domain} & \multicolumn{2}{c}{Overlap-save} & \multicolumn{2}{c}{Overlap-save (\(2^k\) twiddle)} \\
+        \cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}
+        \(L\) (km) & \(N_\mathrm{CD}\) & \(N\) & RM & RA & RM & RA & RM & RA \\
+        \midrule
+        20 & 6  & 32  & 48  & 44  & 56.9 & 75.9  & 9.48 & 75.9  \\
+        80 & 22 & 128 & 176 & 172 & 76.6 & 105.3 & 9.57 & 105.3 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Filter length \(N_\mathrm{CD}\), optimum FFT size \(N\), and real multiplications (RM) and real additions (RA) per symbol for each chromatic dispersion equaliser implementation on the 20\,km and 80\,km networks.}
+    \label{tab:cd_cost_eval}
+\end{table}
+
 \section{Adaptive Equalisation}
 \subsection{Equalisation Procedure}
-Tracking PMD is done with a 2x2 MIMO equaliser that employs 4 finite impulse response (FIR) filters to give outputs
+PMD is tracked with a $2\times 2$ MIMO equaliser comprising four finite impulse response (FIR) filters whose outputs are
 \begin{equation}
     x_\mathrm{out} = \mathbf{h}_{xx}^H \mathbf{x}_\mathrm{in} + \mathbf{h}_{xy}^H \mathbf{y}_\mathrm{in}, \quad y_\mathrm{out} = \mathbf{h}_{yx}^H \mathbf{x}_\mathrm{in} + \mathbf{h}_{yy}^H \mathbf{y}_\mathrm{in}.
     \label{eq:adaptive_output}
 \end{equation}
-The filter weights are updated using an error estimate as
+The error terms are produced blindly using the constant modulus algorithm (CMA) \cite{coherent_receivers}, which exploits the fact that an ideal QPSK constellation lies on a circle of fixed radius. CMA minimises the cost function $J = \mathbb{E}\!\left[\left(|x_\mathrm{out}|^2 - R\right)^2\right]$, where the dispersion constant $R = \mathbb{E}[|s|^4]/\mathbb{E}[|s|^2]$ is set by the transmitted symbols $s$ and reduces to a constant for QPSK. Taking the stochastic gradient of $J$ and absorbing the factor of $-2$ into the step size yields the error estimates
+\begin{equation}
+    e_x = \left(R - |x_\mathrm{out}|^2\right), \quad e_y = \left(R - |y_\mathrm{out}|^2\right).
+    \label{eq:cma_error}
+\end{equation}
+The filter weights are then updated as
 \begin{equation}
     \begin{aligned}
-    \mathbf{h_{xx}}\leftarrow \mathbf{h_{xx}} + \mu e_x \mathbf{x}_\mathrm{in}x_\mathrm{out}^*, \quad \mathbf{h_{xy}}\leftarrow \mathbf{h_{xy}} + \mu e_x \mathbf{y}_\mathrm{in}x_\mathrm{out}^*, \\
-    \mathbf{h_{yx}}\leftarrow \mathbf{h_{yx}} + \mu e_y \mathbf{x}_\mathrm{in}y_\mathrm{out}^*, \quad \mathbf{h_{yy}}\leftarrow \mathbf{h_{yy}} + \mu e_y \mathbf{y}_\mathrm{in}y_\mathrm{out}^*.
+    \mathbf{h}_{xx}\leftarrow \mathbf{h}_{xx} + \mu e_x \mathbf{x}_\mathrm{in}x_\mathrm{out}^*, \quad \mathbf{h}_{xy}\leftarrow \mathbf{h}_{xy} + \mu e_x \mathbf{y}_\mathrm{in}x_\mathrm{out}^*, \\
+    \mathbf{h}_{yx}\leftarrow \mathbf{h}_{yx} + \mu e_y \mathbf{x}_\mathrm{in}y_\mathrm{out}^*, \quad \mathbf{h}_{yy}\leftarrow \mathbf{h}_{yy} + \mu e_y \mathbf{y}_\mathrm{in}y_\mathrm{out}^*,
     \end{aligned}
     \label{eq:adaptive_update}
 \end{equation}
-where the convergence parameter $\mu$ is chosen to be a power of 2 for hardware simplicity.The error terms are produced blindly using the constant modulus algorithm (CMA) \cite{coherent_receivers}, which exploits the fact that an ideal QPSK constellation lies on a circle of fixed radius. CMA minimises the cost function $J = \mathbb{E}\!\left[\left(|x_\mathrm{out}|^2 - R\right)^2\right]$, where the dispersion constant $R = \mathbb{E}[|s|^4]/\mathbb{E}[|s|^2]$ is set by the transmitted symbols $s$ and reduces to a constant for QPSK. Taking the stochastic gradient of $J$ yields the error estimates
+where the step size $\mu$ is chosen to be a power of 2 for hardware simplicity. CMA suffers from the well-known singularity problem, in which both outputs converge to the same input signal. To avoid this, $\mathbf{h}_{xx}$ and $\mathbf{h}_{xy}$ are initialised with a single one at the centre tap; then, once $x_\mathrm{out}$ has converged, the weights producing $y_\mathrm{out}$ are initialised as $\mathbf{h}_{yx}[n] = \mathbf{h}_{xx}^*[-n]$ and $\mathbf{h}_{yy}[n] = -\mathbf{h}_{xy}^*[-n]$ \cite{Liu;09}.
+
+Because the output terms are complex, the standard sign function generalises to a complex signum
 \begin{equation}
-    e_x = \left(R - |x_\mathrm{out}|^2\right), \quad e_y = \left(R - |y_\mathrm{out}|^2\right).
+    \operatorname{csgn}(z) = \operatorname{sgn}(\operatorname{Re} z) + j\operatorname{sgn}(\operatorname{Im} z).
 \end{equation}
-The update step from \cref{eq:adaptive_update} can be simplified by only considering the signs of the error and output terms with no performance penalty \cite{Cardenas:14}. The output is a complex number so a complex signum function is defined as
-\begin{equation}
-    csgn(z) = sgn(Re(z)) + jsgn(Im(z)).
-\end{equation}
+Retaining only $\operatorname{sgn}(e)$ and $\operatorname{csgn}(x_\mathrm{out})$ in \cref{eq:adaptive_update} eliminates every multiplication from the weight update at no performance penalty \cite{Cardenas:14}.
 
 \subsection{Filter Length}
-There must be sufficient taps in the filter to cover the channel memory introduced by PMD. The mean differential group delay (DGD) \(\langle\Delta \tau\rangle = D\sqrt{L}\) where \(D\) is the DGD parameter and \(L\) is the link length. The instantaneous DGD is modelled by a Maxwellian distribution \cite{Mantzoukis:11}
+The filter must span the channel memory introduced by PMD. The mean differential group delay (DGD) is \(\langle\Delta \tau\rangle = D_\mathrm{DGD}\sqrt{L}\), where \(D_\mathrm{DGD}\) is the DGD parameter of \cref{tab:network_params} and \(L\) is the link length. The instantaneous DGD is modelled by a Maxwellian distribution \cite{Mantzoukis:11}
 \begin{equation}
     \mathbb{P}[\Delta \tau > x] \approx \frac{4}{\pi}\frac{x}{\langle\Delta \tau \rangle}\exp\left(-\frac{4x^2}{\pi {\langle\Delta\tau\rangle}^2}\right).
     \label{eq:maxwellian}
 \end{equation}
-The number of taps can be found for a given outage probability from \cref{eq:maxwellian} as
+For a given outage probability, the corresponding tap count is
 \begin{equation}
-    N = \lceil\frac{x}{T} + 1\rceil
+    N = \left\lceil\frac{x}{T}\right\rceil,
+    \label{eq:aeq_taps}
 \end{equation}
-where $T$ is the sampling period of the receiver. For an access network where $L \leq 80$ km, and a typical DGD parameter $D = 0.1$ ps/$\sqrt{\mathrm{km}}$ then $\langle\Delta\tau\rangle \leq 0.9$ ps. With an oversampling rate of 2, the sampling period $T = 16.4$ ps. Given that an outage probability of $10^{-12}$ only requires $x = 4.81\langle\Delta\tau\rangle = 4.3$ ps, few taps will be needed for reliable performance.
+where $T$ is the receiver sampling period. The relevant values for the access network are summarised in \cref{tab:pmd_budget}: the resulting DGD budget is covered by a single tap. However, with only one tap, the adaptive equaliser cannot also function as a matched filter \cite{Ezra;07}, leaving residual ISI from pulse shaping.
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lc}
+        \toprule
+        Quantity & Value \\
+        \midrule
+        Link length $L$                            & $\leq 80$\,km \\
+        DGD parameter $D_\mathrm{DGD}$             & $0.1$\,ps$/\sqrt{\mathrm{km}}$ \\
+        Mean DGD $\langle\Delta\tau\rangle$        & $\leq 0.9$\,ps \\
+        Outage target                              & $10^{-12}$ \\
+        Required span $x = 4.81\langle\Delta\tau\rangle$ & $4.3$\,ps \\
+        Sampling period $T$ ($S=2$)                & $16.4$\,ps \\
+        Required taps $N$                          & $1$ \\
+        \bottomrule
+    \end{tabular}
+    \caption{PMD budget for the 80\,km access network.}
+    \label{tab:pmd_budget}
+\end{table}
 
 
 \subsection{Computational Complexity}
-The per-sample cost of the weight updates is compared below for the direct and sign-sign implementations with $N$ taps.
+The per-symbol cost splits into three stages: forming the filter outputs via the four $N$-tap FIR filters of \cref{eq:adaptive_output}, forming the error terms, and updating the weights via \cref{eq:adaptive_update}. The sign-sign variant retains only the sign of the error and the complex signum of $x_\mathrm{out}$ in the update \cite{Cardenas:14}, eliminating every multiplication at no performance penalty. To support the 30.5\,GBd symbol rate, the equaliser is parallelised across $P$ lanes, the input vector of lane $p$ being
+\begin{equation}
+    \mathbf{x}_p = \left[\mathbf{x}[mP + p], \mathbf{x}[mP + p - 1], \dots, \mathbf{x}[mP + p - (N - 1)]\right].
+\end{equation}
+The outputs are formed independently on every lane, costing $16NP$ real multiplications and $(8N+4)P$ real additions per block of $P$ symbols regardless of how the weights are updated. The two strategies for forming the errors and updating the weights differ in how they scale with $P$; in each case the per-symbol cost is obtained by dividing the block cost by $2P$.
+
+\paragraph{CMA}
+The CMA error terms of \cref{eq:cma_error} take the squared modulus of each output and subtract it from the dispersion constant $R$, formed on every lane. A single set of weights is shared across the lanes and updated from their summed contributions,
+\begin{equation}
+    \Delta \mathbf{h} = \mu \sum_{p=0}^{P-1}e[p]\mathbf{x}_p x_\mathrm{out}^*[p],
+\end{equation}
+so both the error terms and the update scale with $P$, as summarised in \cref{tab:adaptive_cost_cma}.
 \begin{table}[H]
     \centering
     \begin{tabular}{lcc}
         \toprule
-        Operation & Direct & Sign-Sign \\
+        Stage & Real mult. & Real add. \\
         \midrule
-        Real multiplications & $16N + 4$ & 0\\
-        Real additions & $16N$ & $16N$ \\
+        Error terms               & $4P$      & $2P$ \\
+        Weight update (direct)    & $16NP+4P$ & $16NP$ \\
+        Weight update (sign-sign) & $0$       & $16NP$ \\
         \bottomrule
     \end{tabular}
-    \caption{Per-update computational cost of the direct and sign-sign weight updates.}
-    \label{tab:update_cost}
+    \caption{Cost of the CMA error terms and weight update per block, parallelised across $P$ lanes.}
+    \label{tab:adaptive_cost_cma}
 \end{table}
-The adaptive equaliser must be parallelised to support a 30.5 GBd symbol rate. The input samples are split into $P$ lanes, with the input vector of lane $p$
-\begin{equation}
-    \mathbf{x}_p = \left[\mathbf{x}[mP + p], \mathbf{x}[mP + p - 1], \dots, \mathbf{x}[mP + p - (N - 1)]\right].
-\end{equation}
-The update step for the shared weights is given by
-\begin{equation}
-    \Delta \mathbf{h} = \mu \sum_{p=0}^{P-1}e[p]\mathbf{x}_p x_\mathrm{out}[p].
-\end{equation}
-A natural choice for blocks of 32 symbols is $P=32$, allowing the pilot symbols with a larger modulus to be processed separately. With an oversampling rate of 2, each lane would need to operate with a sampling frequency of $ 2 \cdot 30.5 / 32 = 1.9$ GHz which is reasonable for modern CMOS. This scales the number of operations in \cref{tab:update_cost} by $P$.
-\subsection{Fixed Point Precision}
-The convergence parameter $\mu$ in \cref{eq:adaptive_update} is typically $\approx 10^{-3}$ which would require at least 10 bits of precision to represent. Computing the update term to this precison adds unnecessary computational cost, so it should instead be computed at lower precision and bit-shifted (equivalent to setting $\mu$ to a power of 2) to the least significant bits of the weights before updating. This can lead to the most significant bits being redundant. These bits waste energy when the weights change sign and when forming the outputs in \cref{eq:adaptive_output} if the weights are negative. Jiang et al. \cite{Jiang;26} propose removing these redundant bits with an optimisation over the precision of each weight and demonstrate a decrease in energy consumption with a slight performance loss. The decrease in energy consumption can be estimated directly from the frequency of sign changes in the weights and the proportion of multiplications in \cref{eq:adaptive_output} that use negative weights. For $d$ redundant bits, a sign change is equivalent to the cost of a $d$-bit addition and the additional cost in forming the outputs will be a $d$-bit multiplication.
 
+\paragraph{Pilots}
+Alternatively the update can be driven directly from the pilot symbol using a least mean-squares (LMS) approach \cite{Savory;08}
+\begin{equation}
+    \Delta \mathbf{h} = \mu e^* \mathbf{x}_p = \mu (\hat{s} - s)^* \mathbf{x}_p,
+\end{equation}
+where $s$ and $\hat{s}$ are the transmitted and estimated pilot symbols at the start of each block, and $\mathbf{x}_p$ is the buffer of $N$ symbols used to form the pilot estimate from \cref{eq:adaptive_output}. A sign-sign variant analogous to the CMA case is obtained by retaining only $\operatorname{csgn}(e)$. With only one pilot symbol per block the error is formed once and the weights updated once, so neither scales with $P$, as summarised in \cref{tab:adaptive_cost_pilot}.
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lcc}
+        \toprule
+        Stage & Real mult. & Real add. \\
+        \midrule
+        Error terms               & $0$    & $4$ \\
+        Weight update (direct)    & $16N$  & $16N$ \\
+        Weight update (sign-sign) & $0$    & $16N$ \\
+        \bottomrule
+    \end{tabular}
+    \caption{Cost of the pilot error terms and weight update per block, formed once per block.}
+    \label{tab:adaptive_cost_pilot}
+\end{table}
 \section{Methodology}
+Both equalisers are evaluated by simulation in MATLAB. Each fixed-point block uses \texttt{fi} arithmetic and is compiled to a MEX binary via MATLAB Coder, so the algorithm exercised in the sweeps is bit-identical to a fixed-point hardware target.
+
+\subsection{Simulation Pipeline}
+Symbols are oversampled by a factor of 2 and pulse-shaped with a root-raised-cosine filter. All the algorithms discussed work at lower oversampling rates, which is investigated in \cref{chapter:full_pipeline}. AWGN is applied to all tests. Chromatic dispersion and PMD are applied either in isolation for individual equaliser tests or together for the combined test.
+
+\subsection{Adaptive Equaliser Convergence}
+The CMA singularity is avoided by initialising $\mathbf{h}_{xx}$ and $\mathbf{h}_{xy}$ with a single one at the centre tap and updating only the $x$-output filter at first; once $N_1$ symbols have elapsed and the $x$ filter has converged, $\mathbf{h}_{yx}$ and $\mathbf{h}_{yy}$ are seeded from the conjugate-symmetric relation in \cref{eq:adaptive_update} and updates are extended to both polarisations. The step size $\mu$ and re-initialisation point $N_1$ are tuned per (algorithm, tap count, update variant) by a separate convergence sweep, with $\mu$ restricted to powers of 2 for hardware simplicity. The first $N_\mathrm{out} = 4000$ symbols of every realisation are discarded before any BER measurement so that the convergence transient does not contaminate the steady-state estimate.
+
+\subsection{Performance Evaluation}
+Each operating point is evaluated by Monte Carlo over independent realisations of the channel and an SNR sweep from 0 to 30\,dB in 2\,dB steps. The BER per trial is computed against the transmitted reference with an exhaustive search over the 32 multiples of $\pi/16$ phase rotation and the polarisation swap that resolve the residual ambiguities left by CMA. The FEC SNR is then defined as the SNR at which the trial's BER curve crosses the FEC threshold, located by linear interpolation between adjacent samples; the mean and standard deviation across trials are reported.
+\section{Results \& Discussion}
+\subsection{Static Equalisation}
+\Cref{fig:cd_fec_snr_20km,fig:cd_fec_snr_80km} compare the FEC SNR of each CD equaliser as fixed-point precision is reduced. The time-domain FIR is highly sensitive to quantisation: it fails to reach the FEC limit at 20\,km even with 6 taps, and its FEC SNR rises sharply below 8 bits on both networks. Overlap-save performs comparably on both networks and is robust down to 4 bits, but cannot meet the FEC limit at 2 bits. Rounding the twiddle factors to the nearest power of 2 incurs a small penalty at 20\,km and a larger one at 80\,km, but remains viable at 4 bits in both cases. The time-domain equaliser is therefore discarded; both overlap-save variants are carried forward to the combined analysis at 4 bits of precision.
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.7\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{cd_fec_snr_20km.png}
+        \caption{20 km}
+        \label{fig:cd_fec_snr_20km}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.7\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{cd_fec_snr_80km.png}
+        \caption{80 km}
+        \label{fig:cd_fec_snr_80km}
+    \end{subfigure}
+    \caption{FEC SNR of each CD equaliser implementation as fixed-point precision varies for the 20\,km and 80\,km networks.}
+    \label{fig:cd_20km}
+\end{figure}
+
+\subsection{Adaptive Equalisation}
+\paragraph{Algorithm selection}
+\Cref{tab:cma_fec_snr_fl12} compares the update variants at high precision. The pilot update lacks any averaging and is therefore dominated by additive noise, giving a much higher FEC SNR and large variance on both networks; it is discarded despite its lower complexity. Direct and sign-sign CMA perform similarly at $N=1$ but diverge as taps are added: sign-sign improves at $N=3$, where the filter can act as both a matched filter and a PMD compensator, and gains a further marginal improvement at $N=5$. Direct CMA degrades from $N=1$ to $N=3$, likely due to slow convergence. Although the standalone gain from $N=3$ to $N=5$ is small, the extra taps span enough symbol periods to absorb residual CD that the upstream equaliser may leave behind -- particularly with the power-of-2 twiddle variant -- so all three sign-sign lengths are taken forward to the combined analysis.
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabular}{lllcc}
+        \toprule
+        Network & Algorithm & Variant & $N$ & FEC SNR (dB) \\
+        \midrule
+        \multirow{12}{*}{20\,km} & \multirow{6}{*}{CMA}   & \multirow{3}{*}{Direct}    & 1 & $6.12  \pm 0.09$ \\
+                                  &                        &                            & 3 & $7.03  \pm 1.54$ \\
+                                  &                        &                            & 5 & $6.99  \pm 1.54$ \\
+                                  \cmidrule(l){3-5}
+                                  &                        & \multirow{3}{*}{Sign-sign} & 1 & $6.40  \pm 0.36$ \\
+                                  &                        &                            & 3 & $4.18  \pm 0.35$ \\
+                                  &                        &                            & 5 & $4.06  \pm 0.37$ \\
+                                  \cmidrule(l){2-5}
+                                  & \multirow{6}{*}{Pilot} & \multirow{3}{*}{Direct}    & 1 & $19.48 \pm 6.49$ \\
+                                  &                        &                            & 3 & $13.57 \pm 3.89$ \\
+                                  &                        &                            & 5 & $13.57 \pm 3.89$ \\
+                                  \cmidrule(l){3-5}
+                                  &                        & \multirow{3}{*}{Sign-sign} & 1 & $18.29 \pm 6.67$ \\
+                                  &                        &                            & 3 & $17.54 \pm 6.06$ \\
+                                  &                        &                            & 5 & $16.72 \pm 6.51$ \\
+        \midrule
+        \multirow{12}{*}{80\,km} & \multirow{6}{*}{CMA}   & \multirow{3}{*}{Direct}    & 1 & $6.12  \pm 0.08$ \\
+                                  &                        &                            & 3 & $7.13  \pm 1.52$ \\
+                                  &                        &                            & 5 & $7.11  \pm 1.52$ \\
+                                  \cmidrule(l){3-5}
+                                  &                        & \multirow{3}{*}{Sign-sign} & 1 & $6.38  \pm 0.36$ \\
+                                  &                        &                            & 3 & $4.34  \pm 0.49$ \\
+                                  &                        &                            & 5 & $4.14  \pm 0.44$ \\
+                                  \cmidrule(l){2-5}
+                                  & \multirow{6}{*}{Pilot} & \multirow{3}{*}{Direct}    & 1 & $16.50 \pm 5.38$ \\
+                                  &                        &                            & 3 & $13.08 \pm 3.85$ \\
+                                  &                        &                            & 5 & $13.08 \pm 3.85$ \\
+                                  \cmidrule(l){3-5}
+                                  &                        & \multirow{3}{*}{Sign-sign} & 1 & $15.77 \pm 6.09$ \\
+                                  &                        &                            & 3 & $17.27 \pm 6.32$ \\
+                                  &                        &                            & 5 & $16.95 \pm 5.88$ \\
+        \bottomrule
+    \end{tabular}
+    \caption{FEC SNR (mean $\pm$ std over 20 trials) at 12 bits of gradient precision for the 20\,km (1:512 split) and 80\,km (1:16 split) networks, across algorithm (CMA, pilot), update variant and number of taps.}
+    \label{tab:cma_fec_snr_fl12}
+\end{table}
+\subsection{Combined Performance}
+A sweep over the precision of the adaptive equaliser with the static equaliser fixed at 4 bits found that the combined FEC SNR is unchanged for adaptive equaliser precisions of 4 bits or more across both overlap-save variants and all three filter lengths. The performance of each combination at 4 bits of precision is shown in \cref{tab:combined_eq_summary}, from which two observations can be made:
+
+\paragraph{Cascaded quantisation noise} The FEC SNR of standalone overlap-save compensating only chromatic dispersion is $\approx 4.8$\,dB on both the 20\,km and 80\,km networks. Cascading the two equalisers would be expected to compound their quantisation noise contributions; however, for $N=3$ and $5$ taps the combined FEC SNR is at or below $4.8$\,dB. The adaptive equaliser is therefore able to compensate for the quantisation noise introduced by the static equaliser, outweighing its own quantisation noise contribution.
+
+\paragraph{Residual chromatic dispersion} For overlap-save with exact twiddles the move from $N=3$ to $N=5$ buys a negligible performance improvement at either reach. The exception is the $2^k$-twiddle variant at 80\,km, where the coarse CD stage leaves a substantial residual dispersion that the adaptive equaliser must absorb: $N=5$ recovers a further $0.6$\,dB over $N=3$. At 20\,km the residual is small enough that $N=3$ is sufficient. The same effect is evident in the single-tap performance, where the greater residual left by the $2^k$-twiddle variant pushes the FEC SNR far higher than the standalone tests would predict.
+
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabular}{llcrrrc}
+        \toprule
+        Network & CD implementation & $N$ & $E_\mathrm{CD}$ & $E_\mathrm{AEQ}$ & $E_\mathrm{total}$ & FEC SNR (dB) \\
+                &                   &     & (fJ/bit)        & (fJ/bit)         & (fJ/bit)           &              \\
+        \midrule
+        \multirow{6}{*}{20\,km} & \multirow{3}{*}{Overlap-save}                 & 1 &  929 & 169 & 1098 & $ 7.09 \pm 0.25$ \\
+                                 &                                              & 3 &  929 & 438 & 1367 & $ 4.69 \pm 0.57$ \\
+                                 &                                              & 5 &  929 & 708 & 1637 & $ 4.42 \pm 0.49$ \\
+                                 \cmidrule(l){2-7}
+                                 & \multirow{3}{*}{Overlap-save ($2^k$ twiddle)} & 1 &  355 & 169 &  524 & $10.02 \pm 0.58$ \\
+                                 &                                              & 3 &  355 & 438 &  793 & $ 5.68 \pm 0.21$ \\
+                                 &                                              & 5 &  355 & 708 & 1063 & $ 5.53 \pm 0.23$ \\
+        \midrule
+        \multirow{6}{*}{80\,km} & \multirow{3}{*}{Overlap-save}                 & 1 & 1261 & 169 & 1430 & $ 7.11 \pm 0.26$ \\
+                                 &                                              & 3 & 1261 & 438 & 1699 & $ 4.64 \pm 0.28$ \\
+                                 &                                              & 5 & 1261 & 708 & 1969 & $ 4.78 \pm 1.12$ \\
+                                 \cmidrule(l){2-7}
+                                 & \multirow{3}{*}{Overlap-save ($2^k$ twiddle)} & 1 &  449 & 169 &  618 & $14.72 \pm 1.32$ \\
+                                 &                                              & 3 &  449 & 438 &  887 & $ 8.60 \pm 0.74$ \\
+                                 &                                              & 5 &  449 & 708 & 1157 & $ 8.00 \pm 0.63$ \\
+        \bottomrule
+    \end{tabular}
+    \caption{End-to-end energy per bit and FEC SNR (mean $\pm$ std over 10 trials) for the cascaded CD + sign-sign CMA operating points at 4 bits of precision in both stages.}
+    \label{tab:combined_eq_summary}
+\end{table}
+The optimal choice of equaliser depends on the network length. At 20\,km, a 3-tap adaptive equaliser is optimal, with the choice of overlap-save variant depending on whether equalisation limits the receiver SNR and on the balance between transmitter and receiver energy. At 80\,km, standard overlap-save should be paired with a 3-tap equaliser; switching to the $2^k$-twiddle variant is less favourable given the higher FEC SNR penalty.
 
 \printbibliography
 

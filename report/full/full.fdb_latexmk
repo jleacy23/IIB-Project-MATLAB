@@ -1,26 +1,26 @@
 # Fdb version 4
-["biber full"] 1779742974.28939 "full.bcf" "full.bbl" "full" 1779746500.88642 0
+["biber full"] 1779742974.28939 "full.bcf" "full.bbl" "full" 1779819078.13971 0
   "../clk_recovery/ref.bib" 1779742776 1953 a0719b753882df74e9d4344dfff12dd1 ""
   "../energy/ref.bib" 1777992037 1213 3edeab146894889c227b177519c60136 ""
   "../equalisation/ref.bib" 1779628208 5201 22c7e73c24286578dccfa182bc223823 ""
   "../frequency_recovery/ref.bib" 1777558777 1554 5f443762d1d5dcd5fd6ffed8945c1a19 ""
-  "full.bcf" 1779746500 110637 7c96b233bfcba88c619a969259cff6dd "pdflatex"
+  "full.bcf" 1779819077 110637 7c96b233bfcba88c619a969259cff6dd "pdflatex"
   "ref.bib" 1779269149 3456 a894c00d1b50f9e1f5e2783661d548f5 ""
   (generated)
   "full.bbl"
   "full.blg"
   (rewritten before read)
-["pdflatex"] 1779746498.79099 "c:/Users/joele/Downloads/iib_project/report/full/full.tex" "full.pdf" "full" 1779746500.88758 0
+["pdflatex"] 1779819076.29301 "c:/Users/joele/Downloads/iib_project/report/full/full.tex" "full.pdf" "full" 1779819078.1408 0
   "../equalisation/cd_fec_snr_20km.png" 1779636685 42385 82ae2b0d0502ca232f53a2329f832bdd ""
   "../equalisation/cd_fec_snr_80km.png" 1779637037 41625 a78899e71e79547dbb527c47ac235270 ""
-  "../frequency_recovery/CR_precision_comparison.png" 1779281098 37243 70fe50ace231aa272b9e1671c5ed62a1 ""
-  "../frequency_recovery/FR_precision_comparison.png" 1779353923 60379 2a7954f047d2fe5c931de09151675b06 ""
+  "../frequency_recovery/CR_precision_comparison.png" 1779818578 37872 a79e9e4dc7ba6efc9bb3ea37aebf66ae ""
+  "../frequency_recovery/FR_precision_comparison.png" 1779818686 61087 46df9f443f305bf84a1ff3c398c24d2e ""
   "../frequency_recovery/FR_precision_energy.png" 1779363661 67071 4ef1e796f1b21195abc6f1e18814ba74 ""
   "../frequency_recovery/MCRB_diffkay_blind.png" 1779275050 115865 0abc6cd5311ebefe452fa7dd8376be61 ""
   "../frequency_recovery/MCRB_diffkay_data.png" 1779275226 74749 6f5697d5f2ffbd7d65835b3528195fc7 ""
   "../frequency_recovery/MCRB_fft_blind.png" 1779275031 117154 e4c4218fe0bd59371e4bef97cd810375 ""
   "../frequency_recovery/MCRB_fft_data.png" 1779275208 63051 62f6f8a3b6cd3d18244f144323a4f654 ""
-  "../frequency_recovery/blind_data.png" 1779284367 60892 25cdc0568be91820b3dca72d5d8c8fad ""
+  "../frequency_recovery/blind_data.png" 1779818401 71834 7ee05a2e99c56eed168f69586af95abb ""
   "../frequency_recovery/max_cfo.png" 1779279992 84184 ee65a2bf2189c1c15a0234f1672a55a3 ""
   "../frequency_recovery/receiver_energy_breakdown_CR.png" 1779367563 46919 f68d811f372c6f6f78a90dbfbe7ff182 ""
   "../frequency_recovery/vv_vs_pilots.png" 1779280895 96506 603a2fb5fc419ed61dcb4fbf2b539001 ""
@@ -206,12 +206,12 @@
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1772596550 94259 aec9939469efac8f0cf917369f632359 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/web2c/pdftex/pdflatex.fmt" 1772596566 2236130 036198fdb3bbb46401ac4d671e71ba73 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf.cnf" 1772596498 903 164c5b127cd0d6dc91abad2f62421ea2 ""
-  "c:/Users/joele/Downloads/iib_project/report/full/full.tex" 1779746496 77505 79d593b6bd6e4b3a120030d9ad858d41 ""
-  "full.aux" 1779746500 26977 2cb01d3e42fdb34653c1a680886b7c01 "pdflatex"
+  "c:/Users/joele/Downloads/iib_project/report/full/full.tex" 1779819075 79962 6938b4d76c48494d590913f5da12c794 ""
+  "full.aux" 1779819077 27229 24cc96af09892fdbd702a4782a8813f7 "pdflatex"
   "full.bbl" 1779742976 40145 22706061cb0763acc68b3540ee749dce "biber full"
-  "full.run.xml" 1779746500 2470 b201c3512d6c50d3be3b3780315b62f5 "pdflatex"
-  "full.tex" 1779746496 77505 79d593b6bd6e4b3a120030d9ad858d41 ""
-  "full.toc" 1779746500 5619 eab76a47655c3b6eefb1dd014734b680 "pdflatex"
+  "full.run.xml" 1779819077 2470 b201c3512d6c50d3be3b3780315b62f5 "pdflatex"
+  "full.tex" 1779819075 79962 6938b4d76c48494d590913f5da12c794 ""
+  "full.toc" 1779819077 5678 edcf74a896e9b7e5c4e1edfc3d1b59d4 "pdflatex"
   (generated)
   "full.aux"
   "full.bcf"

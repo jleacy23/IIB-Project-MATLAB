@@ -263,6 +263,7 @@ INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/amsfont
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/amsfonts/symbols/msbm7.tfm
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmr17.tfm
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmbx12.tfm
+INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmbx12.tfm
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmr8.tfm
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmr6.tfm
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmmi12.tfm
@@ -280,13 +281,9 @@ INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/amsfont
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/amsfonts/symbols/msbm10.tfm
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/amsfonts/symbols/msbm10.tfm
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/amsfonts/symbols/msbm7.tfm
-INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmbx12.tfm
-INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmti12.tfm
 OUTPUT clk_recovery.pdf
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map
-INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmbx12.tfm
 INPUT clk_recovery.aux
-INPUT clk_recovery.run.xml
 OUTPUT clk_recovery.run.xml
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb
@@ -295,7 +292,8 @@ INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfo
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb
+INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb
+INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb
-INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb

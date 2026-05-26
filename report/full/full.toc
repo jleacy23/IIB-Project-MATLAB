@@ -81,4 +81,5 @@
 \contentsline {section}{\numberline {5.2}Godard Timing Recovery}{33}{}%
 \contentsline {paragraph}{Timing error estimate}{33}{}%
 \contentsline {paragraph}{Timing correction}{34}{}%
+\contentsline {paragraph}{Computational complexity}{34}{}%
 \contentsline {chapter}{\numberline {6}Full DSP Pipeline}{35}{}%

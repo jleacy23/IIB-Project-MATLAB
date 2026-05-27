@@ -1,11 +1,15 @@
-function y = combined_cd_fd_godard_adaptive(In, SpS, NFFT, NOverlap, ...
-        D, L, CLambda, Rs, Rolloff, ki, kp, NSymb, AdaptOpts)
+function [y, cfoBinsApplied] = combined_cd_fd_godard_adaptive(In, SpS, ...
+        NFFT, NOverlap, D, L, CLambda, Rs, Rolloff, ki, kp, NSymb, ...
+        AdaptOpts, cfoEnable, po2Twiddle)
 %COMBINED_CD_FD_GODARD_ADAPTIVE  Frequency-domain CD + RRC matched filter
-%   (overlap-save) with Godard timing recovery sharing the same FFT and
-%   overlap, followed by a butterfly CMA equaliser.
+%   (overlap-save) with optional one-shot coarse CFO correction and
+%   Godard timing recovery sharing the same FFT and overlap, followed
+%   by a butterfly CMA equaliser.
 %
 %   y = combined_cd_fd_godard_adaptive(In, SpS, NFFT, NOverlap, D, L, ...
 %           CLambda, Rs, Rolloff, ki, kp, NSymb, AdaptOpts)
+%   y = combined_cd_fd_godard_adaptive(..., AdaptOpts, cfoEnable)
+%   y = combined_cd_fd_godard_adaptive(..., cfoEnable, po2Twiddle)
 %
 %   Inputs
 %     In          - input signal [samples x 2]
@@ -18,13 +22,35 @@ function y = combined_cd_fd_godard_adaptive(In, SpS, NFFT, NOverlap, ...
 %     NSymb       - number of transmitted symbols
 %     AdaptOpts   - adaptive equaliser settings struct (NTaps, Mu, ...) -
 %                   see eq_clk.apply_adaptive_eq.
+%     cfoEnable   - (optional) when truthy (nonzero), apply a one-shot
+%                   coarse CFO correction (eq_clk.coarse_cfo_fd):
+%                   centroid of the first NFFT samples' FFT drives a
+%                   continuous-valued time-domain phasor across the
+%                   whole input.  Default false.
+%     po2Twiddle  - (optional) when true, the per-block FFT/IFFT use
+%                   fft.fft_flp with twiddle factors snapped to the
+%                   nearest signed power of two (for hardware shift-only
+%                   multiplications).  Default false.
 %
 %   The Godard Modified-Godard timing metric is evaluated on the
 %   already-corrected spectrum (CD + MF + current phase ramp).  Its imag
 %   part drives a per-block PI loop filter whose accumulated tau is
 %   applied as the next-block phase ramp.
 
+    if nargin < 14 || isempty(cfoEnable)
+        cfoEnable = false;
+    end
+    if nargin < 15 || isempty(po2Twiddle)
+        po2Twiddle = false;
+    end
+
     NPol = size(In, 2);
+
+    %% One-shot coarse CFO correction (time-domain phasor) ---------
+    cfoBinsApplied = 0;
+    if cfoEnable
+        [In, cfoBinsApplied] = eq_clk.coarse_cfo_fd(In, NFFT);
+    end
 
     %% Static frequency masks (natural FFT order) --------------------
     HCDshift = eq_clk.cd_fd_response(D, L, CLambda, Rs, SpS, NFFT);
@@ -70,7 +96,7 @@ function y = combined_cd_fd_godard_adaptive(In, SpS, NFFT, NOverlap, ...
         InB = [Overlap; Blocks(:,i,:)];
 
         % Natural-order FFT (matches recovery_godard convention)
-        R = fft(InB);
+        R = fft.fft_flp(InB, false, po2Twiddle);
 
         % Apply CD + matched filter
         Rfilt = R .* Hstatic;
@@ -92,7 +118,7 @@ function y = combined_cd_fd_godard_adaptive(In, SpS, NFFT, NOverlap, ...
         tauSamp = kp * e + LF_I;
 
         % IFFT and overlap-save save
-        OutFDE  = ifft(R_corr);
+        OutFDE  = fft.fft_flp(R_corr, true, po2Twiddle);
         Overlap = InB(end-NOverlap+1:end, 1, :);
         OutB    = OutFDE(NOverlap/2+1:end-NOverlap/2, 1, :);
         Out(:,i,:) = OutB;

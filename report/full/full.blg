@@ -1,30 +1,31 @@
 [0] Config.pm:328> INFO - This is Biber 2.21
 [0] Config.pm:331> INFO - Logfile is 'full.blg'
-[125] biber-MSWIN64:342> INFO - === 
-[165] Biber.pm:421> INFO - Reading 'full.bcf'
-[306] Biber.pm:1002> INFO - Found 16 citekeys in bib section 0
-[322] Biber.pm:4487> INFO - Processing section 0
-[333] Biber.pm:4678> INFO - Looking for bibtex file '../energy/ref.bib' for section 0
-[386] bibtex.pm:1713> INFO - LaTeX decoding ...
-[405] bibtex.pm:1519> INFO - Found BibTeX data source '../energy/ref.bib'
-[448] Biber.pm:4678> INFO - Looking for bibtex file '../frequency_recovery/ref.bib' for section 0
-[507] bibtex.pm:1713> INFO - LaTeX decoding ...
-[518] bibtex.pm:1519> INFO - Found BibTeX data source '../frequency_recovery/ref.bib'
-[545] Biber.pm:4678> INFO - Looking for bibtex file '../equalisation/ref.bib' for section 0
-[598] bibtex.pm:1713> INFO - LaTeX decoding ...
-[617] bibtex.pm:1519> INFO - Found BibTeX data source '../equalisation/ref.bib'
-[655] Biber.pm:4678> INFO - Looking for bibtex file '../clk_recovery/ref.bib' for section 0
-[708] bibtex.pm:1713> INFO - LaTeX decoding ...
-[722] bibtex.pm:1519> INFO - Found BibTeX data source '../clk_recovery/ref.bib'
-[744] Biber.pm:4678> INFO - Looking for bibtex file 'ref.bib' for section 0
-[796] bibtex.pm:1713> INFO - LaTeX decoding ...
-[812] bibtex.pm:1519> INFO - Found BibTeX data source 'ref.bib'
-[908] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'normalization = NFD' with 'normalization = prenormalized'
-[908] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'variable = shifted' with 'variable = non-ignorable'
-[908] Biber.pm:4307> INFO - Sorting list 'nty/global//global/global/global' of type 'entry' with template 'nty' and locale 'en-US'
-[908] Biber.pm:4313> INFO - No sort tailoring available for locale 'en-US'
-[930] bbl.pm:676> INFO - Writing 'full.bbl' with encoding 'UTF-8'
-[944] bbl.pm:779> INFO - Output to full.bbl
-[944] Biber.pm:132> WARN - Duplicate entry key: 'CPON_PMD_2025' in file '../frequency_recovery/ref.bib', skipping ...
-[944] Biber.pm:132> WARN - legacy month field 'Jun' in entry 'Mantzoukis:11' is not an integer - this will probably not sort properly.
-[944] Biber.pm:134> INFO - WARNINGS: 2
+[162] biber-MSWIN64:342> INFO - === 
+[216] Biber.pm:421> INFO - Reading 'full.bcf'
+[417] Biber.pm:1002> INFO - Found 20 citekeys in bib section 0
+[436] Biber.pm:4487> INFO - Processing section 0
+[455] Biber.pm:4678> INFO - Looking for bibtex file '../energy/ref.bib' for section 0
+[528] bibtex.pm:1713> INFO - LaTeX decoding ...
+[537] bibtex.pm:1519> INFO - Found BibTeX data source '../energy/ref.bib'
+[588] Biber.pm:4678> INFO - Looking for bibtex file '../frequency_recovery/ref.bib' for section 0
+[643] bibtex.pm:1713> INFO - LaTeX decoding ...
+[653] bibtex.pm:1519> INFO - Found BibTeX data source '../frequency_recovery/ref.bib'
+[673] Biber.pm:4678> INFO - Looking for bibtex file '../equalisation/ref.bib' for section 0
+[730] bibtex.pm:1713> INFO - LaTeX decoding ...
+[748] bibtex.pm:1519> INFO - Found BibTeX data source '../equalisation/ref.bib'
+[780] Biber.pm:4678> INFO - Looking for bibtex file '../clk_recovery/ref.bib' for section 0
+[833] bibtex.pm:1713> INFO - LaTeX decoding ...
+[844] bibtex.pm:1519> INFO - Found BibTeX data source '../clk_recovery/ref.bib'
+[865] Biber.pm:4678> INFO - Looking for bibtex file 'ref.bib' for section 0
+[914] bibtex.pm:1713> INFO - LaTeX decoding ...
+[928] bibtex.pm:1519> INFO - Found BibTeX data source 'ref.bib'
+[1026] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'variable = shifted' with 'variable = non-ignorable'
+[1026] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'normalization = NFD' with 'normalization = prenormalized'
+[1026] Biber.pm:4307> INFO - Sorting list 'nty/global//global/global/global' of type 'entry' with template 'nty' and locale 'en-US'
+[1026] Biber.pm:4313> INFO - No sort tailoring available for locale 'en-US'
+[1051] bbl.pm:676> INFO - Writing 'full.bbl' with encoding 'UTF-8'
+[1071] bbl.pm:779> INFO - Output to full.bbl
+[1071] Biber.pm:132> WARN - Duplicate entry key: 'CPON_PMD_2025' in file '../frequency_recovery/ref.bib', skipping ...
+[1071] Biber.pm:132> WARN - legacy month field 'Jun' in entry 'Mantzoukis:11' is not an integer - this will probably not sort properly.
+[1071] Biber.pm:132> WARN - legacy month field 'Jun' in entry 'Faruk:11' is not an integer - this will probably not sort properly.
+[1071] Biber.pm:134> INFO - WARNINGS: 3

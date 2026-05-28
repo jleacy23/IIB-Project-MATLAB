@@ -366,6 +366,53 @@
       \endverb
       \keyw{Physical layer;Optics;Passive optical networks;Next generation networking}
     \endentry
+    \entry{Faruk:11}{article}{}{}
+      \name{author}{2}{}{%
+        {{hash=daf16bdb226d0e1746bb056a99ebd461}{%
+           family={Faruk},
+           familyi={F\bibinitperiod},
+           given={Md.\bibnamedelimi Saifuddin},
+           giveni={M\bibinitperiod\bibinitdelim S\bibinitperiod}}}%
+        {{hash=6ce61b060573b0c19e13f8078c654f1d}{%
+           family={Kikuchi},
+           familyi={K\bibinitperiod},
+           given={Kazuro},
+           giveni={K\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Optica Publishing Group}%
+      }
+      \strng{namehash}{5ee55e4bd7ddc50e8233d4bedec1e9ba}
+      \strng{fullhash}{5ee55e4bd7ddc50e8233d4bedec1e9ba}
+      \strng{fullhashraw}{5ee55e4bd7ddc50e8233d4bedec1e9ba}
+      \strng{bibnamehash}{5ee55e4bd7ddc50e8233d4bedec1e9ba}
+      \strng{authorbibnamehash}{5ee55e4bd7ddc50e8233d4bedec1e9ba}
+      \strng{authornamehash}{5ee55e4bd7ddc50e8233d4bedec1e9ba}
+      \strng{authorfullhash}{5ee55e4bd7ddc50e8233d4bedec1e9ba}
+      \strng{authorfullhashraw}{5ee55e4bd7ddc50e8233d4bedec1e9ba}
+      \field{sortinit}{F}
+      \field{sortinithash}{2638baaa20439f1b5a8f80c6c08a13b4}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Opt. Express}
+      \field{month}{6}
+      \field{number}{13}
+      \field{title}{Adaptive frequency-domain equalization in digital coherent optical receivers}
+      \field{volume}{19}
+      \field{year}{2011}
+      \field{pages}{12789\bibrangedash 12798}
+      \range{pages}{10}
+      \verb{doi}
+      \verb 10.1364/OE.19.012789
+      \endverb
+      \verb{urlraw}
+      \verb https://opg.optica.org/oe/abstract.cfm?URI=oe-19-13-12789
+      \endverb
+      \verb{url}
+      \verb https://opg.optica.org/oe/abstract.cfm?URI=oe-19-13-12789
+      \endverb
+      \keyw{Coherent communications; Fiber optics communications; Homodyning; Analog to digital converters; Optical networks; Optical receivers; Polarization mode dispersion; Quadrature phase shift keying; Signal processing}
+    \endentry
     \entry{horowitz2014computing}{inproceedings}{}{}
       \name{author}{1}{}{%
         {{hash=2c9d1aa766759ce8abffd16d2a35689e}{%
@@ -529,6 +576,54 @@
       \verb{url}
       \verb https://www.mdpi.com/2076-3417/7/7/655
       \endverb
+    \endentry
+    \entry{Cheng;20}{article}{}{}
+      \name{author}{3}{}{%
+        {{hash=5b87ad1784cfef8c8036c5af35e26add}{%
+           family={Ju},
+           familyi={J\bibinitperiod},
+           given={Cheng},
+           giveni={C\bibinitperiod}}}%
+        {{hash=448c2eef8cc5449b736ed6d207e69af6}{%
+           family={Liu},
+           familyi={L\bibinitperiod},
+           given={Na},
+           giveni={N\bibinitperiod}}}%
+        {{hash=454877f0986e94e9eaeec3aa959704fa}{%
+           family={Li},
+           familyi={L\bibinitperiod},
+           given={Changhong},
+           giveni={C\bibinitperiod}}}%
+      }
+      \strng{namehash}{bd6f8f30f413ab5f4ace926ff3cd11fb}
+      \strng{fullhash}{bd6f8f30f413ab5f4ace926ff3cd11fb}
+      \strng{fullhashraw}{bd6f8f30f413ab5f4ace926ff3cd11fb}
+      \strng{bibnamehash}{bd6f8f30f413ab5f4ace926ff3cd11fb}
+      \strng{authorbibnamehash}{bd6f8f30f413ab5f4ace926ff3cd11fb}
+      \strng{authornamehash}{bd6f8f30f413ab5f4ace926ff3cd11fb}
+      \strng{authorfullhash}{bd6f8f30f413ab5f4ace926ff3cd11fb}
+      \strng{authorfullhashraw}{bd6f8f30f413ab5f4ace926ff3cd11fb}
+      \field{sortinit}{J}
+      \field{sortinithash}{b2f54a9081ace9966a7cb9413811edb4}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{issn}{0030-4018}
+      \field{journaltitle}{Optics Communications}
+      \field{title}{An efficient adaptive equalization architecture for high-speed coherent PON systems}
+      \field{volume}{460}
+      \field{year}{2020}
+      \field{pages}{125022}
+      \range{pages}{1}
+      \verb{doi}
+      \verb https://doi.org/10.1016/j.optcom.2019.125022
+      \endverb
+      \verb{urlraw}
+      \verb https://www.sciencedirect.com/science/article/pii/S0030401819310727
+      \endverb
+      \verb{url}
+      \verb https://www.sciencedirect.com/science/article/pii/S0030401819310727
+      \endverb
+      \keyw{Coherent receiver,Adaptive equalization,Low-complexity,Passive optical network,Field-programmable gate array}
     \endentry
     \entry{Liu;09}{inproceedings}{}{}
       \name{author}{6}{}{%
@@ -704,6 +799,185 @@
       \verb 10.1109/ACCESS.2018.2885895
       \endverb
       \keyw{Bridge circuits;Frequency measurement;CMOS technology;Microprocessors;Benchmark testing;Capacitance;High frequency;Computer performance;CMOS scaling;FinFET;Moore’s law;MOSFET;power dissipation;scaling;technology node}
+    \endentry
+    \entry{Vaskasi;22}{inproceedings}{}{}
+      \name{author}{6}{}{%
+        {{hash=8dad4d32648aacf4e0f476e80490b0c8}{%
+           family={Vaskasi},
+           familyi={V\bibinitperiod},
+           given={Javad\bibnamedelima Rahimi},
+           giveni={J\bibinitperiod\bibinitdelim R\bibinitperiod}}}%
+        {{hash=7ee6c057b42369a016bab7f17683e6f9}{%
+           family={Singh},
+           familyi={S\bibinitperiod},
+           given={Nishant},
+           giveni={N\bibinitperiod}}}%
+        {{hash=278f4f370c7fc8a8fe543a193ed4f4e6}{%
+           family={Van\bibnamedelima Kerrebrouck},
+           familyi={V\bibinitperiod\bibinitdelim K\bibinitperiod},
+           given={Joris},
+           giveni={J\bibinitperiod}}}%
+        {{hash=55cbb0060b19003eda45cb02f4cbcab2}{%
+           family={Bauwelinck},
+           familyi={B\bibinitperiod},
+           given={Johan},
+           giveni={J\bibinitperiod}}}%
+        {{hash=7859917658cc3e51c995a772cf8262e0}{%
+           family={Roelkens},
+           familyi={R\bibinitperiod},
+           given={Gunther},
+           giveni={G\bibinitperiod}}}%
+        {{hash=9add69d8011d374b1d451d689fd20949}{%
+           family={Morthier},
+           familyi={M\bibinitperiod},
+           given={Geert},
+           giveni={G\bibinitperiod}}}%
+      }
+      \strng{namehash}{d0232cd446cb4e7bb99a88be66e5fa9d}
+      \strng{fullhash}{96a29f36ea537db7006f2627df8ba879}
+      \strng{fullhashraw}{96a29f36ea537db7006f2627df8ba879}
+      \strng{bibnamehash}{d0232cd446cb4e7bb99a88be66e5fa9d}
+      \strng{authorbibnamehash}{d0232cd446cb4e7bb99a88be66e5fa9d}
+      \strng{authornamehash}{d0232cd446cb4e7bb99a88be66e5fa9d}
+      \strng{authorfullhash}{96a29f36ea537db7006f2627df8ba879}
+      \strng{authorfullhashraw}{96a29f36ea537db7006f2627df8ba879}
+      \field{sortinit}{V}
+      \field{sortinithash}{afb52128e5b4dc4b843768c0113d673b}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{2022 27th OptoElectronics and Communications Conference (OECC) and 2022 International Conference on Photonics in Switching and Computing (PSC)}
+      \field{title}{High Wall-plug-efficiency III-V-on-silicon C-band DFB Laser Diodes}
+      \field{year}{2022}
+      \field{pages}{1\bibrangedash 3}
+      \range{pages}{3}
+      \verb{doi}
+      \verb 10.23919/OECC/PSC53152.2022.9849904
+      \endverb
+      \keyw{Temperature measurement;Optical losses;Semiconductor lasers;Power lasers;Scattering;Waveguide lasers;Threshold current;DFB lasers;Heterogeneous integration;Wall-plug efficiency}
+    \endentry
+    \entry{Zhang;24}{article}{}{}
+      \name{author}{20}{}{%
+        {{hash=405a8b70e17b3d4e1a84d0a84fa4459d}{%
+           family={Zhang},
+           familyi={Z\bibinitperiod},
+           given={Xuguang},
+           giveni={X\bibinitperiod}}}%
+        {{hash=94dffec766aad5da35c894505256e0e1}{%
+           family={Zhou},
+           familyi={Z\bibinitperiod},
+           given={Zixuan},
+           giveni={Z\bibinitperiod}}}%
+        {{hash=b43015f2e3c58567ce874cae149bd12f}{%
+           family={Guo},
+           familyi={G\bibinitperiod},
+           given={Yijun},
+           giveni={Y\bibinitperiod}}}%
+        {{hash=5b6536a0a44c16d737cf254e14be07a8}{%
+           family={Zhuang},
+           familyi={Z\bibinitperiod},
+           given={Minxue},
+           giveni={M\bibinitperiod}}}%
+        {{hash=8361bdaf676e317def2d318c41002067}{%
+           family={Jin},
+           familyi={J\bibinitperiod},
+           given={Warren},
+           giveni={W\bibinitperiod}}}%
+        {{hash=acf95598be4733f78d3136718c8747da}{%
+           family={Shen},
+           familyi={S\bibinitperiod},
+           given={Bitao},
+           giveni={B\bibinitperiod}}}%
+        {{hash=c49f8154e2ebaefb9cb03363627aeb16}{%
+           family={Chen},
+           familyi={C\bibinitperiod},
+           given={Yujun},
+           giveni={Y\bibinitperiod}}}%
+        {{hash=77bfb5b90dc7ff788c68faa8d0c9c487}{%
+           family={Huang},
+           familyi={H\bibinitperiod},
+           given={Jiahui},
+           giveni={J\bibinitperiod}}}%
+        {{hash=8e579a33084bab0a8a80f7439c9f23b9}{%
+           family={Tao},
+           familyi={T\bibinitperiod},
+           given={Zihan},
+           giveni={Z\bibinitperiod}}}%
+        {{hash=dbb2d2e2052df8dbdcc4e3e84f5b6068}{%
+           family={Jin},
+           familyi={J\bibinitperiod},
+           given={Ming},
+           giveni={M\bibinitperiod}}}%
+        {{hash=a56b02f65496abab4dc6c365f9128884}{%
+           family={Chen},
+           familyi={C\bibinitperiod},
+           given={Ruixuan},
+           giveni={R\bibinitperiod}}}%
+        {{hash=942474ad1261d9515eaf48e08477386c}{%
+           family={Ge},
+           familyi={G\bibinitperiod},
+           given={Zhangfeng},
+           giveni={Z\bibinitperiod}}}%
+        {{hash=d475d5faf8f154792280cca5ab485382}{%
+           family={Fang},
+           familyi={F\bibinitperiod},
+           given={Zhou},
+           giveni={Z\bibinitperiod}}}%
+        {{hash=803fb0c7ba592ff2ac5109218a4a8211}{%
+           family={Zhang},
+           familyi={Z\bibinitperiod},
+           given={Ning},
+           giveni={N\bibinitperiod}}}%
+        {{hash=81cab2e7b41d6267c719aa81e06c134a}{%
+           family={Liu},
+           familyi={L\bibinitperiod},
+           given={Yadong},
+           giveni={Y\bibinitperiod}}}%
+        {{hash=ed8ddfdb103d49fc03674754f1587d29}{%
+           family={Cai},
+           familyi={C\bibinitperiod},
+           given={Pengfei},
+           giveni={P\bibinitperiod}}}%
+        {{hash=dd79d15dde2d0de0c1e9e77a5056f536}{%
+           family={Hu},
+           familyi={H\bibinitperiod},
+           given={Weiwei},
+           giveni={W\bibinitperiod}}}%
+        {{hash=637e6d0374463ca418cdae9715848c29}{%
+           family={Shu},
+           familyi={S\bibinitperiod},
+           given={Haowen},
+           giveni={H\bibinitperiod}}}%
+        {{hash=a7f591c69a74e776490d56be2467f490}{%
+           family={Pan},
+           familyi={P\bibinitperiod},
+           given={Dong},
+           giveni={D\bibinitperiod}}}%
+        {{hash=65498ffa80651d6965de6324cf6f1631}{%
+           family={Chang},
+           familyi={C\bibinitperiod},
+           given={Lin},
+           giveni={L\bibinitperiod}}}%
+      }
+      \strng{namehash}{0483db5d04fe4d244819a2413c400e0f}
+      \strng{fullhash}{c744fb4573208bc866e4c06102b3131e}
+      \strng{fullhashraw}{c744fb4573208bc866e4c06102b3131e}
+      \strng{bibnamehash}{0483db5d04fe4d244819a2413c400e0f}
+      \strng{authorbibnamehash}{0483db5d04fe4d244819a2413c400e0f}
+      \strng{authornamehash}{0483db5d04fe4d244819a2413c400e0f}
+      \strng{authorfullhash}{c744fb4573208bc866e4c06102b3131e}
+      \strng{authorfullhashraw}{c744fb4573208bc866e4c06102b3131e}
+      \field{sortinit}{Z}
+      \field{sortinithash}{96892c0b0a36bb8557c40c49813d48b3}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Nature Communications}
+      \field{month}{09}
+      \field{title}{High-coherence parallelization in integrated photonics}
+      \field{volume}{15}
+      \field{year}{2024}
+      \verb{doi}
+      \verb 10.1038/s41467-024-52269-7
+      \endverb
     \endentry
     \entry{Zhou;10}{article}{}{}
       \name{author}{6}{}{%

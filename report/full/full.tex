@@ -101,22 +101,14 @@ All DSP algorithms in this report are designed, characterised, and compared thro
 
 \subsection{Fixed-Point Arithmetic}
 The receiver is evaluated with fixed-point arithmetic, as used in ASIC designs. This captures the effect of quantisation error on each implementation's performance, and underpins a bit-accurate energy model that goes beyond algorithmic complexity. All fixed-point modelling uses the MATLAB Fixed-Point Designer toolkit.
-\paragraph{Quantisation Error}
-With \(b\) fractional bits the quantisation step is \(\Delta = 2^{-b}\); round-to-nearest produces an error \(e\) modelled as a zero-mean uniform random variable on \([-\Delta/2,\,\Delta/2]\) with variance
-\begin{equation}
-    \sigma_q^2 = \frac{1}{\Delta}\int_{-\Delta/2}^{\Delta/2} e^2\,\mathrm{d}e = \frac{\Delta^2}{12} = \frac{2^{-2b}}{12}.
-    \label{eq:quant_var}
-\end{equation}
-For a signal taking values over $[-A,A]$, $\Delta = \frac{2A}{2^{b}}$ and the signal-to-quantisation-noise ratio in dB with signal energy $E_s$ is
-\begin{equation}
-    \mathrm{SQNR} = 10\log_{10}\left(\frac{E_s}{\sigma^2_q}\right) = 6.02b + 10\log_{10}\left(\frac{3E_s}{A^2}\right).
-\end{equation}
 
 
 \subsection{System Parameters}
 The network under investigation assumes an end-to-end OLT-to-ONU loss budget of 35\,dB and a back-to-back transmitter SNR of 35\,dB, both taken from the CPON downstream specification of \cref{chapter:cpon}. The central wavelength is assumed to be 1550\,nm. The chromatic dispersion, polarisation-mode dispersion, and pulse-shaping models used throughout the receiver chain are introduced in the chapters that use them.
 
-\section{Receiver Energy}\label{sec:rx_energy}
+\section{Energy Estimation}
+The energy-efficiency of a receiver implementation cannot be determined from the receiver energy alone. A simple architecure may reduce receiver energy but incur an SNR penalty for acceptable operation due to a drop in accuracy. This calls for a system-level model of the energy consumption where an SNR penalty can be converted to an equivalent increase in transmitter energy, allowing receiver implementations to be compared by their combined energy.
+\subsection{Receiver Energy}\label{sec:rx_energy}
 The energy consumption of the receiver can be estimated from the number of real multiplications \(N_M\) and real additions \(N_A\) it performs to process each symbol. The true cost of these operations depends on the hardware implementation. The reference values shown in \cref{tab:energy} provide a useful estimate to compare DSP algorithms but a more accurate estimate would require power simulations for an ASIC implementation.
 
 \begin{table}[H]
@@ -165,6 +157,59 @@ and converting to energy per bit allows fair comparison across modulation scheme
     \label{eq:rx_energy}
 \end{equation}
 where \(M\) is the modulation order.
+\subsection{Transmitter Energy}
+The downstream link considered here consists of a single OLT transmitting through a 1:\(K\) passive splitter to \(K\) ONUs, as shown in \cref{fig:pon_intro}. The OLT power is divided equally between branches, so each ONU receives a \(1/K\) share.
+
+\paragraph{Minimum Required SNR}
+The CPON standard specifies a maximum pre-FEC bit-error rate (BER) of \(10^{-2}\) that must not be exceeded for the forward error-correction (FEC) scheme to function correctly. Each receiver implementation therefore has a minimum required SNR to meet this FEC threshold. This SNR, together with the noise characteristics of the optical network, determines the minimum transmitter power.
+
+\paragraph{Noise}
+% \paragraph{Shot Noise}
+The relationship between SNR and transmitter power \(P_\mathrm{tx}\) depends on the dominant source of noise in the network. Optical access networks typically operate over short lengths at low power, so amplifiers can be omitted and non-linear noise neglected, leaving shot noise as the dominant impairment. The shot noise power referred to the optical input of a balanced coherent receiver is \(2h\nu B_\mathrm{eff}\), where the factor of 2 captures the contributions from the signal and LO arms of the balanced detector summed in quadrature, and \(B_\mathrm{eff}\) is the receiver electrical bandwidth, set equal to the symbol rate by a matched bandpass filter after the 1:\(K\) splitter in \cref{fig:pon_intro}. The power per polarisation received by each ONU is \(P_\mathrm{tx}/2\Gamma K\), where $\Gamma$ is the loss from OLT to ONU. This gives a per-ONU NSR of
+\begin{equation}
+    \mathrm{NSR} = \frac{4\Gamma K h\nu B_\mathrm{eff}}{P_\mathrm{tx}} + \mathrm{NSR}_0,
+    \label{eq:snr_shot}
+\end{equation}
+where $\mathrm{NSR} = 1/\mathrm{SNR}$ and $\mathrm{NSR}_0$ is the back-to-back NSR at the OLT. Rearranging gives the transmitted power as
+\begin{equation}
+    P_\mathrm{tx} = \frac{4\Gamma Kh\nu B_\mathrm{eff}}{\mathrm{NSR} - \mathrm{NSR}_0}.
+\end{equation}
+Assuming Nyquist pulse-shaping and matched bandpass filtering at the receiver ($B_\mathrm{eff} = R_s$), the energy per bit transmitted is
+\begin{equation}
+    E_\mathrm{tx} = \frac{P_\mathrm{tx}}{2KR_s \log_2(M)} = \frac{2\Gamma h\nu}{(\mathrm{NSR} - \mathrm{NSR}_0)\log_2(M)}.
+    \label{eq:tx_bit_energy}
+\end{equation}
+
+
+\subsection{Combined Energy}
+Before calculating a combined energy contribution, the transmitted optical energy in \cref{eq:tx_bit_energy} must be converted into an energy drawn from the electrical power supply by estimating the efficiencies of the transmitting laser and the modulator. The dual-polarisation modulator (\cref{fig:mzm}) consists of two nested-Mach-Zehnder IQ modulators sharing a common laser through a polarisation beam splitter, with their outputs recombined by a polarisation beam combiner. Each IQ modulator has the transfer function \cite{Mello;21}
+\begin{equation}
+    \frac{E_\mathrm{output}(t)}{E_\mathrm{input}(t)} = \frac{1}{2}\sin\left[\frac{v_I(t)\pi}{2V_\pi}\right] + \frac{j}{2}\sin\left[\frac{v_Q(t)\pi}{2V_\pi}\right],
+\end{equation}
+where each MZM is biased at its transmission null so that $v_I = v_Q = 0$ produces no output and the drive voltages swing symmetrically about $0\,$V.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{MZM.jpeg}
+    \caption{Dual-polarisation coherent modulator using MZMs.}
+    \label{fig:mzm}
+\end{figure}
+QPSK is generated by driving each MZM between adjacent transmission peaks, $v_I(t), v_Q(t) \in \{-V_\pi, +V_\pi\}$, so
+\begin{equation}
+    \frac{E_\mathrm{output}(t)}{E_\mathrm{input}(t)} = \pm\frac{1}{2} \pm \frac{j}{2}
+\end{equation}
+and $P_\mathrm{out} = P_\mathrm{in}/2$, where the loss comes from power coupled to unused ports in the 2$\times$2 couplers. An ideal polarisation beam splitter and combiner introduce no further loss, so the \emph{marginal} efficiency of the dual-polarisation modulator is
+\begin{equation}
+    \eta_\mathrm{DPM} = \frac{dP_\mathrm{tx}}{dP_\mathrm{in}} = 0.5.
+ \end{equation}
+The overall efficiency would also include the power dissipated in the drive electronics, but this is independent of transmit power and so cancels in a comparison of receiver implementations. Combining with the wall-plug efficiency of the laser $\eta_\mathrm{WP}$ gives an overall efficiency of
+\begin{equation}
+    \eta_\mathrm{T} = \eta_\mathrm{WP}\eta_\mathrm{DPM} = 0.5\eta_\mathrm{WP}.
+\end{equation}
+Recently reported values for the wall-plug efficiency of lasers suited to coherent systems are 16-19\% \cite{Zhang;24,Vaskasi;22} which gives an overall efficiency of just under 10\%. A measure of combined energy is then
+\begin{equation}
+    E_\mathrm{sys} = \frac{1}{\eta_\mathrm{T}}E_\mathrm{tx} + E_\mathrm{rx}.
+\end{equation}
+This does not give the total energy consumed by the optical network, but a difference in $E_\mathrm{sys}$ shows the energy savings across receiver implementations.
 
 
 
@@ -224,7 +269,7 @@ and the filter weights are updated as
     \end{aligned}
     \label{eq:adaptive_update}
 \end{equation}
-with step size $\mu$ restricted to powers of two for hardware simplicity. CMA suffers from the singularity problem, in which both outputs converge to the same input; this is avoided by initialising $\mathbf{h}_{xx}$ with a single one at the centre tap and seeding the $y$-polarisation weights from the conjugate-symmetric relation $\mathbf{h}_{yx}[n] = \mathbf{h}_{xx}^*[-n]$, $\mathbf{h}_{yy}[n] = -\mathbf{h}_{xy}^*[-n]$ once $x_\mathrm{out}$ has converged \cite{Liu;09}. CMA also has the advantage that it is robust to phase rotations caused by CFO or phase noise, allowing the downstream carrier recovery block to be fully feedforward.
+with step size $\mu$ restricted to powers of two for hardware simplicity. CMA suffers from the singularity problem, in which both outputs converge to the same input; this is avoided by initialising $\mathbf{h}_{xx}$ with a single one at the centre tap and seeding the $y$-polarisation weights from the conjugate-symmetric relation $\mathbf{h}_{yx}[n] = \mathbf{h}_{xx}^*[-n]$, $\mathbf{h}_{yy}[n] = -\mathbf{h}_{xy}^*[-n]$ once $x_\mathrm{out}$ has converged \cite{Liu;09}. CMA also has the advantage that it is robust to phase rotations caused by CFO or phase noise which simplifies the DSP architecure by avoiding feedback from the carrier recovery block.
 
 \paragraph{Parallelism.}
 \label{sec:aeq_parallel}
@@ -332,9 +377,6 @@ which is fed into a PI loop filter; the next block applies the accumulated $\tau
 \subsection{Computational Complexity}
 The two detectors operate on blocks of different sizes -- Gardner on a block of $P$ output samples at $\eta=2$ (i.e.\ $P/2$ symbols), Modified Godard on an overlap-save block of $N$ FFT bins producing $N - N_\mathrm{CD} + 1$ valid samples (i.e.\ $(N - N_\mathrm{CD} + 1)/\eta$ symbols) -- so the per-block counts are normalised to per-symbol counts in \cref{tab:clk_cost}, counting complex multiplications as 4 RM + 2 RA and complex additions as 2 RA. The Gardner cost is dominated by one cubic Farrow interpolator per output sample, evaluated as four fixed-coefficient 4-tap FIRs on complex data (one per polynomial coefficient $c_0,\dots,c_3$) followed by evaluation of the polynomial in $\mu$, giving 38 RM and 30 RA per output sample. The Godard cost is dominated by the $\beta N / \eta$ complex products of \cref{eq:godard_sum} and the per-block frequency-domain phase ramp ($N$ recursive ramp coefficients and $N$ spectral-bin multiplications, $\approx 8N$ RM); both are amortised over the $(N - N_\mathrm{CD} + 1)/\eta$ valid symbols delivered by the overlap-save block. The FFT and IFFT used by Godard are reused from the overlap-save CD/matched-filter stage and so appear in \cref{tab:cd_cost} rather than here.
 
-\subsection{Coarse CFO correction}
-Explain how 
-
 \begin{table}[H]
     \centering
     \begin{tabular}{lcc}
@@ -354,21 +396,102 @@ Explain how
 \end{table}
 
 \section{Combined Implementations}
-The equaliser must be at least 22 samples long to compensate chromatic dispersion and may need to be longer to also act as a matched filter. At this length a frequency domain filter will offer reduced complexity, and given that PMD is negligible, converting the adaptive equaliser to the frequency domain is unecessary. The most efficient approach will then employ a static frequency domain equaliser and a single tap time-domain adaptive equaliser. Both Gardner and Godard clock recovery are viable with this approach, and can be placed between the static and adaptive equalisers. 
+A common architecture for short range access-network receivers is to use a single butterfly adaptive equaliser to perform all of the equalisation in one $2\times 2$ MIMO structure \cite{Cheng;20}. However, for a longer network like the one under investigation, the filter must be at least $N_\mathrm{CD} = 22$ taps long (\cref{eq:cd_len}), or up to $22 + 2\times10 -1 = 41$ taps for a conservative equaliser that fully compensates CD and the RRC span.
+
+At those lengths a time-domain FIR is no longer the cheapest implementation, and both the static and the adaptive equalisers become candidates for a frequency-domain implementation. Replacing the static CD/matched-filter FIR with an overlap-save FFT block drops the per-symbol multiplication count from $O(N)$ to $O(\log_2 N)$ (\cref{tab:cd_cost}), and the resulting FFTs are then available for the Modified Godard TED. A frequency-domain adaptive equaliser \cite{Faruk:11} achieves the same per-symbol FFT scaling but the MIMO structure is wasteful when PMD is negligible, and the Modified Godard TED cannot be placed after it as the output is at the symbol rate. This motivates two combined implementations: An overlap-save static equaliser to perform CD compensation and matched filtering followed by either the Godard (in the frequency domain) or Gardner (after the IFFT) and finally a single-tap adaptive equaliser for polarisation demultiplexing.
+
 
 \section{Results \& Discussion}
-\subsection{}
-% --- FEC SNR per configuration (FEC BER = 2e-02) ---
-% block              NCD   NTaps   po2   ki        kp        FEC SNR    std       
-% cd_gardner_cma     22    1       0     1.0e-07   1.0e-06      3.98       0.24   
-% cd_gardner_cma     22    1       1     1.0e-06   1.0e-06      8.47       0.30   
-% cd_gardner_cma     41    1       0     1.0e-07   1.0e-06      3.93       0.23   
-% cd_gardner_cma     41    1       1     1.0e-06   1.0e-05      8.41       0.34   
-% cd_godard_cma      22    1       0     1.0e-06   1.0e-05      4.41       0.30   
-% cd_godard_cma      22    1       1     1.0e-05   1.0e-05      7.04       0.15   
-% cd_godard_cma      41    1       0     1.0e-06   1.0e-05      4.32       0.30   
-% cd_godard_cma      41    1       1     1.0e-04   1.0e-04      6.40       0.12 
+\subsection{Combined Performance}
+\Cref{tab:combined_eq_clk_no_cfo} compares the performance of the proposed implementations with floating point precision in the absence of CFO. The conservative static equaliser length of 41 seems to offer little improvement over 22 taps, hence 22 taps can be used to reduce complexity. Rounding the FFT/IFFT twiddle factors to a power of 2 incurs an SNR penalty but should still be considered as the receiver's SNR floor may be determined by other DSP blocks.
 
+In reality a CFO can be present in the signal as the carrier recovery block is downstream of equalisation and clock recovery. The effect of CFO on performance is shown in \cref{fig:cfo_sweep_float}. CFO is clearly problematic for both clock recovery algorithms, with none able to achieve the 3 GHz tolerance, but the Godard TED struggles the most. The issue can be seen from \cref{eq:godard_sum}; the summation used to perform the estimate is over specific frequency bins but a CFO shifts the spectrum and the sum no longer captures the intended overlap. The effect of a CFO $\Delta f$ on Gardner is more subtle but can be seen by expressing the signal with CFO as $y[k] = x[k]\exp{(j2\pi \Delta f T\eta k)}$ then substituting into \cref{eq:gardner_ted} to give
+\begin{equation}
+    e[k] = \Re\left\{x^*[2k-1]x[2k]\exp{(j2\pi\Delta f T\eta)} - x^*[2k-1]x[2k-2]\exp{(-j2\pi\Delta f T \eta)}\right\}.
+\end{equation}
+Taking expectations and noting that the correlation of QPSK symbols is real, we obtain
+\begin{equation}
+    \mathbb{E}\left[e[k]\right] = \cos(2\pi\Delta fT\eta)\left\{\mathbb{E}\left[x^*[2k-1]x[2k]\right] - \mathbb{E}\left[x^*[2k-1]x[2k-2]\right]\right\},
+\end{equation}
+so a CFO flattens $\mathbb{E}\left[e[k]\right]$ (known as the S-curve), making it harder for the loop to track errors.
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabular}{lcccc}
+        \toprule
+        Block & $N_\mathrm{SEQ}$ & $N_\mathrm{AEQ}$ & $2^k$ twiddles & SNR @ FEC Limit (dB) \\
+        \midrule
+        Gardner & 22 & 1 & no  & $3.98 \pm 0.24$ \\
+        Gardner & 22 & 1 & yes & $8.47 \pm 0.30$ \\
+        Gardner & 41 & 1 & no  & $3.93 \pm 0.23$ \\
+        Gardner & 41 & 1 & yes & $8.41 \pm 0.34$ \\
+        \midrule
+        Godard  & 22 & 1 & no  & $4.41 \pm 0.30$ \\
+        Godard  & 22 & 1 & yes & $7.04 \pm 0.15$ \\
+        Godard  & 41 & 1 & no  & $4.32 \pm 0.30$ \\
+        Godard  & 41 & 1 & yes & $6.40 \pm 0.12$ \\
+        \bottomrule
+    \end{tabular}
+    \caption{SNR @ FEC limit (mean $\pm$ standard deviation over trials) for each combined equalisation/clock recovery configuration in the absence of CFO. $N_\mathrm{SEQ}, N_\mathrm{AEQ}$ are the number of taps in the static and adaptive equalisers respectively.}
+    \label{tab:combined_eq_clk_no_cfo}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{max_cfo_combined_float.png}
+    \caption{SNR @ FEC limit as CFO varies for each implementation, plotted points stop when the FEC limit is no longer reached at any SNR.}
+    \label{fig:cfo_sweep_float}
+\end{figure}
+
+\paragraph{Correcting CFO}
+An energy-efficient coarse CFO correction can be built from the FFT already produced by the overlap-save CD/matched-filter. The CFO estimate is found from the centroid of the FFT magnitudes, combined over multiple blocks to improve the estimation accuracy.
+\begin{equation}
+    \hat{k} = \frac{\sum_{k} k\,|X[k]|^2}{\sum_{k} |X[k]|^2}, \qquad k \in \{0,\dots,\tfrac{N}{2}-1,-\tfrac{N}{2},\dots,-1\},
+\end{equation}
+with bin spacing $\eta R_s / N$, and applied as a continuous-valued time-domain phasor
+\\ $\exp(-j 2\pi \hat{k}n / N)$ to later samples before they reach the FFT. This estimator is applied before the matched filter as it is band-limited and biases the estimator closer to DC. \Cref{fig:cfo_corrected_float} shows the SNR at the FEC limit for each implementation. The coarse estimate allows both Godard and Gardner to achieve the FEC limit at the 3 GHz tolerance but the residual CFO is still impactful for Godard. $2^k$ twiddles consistently underperform the standard FFT/IFFT for Gardner but towards the 3 GHz limit using them with Godard appears to offer the same performance within the given variance but saves energy.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{cfo_sweep_corrected_float.png}
+    \caption{SNR @ FEC limit as CFO varies with coarse CFO correction.}
+    \label{fig:cfo_corrected_float}
+\end{figure}
+
+\subsection{Fixed Point Precision}
+So far implementations have been compared in floating point arithmetic, which avoids the quantisation error present in a real coherent receiver. \Cref{fig:fxp_sweep_combined_snr} shows the performance for a bit-accurate model of each combination. The most notable change from the SNRs at 3 GHz in \cref{fig:cfo_corrected_float} is for Godard with $2^k$ twiddles, increasing by $\approx 5$ dB and no longer making it a viable choice. Gardner with a standard FFT/IFFT still offers the best performance and from \cref{fig:fxp_sweep_combined_energy}, Gardner with $2^k$ twiddles narrowly beats Godard as the low energy alternative. Precision can go as low as 6 bits for both Gardner implementations with a small rise in SNR at 4 bits, thus the combinations most promising for an energy-efficient receiver are shown in \cref{tab:gardner_energy_breakdown}. Clock recovery and static equalisation dominate the energy consumption but using $2^k$ significantly reduces the contribution from the static equaliser.
+\begin{table}[H]
+    \centering
+    \begin{tabular}{ccccccc}
+        \toprule
+        $2^k$ twiddles & Precision (bits) & SNR @ FEC (dB) & $E_\mathrm{stat}$ & $E_\mathrm{aeq}$ & $E_\mathrm{clk}$ & $E_\mathrm{tot}$ \\
+        \midrule
+        no  & 4 &  $6.39 \pm 0.16$ & $24.94$ & $3.28$ & $25.39$ & $53.61$ \\
+        yes & 4 & $9.55 \pm 0.42$ & $4.57$  & $3.28$ & $25.39$ & $33.24$ \\
+        no  & 6 & $5.50 \pm 0.08$ & $29.99$ & $3.94$ & $30.61$ & $64.54$ \\
+        yes & 6 & $8.02 \pm 0.50$ & $5.35$  & $3.94$ & $30.61$ & $39.90$ \\
+        \bottomrule
+    \end{tabular}
+    \caption{Energy breakdown (pJ/bit) and SNR at the FEC limit for the Gardner implementation with and without $2^k$ twiddles at $4$ and $6$ bits of fractional precision (the same precision is used in every block). $E_\mathrm{stat}$, $E_\mathrm{aeq}$, and $E_\mathrm{clk}$ are the per-bit energies of the static FD CD/matched-filter, the adaptive equaliser, and the clock-recovery loop respectively.}
+    \label{tab:gardner_energy_breakdown}
+\end{table}
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[t]{0.65\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{fxp_sweep_combined_3GHz.png}
+        \caption{SNR @ FEC limit vs fixed-point precision.}
+        \label{fig:fxp_sweep_combined_snr}
+    \end{subfigure}
+    \begin{subfigure}[t]{0.65\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{fxp_sweep_energy.png}
+        \caption{Energy per bit vs fixed-point precision.}
+        \label{fig:fxp_sweep_combined_energy}
+    \end{subfigure}
+    \caption{Performance and energy of each implementation as fixed-point precision varies with 3\,GHz of CFO applied.}
+    \label{fig:fxp_sweep_combined}
+\end{figure}
+\paragraph{Oversampling rate.} It is important to note the impact of performing this analysis with an oversampling rate of 2. Modern coherent receivers operate below 2 samples per symbol to reduce the load on analogue-digital converters (ADCs). A standard adaptive equaliser requires 2 samples per symbol as it effectively splits the signal into odd and even samples, which is not possible with fractional oversampling rates. This means the output of the ADC must eventually be upsampled but the clock recovery can be done at the lower sampling rate if Modified Godard is used, reducing the operation counts per symbol in \cref{tab:clk_cost}. Thus for lower oversampling rates Godard may be the preferred choice.
 % =====================================================================
 \chapter{Carrier Recovery}\label{chapter:carrier_recovery}
 % =====================================================================
@@ -377,7 +500,7 @@ The equaliser must be at least 22 samples long to compensate chromatic dispersio
 
 A coherent receiver recovers the transmitted symbols by mixing the incoming optical signal with a local oscillator (LO) laser, allowing the amplitude and phase of each symbol to be extracted directly. However, the transmitter and LO lasers will in general have different centre frequencies and independent phase trajectories, producing a carrier frequency offset (CFO) and accumulated phase noise on the received symbols. Carrier recovery is the DSP stage responsible for estimating and removing these impairments before symbol decisions are made.
 
-Carrier recovery is divided into two sequential stages. Frequency recovery performs a coarse estimate of the CFO and corrects it so that only slow residual phase variations remain. Phase recovery then tracks and removes these residual phase errors on a block-by-block basis.
+Carrier recovery is divided into two sequential stages. Frequency recovery performs a finer estimate of the CFO than discussed in \cref{chapter:equalisation} and corrects it so that only slow residual phase variations remain. Phase recovery then tracks and removes these residual phase errors on a block-by-block basis.
 
 Two common carrier recovery algorithms, Rife \& Boorstyn and Viterbi \& Viterbi, are compared against low-complexity alternatives to quantify the trade-offs between energy consumption and performance in an energy-efficient carrier recovery block.
 
@@ -647,57 +770,6 @@ Blind Rife \& Boorstyn and differential phase and Kay with pilots-only phase rec
 \end{table}
 
 \chapter{Full DSP Pipeline}\label{chapter:full_pipeline}
-\subsection{Transmitter Energy}
-The downstream link considered here consists of a single OLT transmitting through a 1:\(K\) passive splitter to \(K\) ONUs, as shown in \cref{fig:pon_intro}. The OLT power is divided equally between branches, so each ONU receives a \(1/K\) share.
 
-\paragraph{Minimum Required SNR}
-The CPON standard specifies a maximum pre-FEC bit-error rate (BER) of \(10^{-2}\) that must not be exceeded for the forward error-correction (FEC) scheme to function correctly. Each receiver implementation therefore has a minimum required SNR to meet this FEC threshold. This SNR, together with the noise characteristics of the optical network, determines the minimum transmitter power.
-
-\paragraph{Noise}
-% \paragraph{Shot Noise}
-The relationship between SNR and transmitter power \(P_\mathrm{tx}\) depends on the dominant source of noise in the network. Optical access networks typically operate over short lengths at low power, so amplifiers can be omitted and non-linear noise neglected, leaving shot noise as the dominant impairment. The shot noise power referred to the optical input of a balanced coherent receiver is \(2h\nu B_\mathrm{eff}\), where the factor of 2 captures the contributions from the signal and LO arms of the balanced detector summed in quadrature, and \(B_\mathrm{eff}\) is the receiver electrical bandwidth, set equal to the symbol rate by a matched bandpass filter after the 1:\(K\) splitter in \cref{fig:pon_intro}. The power per polarisation received by each ONU is \(P_\mathrm{tx}/2\Gamma K\), where $\Gamma$ is the loss from OLT to ONU. This gives a per-ONU NSR of
-\begin{equation}
-    \mathrm{NSR} = \frac{4\Gamma K h\nu B_\mathrm{eff}}{P_\mathrm{tx}} + \mathrm{NSR}_0,
-    \label{eq:snr_shot}
-\end{equation}
-where $\mathrm{NSR} = 1/\mathrm{SNR}$ and $\mathrm{NSR}_0$ is the back-to-back NSR at the OLT. Rearranging gives the transmitted power as
-\begin{equation}
-    P_\mathrm{tx} = \frac{4\Gamma Kh\nu B_\mathrm{eff}}{\mathrm{NSR} - \mathrm{NSR}_0}.
-\end{equation}
-Assuming Nyquist pulse-shaping and matched bandpass filtering at the receiver ($B_\mathrm{eff} = R_s$), the energy per bit transmitted is
-\begin{equation}
-    E_\mathrm{tx} = \frac{P_\mathrm{tx}}{2KR_s \log_2(M)} = \frac{2\Gamma h\nu}{(\mathrm{NSR} - \mathrm{NSR}_0)\log_2(M)}.
-    \label{eq:tx_bit_energy}
-\end{equation}
-
-
-\subsection{Combined Energy}
-Before calculating a combined energy contribution, the transmitted optical energy in \cref{eq:tx_bit_energy} must be converted into an energy drawn from the electrical power supply by estimating the efficiencies of the transmitting laser and the modulator. The dual-polarisation modulator (\cref{fig:mzm}) consists of two nested-Mach-Zehnder IQ modulators sharing a common laser through a polarisation beam splitter, with their outputs recombined by a polarisation beam combiner. Each IQ modulator has the transfer function \cite{Mello;21}
-\begin{equation}
-    \frac{E_\mathrm{output}(t)}{E_\mathrm{input}(t)} = \frac{1}{2}\cos\left[\frac{v_I(t)\pi}{2V_\pi}\right] + \frac{j}{2}\cos\left[\frac{v_Q(t)\pi}{2V_\pi}\right].
-\end{equation}
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.7\textwidth]{MZM.jpeg}
-    \caption{Dual-polarisation coherent modulator using MZMs.}
-    \label{fig:mzm}
-\end{figure}
-With null biasing, QPSK is generated by driving each MZM between transmission minima, $v_I(t), v_Q(t) \in \{0, 2V_\pi\}$, so
-\begin{equation}
-    \frac{E_\mathrm{output}(t)}{E_\mathrm{input}(t)} = \pm\frac{1}{2} \pm \frac{j}{2}
-\end{equation}
-and $P_\mathrm{out} = P_\mathrm{in}/2$, where the loss comes from power coupled to unused ports in the 2$\times$2 couplers. An ideal polarisation beam splitter and combiner introduce no further loss, so the \emph{marginal} efficiency of the dual-polarisation modulator is
-\begin{equation}
-    \eta_\mathrm{DPM} = \frac{dP_\mathrm{tx}}{dP_\mathrm{in}} = 0.5.
- \end{equation}
-The overall efficiency would also include the power dissipated in the drive electronics, but this is independent of transmit power and so cancels in a comparison of receiver implementations. Combining with the marginal laser efficiency $\eta_\mathrm{laser} = dP_\mathrm{opt}/dP_\mathrm{elec}$ gives a marginal wall-plug efficiency
-\begin{equation}
-    \eta_\mathrm{WPE} = \eta_\mathrm{laser}\eta_\mathrm{DPM} = 0.5\eta_\mathrm{laser}.
-\end{equation}
-$\eta_\mathrm{laser}$ will depend on the laser assembly and includes the increase in electrical power to supply the transmit laser and cooling apparatus. The combined energy contribution can now be estimated as
-\begin{equation}
-    E_\mathrm{sys} = \frac{1}{\eta_\mathrm{WPE}}E_\mathrm{tx} + E_\mathrm{rx}.
-\end{equation}
-This does not give the total energy consumed by the optical network, but a difference in $E_\mathrm{sys}$ shows the energy savings across receiver implementations.
 \printbibliography
 \end{document}

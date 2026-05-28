@@ -68,7 +68,7 @@ classdef combined_eq_clk_sweep < matlab.unittest.TestCase
         % design selected by test_design_sweep.  Loop-filter tuning is
         % always performed at CFO_GHz_tune.
         CFO_GHz_tune = 0
-        CFO_GHz_vec  = [0,1,2,3]
+        CFO_GHz_vec  = 0:0.5:3
 
         % --- Pulse shaping ------------------------------------------
         Rolloff  = 0.25
@@ -76,7 +76,7 @@ classdef combined_eq_clk_sweep < matlab.unittest.TestCase
 
         % --- Monte-Carlo --------------------------------------------
         Ns          = 2^12         % symbols per polarisation per trial
-        NTrials     = 10
+        NTrials     = 5
         SNR_dB_vec  = 0 : 2 : 24
         SNR_dB_tune = 22           % SNR used for the (ki, kp) sweep
 

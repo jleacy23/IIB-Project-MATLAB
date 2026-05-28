@@ -1,16 +1,16 @@
 # Fdb version 4
-["biber full"] 1779919233.9986 "full.bcf" "full.bbl" "full" 1779920214.42611 0
+["biber full"] 1779974638.25627 "full.bcf" "full.bbl" "full" 1779981889.79613 0
   "../clk_recovery/ref.bib" 1779919166 2440 89ad63ff25e99c17741ed9e1c6d4e147 ""
   "../energy/ref.bib" 1777992037 1213 3edeab146894889c227b177519c60136 ""
-  "../equalisation/ref.bib" 1779628208 5201 22c7e73c24286578dccfa182bc223823 ""
+  "../equalisation/ref.bib" 1779966011 6388 48ae9b42f4350130069196b37727b946 ""
   "../frequency_recovery/ref.bib" 1777558777 1554 5f443762d1d5dcd5fd6ffed8945c1a19 ""
-  "full.bcf" 1779920214 110106 61bd5aefc66fef5e1cda44165e677e9f "pdflatex"
-  "ref.bib" 1779269149 3456 a894c00d1b50f9e1f5e2783661d548f5 ""
+  "full.bcf" 1779981889 110363 ec22870ceb384d78831c59d236525722 "pdflatex"
+  "ref.bib" 1779974582 4729 8b395d5ccceb18c1724f943d95f51a74 ""
   (generated)
   "full.bbl"
   "full.blg"
   (rewritten before read)
-["pdflatex"] 1779920212.73902 "c:/Users/joele/Downloads/iib_project/report/full/full.tex" "full.pdf" "full" 1779920214.42716 0
+["pdflatex"] 1779981888.04374 "c:/Users/joele/Downloads/iib_project/report/full/full.tex" "full.pdf" "full" 1779981889.79728 0
   "../frequency_recovery/CR_precision_comparison.png" 1779818578 37872 a79e9e4dc7ba6efc9bb3ea37aebf66ae ""
   "../frequency_recovery/FR_precision_comparison.png" 1779818686 61087 46df9f443f305bf84a1ff3c398c24d2e ""
   "../frequency_recovery/FR_precision_energy.png" 1779363661 67071 4ef1e796f1b21195abc6f1e18814ba74 ""
@@ -203,12 +203,16 @@
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1772596550 94259 aec9939469efac8f0cf917369f632359 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/web2c/pdftex/pdflatex.fmt" 1772596566 2236130 036198fdb3bbb46401ac4d671e71ba73 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf.cnf" 1772596498 903 164c5b127cd0d6dc91abad2f62421ea2 ""
-  "c:/Users/joele/Downloads/iib_project/report/full/full.tex" 1779920210 67288 c9725ddb84eb9615926e162931cb1236 ""
-  "full.aux" 1779920214 23781 1726e158f580bfa7ae50997cc78ea544 "pdflatex"
-  "full.bbl" 1779919236 32942 ba214517f3d945351b888e817ca0d275 "biber full"
-  "full.run.xml" 1779920214 2470 b201c3512d6c50d3be3b3780315b62f5 "pdflatex"
-  "full.tex" 1779920210 67288 c9725ddb84eb9615926e162931cb1236 ""
-  "full.toc" 1779920214 4895 a96f5edd982e8458b53f64ce46d79269 "pdflatex"
+  "c:/Users/joele/Downloads/iib_project/report/full/full.tex" 1779981885 75222 37272312ca955bc3fdc298efc355b835 ""
+  "cfo_sweep_corrected_float.png" 1779965513 52825 6600c9ea3ddb37401553a82134b17f0b ""
+  "full.aux" 1779981889 27275 eb75a922eb0efbe688e55bcf0d195d26 "pdflatex"
+  "full.bbl" 1779974640 44423 22094fd04e2b827165bf64618eb1399e "biber full"
+  "full.run.xml" 1779981889 2470 b201c3512d6c50d3be3b3780315b62f5 "pdflatex"
+  "full.tex" 1779981885 75222 37272312ca955bc3fdc298efc355b835 ""
+  "full.toc" 1779981889 5041 b9f1ad155a0619f7780de744c700bd98 "pdflatex"
+  "fxp_sweep_combined_3GHz.png" 1779977447 48686 a0e9632d1e58ed70a7695e936bd295a5 ""
+  "fxp_sweep_energy.png" 1779978763 66464 6721c975f953d2160f489965111ac5b4 ""
+  "max_cfo_combined_float.png" 1779957798 54446 ad4dba6dee1cb1ddbbe9c1b3f16057e3 ""
   (generated)
   "full.aux"
   "full.bcf"

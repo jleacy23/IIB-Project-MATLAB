@@ -61,6 +61,64 @@ classdef test_EqClkCombined < matlab.unittest.TestCase
 
         % --- Pass / fail ---
         BER_THRESHOLD = 5e-2
+
+        % --- Fixed-point ---
+        %  'fixed32' is the high-precision uniform 32-bit / FL=16 preset
+        %  defined by the per-section fxp_types tables.  Same config used
+        %  for every section (Static / CFO / Clk or Godard / AdaptEq).
+        FxpConfig = 'fixed32'
+    end
+
+    methods (TestClassSetup)
+        function buildFxpMex(testCase)
+            % Build the fixed-point MEX binaries for the two combined
+            % CD-FD + clock-recovery + adaptive-EQ blocks before the fxp
+            % tests run.  Shared P struct keyed against this test class.
+            thisDir  = fileparts(mfilename('fullpath'));
+            repoRoot = fileparts(thisDir);
+            addpath(genpath(fullfile(repoRoot, 'src')));
+            addpath(fullfile(repoRoot, 'build'));
+
+            P = struct();
+            P.FxpConfig_CombGardner = testCase.FxpConfig;
+            P.FxpConfig_CombGodard  = testCase.FxpConfig;
+
+            % --- System / pulse-shaping / FFT --------------------------
+            P.SpS        = testCase.SpS;
+            P.NFFT       = testCase.NFFT;
+            P.NOverlap   = testCase.NOverlap;
+            P.D          = testCase.D;
+            P.L          = testCase.L_km;
+            P.CWL        = testCase.CWL;
+            P.Rs         = testCase.Rs;
+            P.Rolloff    = testCase.Rolloff;
+            P.N_pol      = testCase.N_pol;
+            P.po2Twiddle = false;
+            P.cfoEnable  = false;
+            P.Ns         = testCase.Ns;
+
+            % --- Clock-recovery loop-filter (nominal type values) ------
+            P.CR_ki     = testCase.ki_sweep_gardner(1);
+            P.CR_kp     = testCase.kp_sweep_gardner(1);
+            P.CR_NLanes = testCase.NLanes;
+
+            % --- Adaptive equaliser ------------------------------------
+            P.AEQ_NTaps          = testCase.NTapsAdapt;
+            P.AEQ_Mu             = testCase.Mu;
+            P.AEQ_SingleSpike    = testCase.SingleSpike;
+            P.AEQ_N1             = testCase.N1;
+            P.AEQ_NOut           = testCase.NOutAdapt;
+            P.AEQ_SignOnly       = testCase.SignOnly;
+            P.AEQ_UpdateStep     = 1;
+            P.AEQ_PLanes         = testCase.PLanes;
+            P.AEQ_Mode           = testCase.Mode;
+            P.AEQ_BlockLen       = testCase.PLanes;
+            P.AEQ_SubframeBlocks = testCase.SubframeBlocks;
+
+            cfg = coder.config('mex');
+            build_eq_clk_combined_cd_fd_gardner_adaptive_fxp_mex(P, cfg);
+            build_eq_clk_combined_cd_fd_godard_adaptive_fxp_mex(P, cfg);
+        end
     end
 
     methods (TestMethodSetup)
@@ -123,6 +181,40 @@ classdef test_EqClkCombined < matlab.unittest.TestCase
                 testCase.D, testCase.L_km, testCase.CWL, testCase.Rs, ...
                 testCase.Rolloff, ki, kp, ...
                 testCase.Ns, testCase.NLanes, adaptOpts(testCase));
+            [y, ki_b, kp_b, qVar_b] = runSweep(testCase, runFn, ...
+                testCase.ki_sweep_gardner, testCase.kp_sweep_gardner, label);
+            evaluate(testCase, rxSig, y, symbols, ...
+                sprintf('%s  (best ki=%.2g kp=%.2g qVar=%.2e)', ...
+                label, ki_b, kp_b, qVar_b));
+        end
+
+        % -------- Block 3 (fixed-point MEX) --------------------------
+        function test_block3_cd_fd_godard_adaptive_fxp(testCase)
+            label = sprintf('Block 3 (FXP %s): CD/MF (overlap-save) + Godard + Adaptive CMA', ...
+                testCase.FxpConfig);
+            [rxSig, symbols] = genRx(testCase);
+
+            T = eq_clk.combined_cd_fd_godard_adaptive_fxp_types(testCase.FxpConfig);
+            rxSig_fi = cast(rxSig, 'like', T.Static.x);
+
+            runFn = @(ki, kp) godardFxp(testCase, rxSig_fi, T, ki, kp);
+            [y, ki_b, kp_b, qVar_b] = runSweep(testCase, runFn, ...
+                testCase.ki_sweep_godard, testCase.kp_sweep_godard, label);
+            evaluate(testCase, rxSig, y, symbols, ...
+                sprintf('%s  (best ki=%.2g kp=%.2g qVar=%.2e)', ...
+                label, ki_b, kp_b, qVar_b));
+        end
+
+        % -------- Block 4 (fixed-point MEX) --------------------------
+        function test_block4_cd_fd_gardner_adaptive_fxp(testCase)
+            label = sprintf('Block 4 (FXP %s): CD/MF (overlap-save) -> Gardner -> Adaptive CMA', ...
+                testCase.FxpConfig);
+            [rxSig, symbols] = genRx(testCase);
+
+            T = eq_clk.combined_cd_fd_gardner_adaptive_fxp_types(testCase.FxpConfig);
+            rxSig_fi = cast(rxSig, 'like', T.Static.x);
+
+            runFn = @(ki, kp) gardnerFxp(testCase, rxSig_fi, T, ki, kp);
             [y, ki_b, kp_b, qVar_b] = runSweep(testCase, runFn, ...
                 testCase.ki_sweep_gardner, testCase.kp_sweep_gardner, label);
             evaluate(testCase, rxSig, y, symbols, ...
@@ -203,6 +295,53 @@ classdef test_EqClkCombined < matlab.unittest.TestCase
                 'Pilots',         [], ...
                 'BlockLen',       testCase.BlockLen, ...
                 'SubframeBlocks', testCase.SubframeBlocks);
+        end
+
+        function opts = adaptOptsFxp(testCase, T)
+            % Codegen-friendly AdaptOpts: every field has a concrete type
+            % and Pilots is a fi 0x2 (empty) at T.AdaptEq.y precision.
+            PilotsEmpty = cast(complex(zeros(0, 2)), 'like', T.AdaptEq.y);
+            BLen = testCase.BlockLen;
+            if isempty(BLen)
+                BLen = testCase.PLanes;
+            end
+            opts = struct( ...
+                'NTaps',          double(testCase.NTapsAdapt), ...
+                'Mu',             double(testCase.Mu), ...
+                'SingleSpike',    logical(testCase.SingleSpike), ...
+                'N1',             double(testCase.N1), ...
+                'NOut',           double(testCase.NOutAdapt), ...
+                'SignOnly',       logical(testCase.SignOnly), ...
+                'UpdateStep',     double(1), ...
+                'PLanes',         double(testCase.PLanes), ...
+                'Mode',           double(testCase.Mode), ...
+                'Pilots',         PilotsEmpty, ...
+                'BlockLen',       double(BLen), ...
+                'SubframeBlocks', double(testCase.SubframeBlocks));
+        end
+
+        function y = godardFxp(testCase, rxSig_fi, T, ki, kp)
+            opts = adaptOptsFxp(testCase, T);
+            [yFi, ~] = eq_clk.combined_cd_fd_godard_adaptive_fxp_mex( ...
+                rxSig_fi, double(testCase.SpS), double(testCase.NFFT), ...
+                double(testCase.NOverlap), double(testCase.D), ...
+                double(testCase.L_km), double(testCase.CWL), ...
+                double(testCase.Rs), double(testCase.Rolloff), ...
+                double(ki), double(kp), double(testCase.Ns), ...
+                opts, false, false, T);
+            y = double(yFi);
+        end
+
+        function y = gardnerFxp(testCase, rxSig_fi, T, ki, kp)
+            opts = adaptOptsFxp(testCase, T);
+            [yFi, ~] = eq_clk.combined_cd_fd_gardner_adaptive_fxp_mex( ...
+                rxSig_fi, double(testCase.SpS), double(testCase.NFFT), ...
+                double(testCase.NOverlap), double(testCase.D), ...
+                double(testCase.L_km), double(testCase.CWL), ...
+                double(testCase.Rs), double(testCase.Rolloff), ...
+                double(ki), double(kp), double(testCase.Ns), ...
+                double(testCase.NLanes), opts, false, false, T);
+            y = double(yFi);
         end
 
         function [rxSig, symbols] = genRx(testCase)

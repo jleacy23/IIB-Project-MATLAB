@@ -1,29 +1,34 @@
 function process_combined_eq_clk_cfo_sweep(varargin)
-%PROCESS_COMBINED_EQ_CLK_CFO_SWEEP  Plot the CFO-sweep results.
+%PROCESS_COMBINED_EQ_CLK_CFO_SWEEP  Plot FEC SNR vs CFO and report 3 GHz table.
 %
 %   process_combined_eq_clk_cfo_sweep()
 %   process_combined_eq_clk_cfo_sweep('MatFile', path, ...
-%       'FECBER', 2e-2, 'SavePlots', true)
+%       'FECBER', 2e-2, 'CfoReport', 3, 'SavePlots', true)
 %
-%   Loads combined_eq_clk_cfo_sweep.mat (one design per block, swept
-%   over (SNR, CFO)) and produces:
-%     1. BER vs SNR curves, one panel per block, one line per CFO.
-%     2. FEC SNR vs CFO, one line per block.
+%   Loads combined_eq_clk_cfo_sweep.mat and produces:
+%     1. A single plot of FEC SNR vs CFO, one line per implementation
+%        (block, NCD, NTaps, po2, ki, kp).
+%     2. A console table of FEC SNR (mean +/- std over trials) at the
+%        worst-case CFO (default 3 GHz).
 %
 %   Name/Value options:
 %     'MatFile'   - path to the .mat (default: alongside this script)
 %     'FECBER'    - FEC threshold (default 2e-2)
-%     'SavePlots' - true to write PNGs alongside the .mat (default true)
+%     'CfoReport' - CFO (GHz) at which to print the summary table
+%                   (default 3).  Must be present in CFO_GHz_vec.
+%     'SavePlots' - true to write a PNG alongside the .mat (default true)
 
     here = fileparts(mfilename('fullpath'));
     p = inputParser;
     p.addParameter('MatFile', ...
         fullfile(here, 'combined_eq_clk_cfo_sweep.mat'));
     p.addParameter('FECBER',    2e-2);
+    p.addParameter('CfoReport', 3);
     p.addParameter('SavePlots', true);
     p.parse(varargin{:});
     matFile   = p.Results.MatFile;
     fecBer    = p.Results.FECBER;
+    cfoReport = p.Results.CfoReport;
     savePlots = p.Results.SavePlots;
 
     if ~isfile(matFile)
@@ -39,77 +44,42 @@ function process_combined_eq_clk_cfo_sweep(varargin)
     NCFO    = numel(CFO_vec);
     NCFG    = height(tbl);
 
-    %% --- BER vs SNR (all blocks x CFOs on a single panel) ----------
-    figure('Name', 'CFO sweep: BER vs SNR', ...
+    %% --- Per-trial FEC SNR (mean +/- std across trials) ------------
+    fecSnrMean = nan(NCFG, NCFO);
+    fecSnrStd  = nan(NCFG, NCFO);
+    for ci = 1:NCFG
+        berCube = tbl.ber{ci};                  % [NTrials x NSNR x NCFO]
+        nTrials = size(berCube, 1);
+        for ic = 1:NCFO
+            berSlice = squeeze(berCube(:, :, ic));   % [NTrials x NSNR]
+            perTrial = nan(nTrials, 1);
+            for tr = 1:nTrials
+                perTrial(tr) = fecSnrFromBer( ...
+                    SNR_dB, berSlice(tr, :), fecBer);
+            end
+            valid = isfinite(perTrial);
+            if any(valid)
+                fecSnrMean(ci, ic) = mean(perTrial(valid));
+                fecSnrStd(ci, ic)  = std(perTrial(valid));
+            end
+        end
+    end
+
+    figure('Name', 'CFO sweep: FEC SNR vs CFO', ...
         'Position', [80 80 720 480]);
     ax = axes; hold(ax, 'on'); grid(ax, 'on'); box(ax, 'on');
-    colors = lines(NCFG * NCFO);
-    lineStyles = {'-', '--', ':', '-.'};
-    iLine = 0;
+    colors = lines(NCFG);
     for ci = 1:NCFG
-        berCube = tbl.ber{ci};
-        ls = lineStyles{mod(ci - 1, numel(lineStyles)) + 1};
-        for ic = 1:NCFO
-            iLine = iLine + 1;
-            berSlice = squeeze(berCube(:, :, ic));
-            meanBer  = mean(berSlice, 1, 'omitnan');
-            minBer   = min(berSlice, [], 1, 'omitnan');
-            maxBer   = max(berSlice, [], 1, 'omitnan');
-
-            meanBer(meanBer < 1e-6) = 1e-6;
-            minBer(minBer   < 1e-6) = 1e-6;
-            maxBer(maxBer   < 1e-6) = 1e-6;
-
-            valid = isfinite(meanBer);
-            col   = colors(iLine, :);
-            fill(ax, [SNR_dB(valid), fliplr(SNR_dB(valid))], ...
-                     [minBer(valid),  fliplr(maxBer(valid))], col, ...
-                     'FaceAlpha', 0.08, 'EdgeColor', 'none', ...
-                     'HandleVisibility', 'off');
-            plot(ax, SNR_dB(valid), meanBer(valid), ls, ...
-                 'Marker', 'o', 'Color', col, 'LineWidth', 1.3, ...
-                 'MarkerSize', 4, ...
-                 'DisplayName', sprintf('%s, CFO=%g GHz', ...
-                    char(tbl.block_name(ci)), CFO_vec(ic)));
-        end
-    end
-    yline(ax, fecBer, '--', sprintf('FEC %.0e', fecBer), ...
-        'LabelHorizontalAlignment', 'left');
-    set(ax, 'YScale', 'log');
-    xlabel(ax, 'SNR (dB)');
-    ylabel(ax, 'BER');
-    title(ax, sprintf('CFO sweep BER vs SNR (L = %d km)', tbl.l_km(1)));
-    legend(ax, 'Location', 'eastoutside', 'Interpreter', 'none');
-    ylim(ax, [1e-6, 0.5]);
-
-    if savePlots
-        outFile = fullfile(here, 'combined_eq_clk_cfo_ber_vs_snr.png');
-        exportgraphics(gcf, outFile, 'Resolution', 200);
-        fprintf('Saved BER vs SNR plot to %s\n', outFile);
-    end
-
-    %% --- FEC SNR vs CFO, one line per block ------------------------
-    figure('Name', 'CFO sweep: FEC SNR vs CFO', ...
-        'Position', [80 80 600 400]);
-    ax = axes; hold(ax, 'on'); grid(ax, 'on'); box(ax, 'on');
-    blockColors = lines(NCFG);
-    fecSnrMat   = nan(NCFG, NCFO);
-    for ci = 1:NCFG
-        berCube = tbl.ber{ci};
-        for ic = 1:NCFO
-            berSlice = squeeze(berCube(:, :, ic));
-            meanBer  = mean(berSlice, 1, 'omitnan');
-            fecSnrMat(ci, ic) = fecSnrFromBer(SNR_dB, meanBer, fecBer);
-        end
-        plot(ax, CFO_vec, fecSnrMat(ci, :), '-o', ...
-            'Color', blockColors(ci, :), 'LineWidth', 1.4, ...
-            'MarkerSize', 5, ...
-            'DisplayName', char(tbl.block_name(ci)));
+        errorbar(ax, CFO_vec, fecSnrMean(ci, :), fecSnrStd(ci, :), ...
+            '-o', 'Color', colors(ci, :), 'LineWidth', 1.4, ...
+            'MarkerSize', 5, 'CapSize', 8, ...
+            'DisplayName', cfgLabel(tbl, ci));
     end
     xlabel(ax, 'CFO (GHz)');
     ylabel(ax, 'FEC SNR (dB)');
-    title(ax, sprintf('FEC SNR vs CFO at BER = %.0e', fecBer));
-    legend(ax, 'Location', 'best', 'Interpreter', 'none');
+    title(ax, sprintf('FEC SNR vs CFO at BER = %.0e (L = %d km)', ...
+        fecBer, tbl.l_km(1)));
+    legend(ax, 'Location', 'eastoutside', 'Interpreter', 'none');
 
     if savePlots
         outFile = fullfile(here, 'combined_eq_clk_cfo_fec_snr.png');
@@ -117,44 +87,44 @@ function process_combined_eq_clk_cfo_sweep(varargin)
         fprintf('Saved FEC SNR vs CFO plot to %s\n', outFile);
     end
 
-    %% --- Console summary -------------------------------------------
-    for ic = 1:NCFO
-        fprintf('\n--- Mean BER vs SNR  (CFO = %g GHz) ---\n', CFO_vec(ic));
-        header = sprintf('%-26s %-5s %-7s', 'block', 'NCD', 'NTaps');
-        for si = 1:numel(SNR_dB)
-            header = [header, sprintf(' %7.1f', SNR_dB(si))]; %#ok<AGROW>
-        end
-        fprintf('%s\n', header);
-        for k = 1:NCFG
-            row = sprintf('%-26s %-5d %-7d', ...
-                char(tbl.block_name(k)), tbl.n_cd(k), tbl.n_aeq(k));
-            m = mean(tbl.ber{k}(:, :, ic), 1, 'omitnan');
-            for si = 1:numel(SNR_dB)
-                row = [row, sprintf(' %7.1e', m(si))]; %#ok<AGROW>
-            end
-            fprintf('%s\n', row);
-        end
+    %% --- Table of FEC SNR (mean +/- std) at cfoReport --------------
+    ic = find(abs(CFO_vec - cfoReport) < 1e-9, 1);
+    if isempty(ic)
+        warning('process_combined_eq_clk_cfo_sweep:cfoMissing', ...
+            ['CfoReport = %.3f GHz not in CFO_GHz_vec [', ...
+             repmat('%g ', 1, NCFO), ']; skipping table.'], ...
+            cfoReport, CFO_vec);
+        return;
     end
 
-    fprintf('\n--- FEC SNR (dB) vs CFO ---\n');
-    header = sprintf('%-26s', 'block');
-    for ic = 1:NCFO
-        header = [header, sprintf(' %7.2f', CFO_vec(ic))]; %#ok<AGROW>
-    end
-    fprintf('%s\n', header);
-    for k = 1:NCFG
-        row = sprintf('%-26s', char(tbl.block_name(k)));
-        for ic = 1:NCFO
-            v = fecSnrMat(k, ic);
-            if isfinite(v)
-                row = [row, sprintf(' %7.2f', v)]; %#ok<AGROW>
-            else
-                row = [row, sprintf(' %7s', '---')]; %#ok<AGROW>
-            end
+    fprintf('\n--- FEC SNR at CFO = %g GHz (FEC BER = %.0e) ---\n', ...
+        cfoReport, fecBer);
+    fprintf('%-18s %-5s %-7s %-5s %-9s %-9s %-10s %-10s\n', ...
+        'block', 'NCD', 'NTaps', 'po2', 'ki', 'kp', ...
+        'FEC SNR', 'std');
+    for ci = 1:NCFG
+        meanStr = '   ---';
+        stdStr  = '   ---';
+        if isfinite(fecSnrMean(ci, ic))
+            meanStr = sprintf('%7.2f', fecSnrMean(ci, ic));
         end
-        fprintf('%s\n', row);
+        if isfinite(fecSnrStd(ci, ic))
+            stdStr = sprintf('%7.2f', fecSnrStd(ci, ic));
+        end
+        fprintf('%-18s %-5d %-7d %-5d %-9.1e %-9.1e %-10s %-10s\n', ...
+            char(tbl.block_name(ci)), tbl.n_cd(ci), tbl.n_aeq(ci), ...
+            tbl.po2(ci), tbl.ki(ci), tbl.kp(ci), meanStr, stdStr);
     end
 end
+
+
+% =====================================================================
+function s = cfgLabel(tbl, ci)
+    s = sprintf('%s, NCD=%d, NTaps=%d, po2=%d', ...
+        char(tbl.block_name(ci)), tbl.n_cd(ci), tbl.n_aeq(ci), ...
+        tbl.po2(ci));
+end
+
 
 % =====================================================================
 function snr = fecSnrFromBer(snrVec, berVec, fecBer)

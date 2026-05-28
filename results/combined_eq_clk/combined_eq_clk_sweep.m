@@ -68,16 +68,16 @@ classdef combined_eq_clk_sweep < matlab.unittest.TestCase
         % design selected by test_design_sweep.  Loop-filter tuning is
         % always performed at CFO_GHz_tune.
         CFO_GHz_tune = 0
-        CFO_GHz_vec  = 0:0.5:3
+        CFO_GHz_vec  = 0:0.5:3.0
 
         % --- Pulse shaping ------------------------------------------
         Rolloff  = 0.25
         Span     = 10
 
         % --- Monte-Carlo --------------------------------------------
-        Ns          = 2^12         % symbols per polarisation per trial
+        Ns          = 37500         % symbols per polarisation per trial
         NTrials     = 5
-        SNR_dB_vec  = 0 : 2 : 24
+        SNR_dB_vec  = 0 : 2 : 22
         SNR_dB_tune = 22           % SNR used for the (ki, kp) sweep
 
         % --- Static-equaliser sizing --------------------------------
@@ -136,9 +136,9 @@ classdef combined_eq_clk_sweep < matlab.unittest.TestCase
         Cfo_blocks  = {'cd_gardner_cma', 'cd_godard_cma'}
         Cfo_NCD     = [22,   22]
         Cfo_NTaps   = [1,    1]
-        Cfo_ki      = [1e-7 1e-6; ...
-                       1e-6 1e-5]
-        Cfo_kp      = [1e-6 1e-6; ...
+        Cfo_ki      = [1e-6 1e-7; ...
+                       1e-4 1e-4]
+        Cfo_kp      = [1e-4 1e-4; ...
                        1e-5 1e-5]
     end
 

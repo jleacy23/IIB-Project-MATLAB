@@ -60,9 +60,9 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
         Span     = 10
 
         % --- Monte-Carlo --------------------------------------------
-        Ns          = 2^12         % symbols per polarisation per trial
+        Ns          = 37500         % symbols per polarisation per trial
         NTrials     = 5
-        SNR_dB_vec  = 0 : 2 : 30
+        SNR_dB_vec  = 0 : 2 : 20
 
         % --- Static-equaliser FFT size ------------------------------
         NFFT     = 128
@@ -76,10 +76,10 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
         Po2Twiddle_vec = [false, true]
         NCD            = [22,   22]
         NTaps          = [1,    1]
-        ki             = [1e-7 1e-6; ...
-                          1e-6 1e-5]
-        kp             = [1e-6 1e-6; ...
-                          1e-5 1e-5]
+        ki             = [1e-6 1e-7; ...
+                          1e-4 1e-5]
+        kp             = [1e-4 1e-4; ...
+                          1e-4 1e-5]
 
         % --- Adaptive equaliser (per-block convergence) -------------
         MuGardner   = 1e-3
@@ -113,8 +113,8 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
         %  total) so the up-front codegen phase stays roughly within
         %  ~10 minutes on a typical workstation.  Extend as needed.
         NIntBits   = 16
-        EqFL_vec   = [2, 4, 6, 8, 10, 12]
-        ClkFL_vec  = [2, 4, 6, 8, 10, 12]
+        EqFL_vec   = [2, 4, 6, 8, 10]
+        ClkFL_vec  = [2, 4, 6, 8, 10]
 
         % --- FEC threshold used to score designs --------------------
         FEC_BER = 2e-2

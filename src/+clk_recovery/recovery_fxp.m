@@ -22,11 +22,15 @@ function Out = recovery_fxp(In, NSymb, ki, kp, NLanes, T) %#codegen
 %   Implementation notes for codegen:
 %     - The data path (signal samples and the interpolator MAC) uses fi
 %       at T.x / T.acc precision.
-%     - The NCO state (Etamn, mun, Wk, LF_I) is stored at fi precision
-%       (T.nco / T.lf) but the in-loop recurrence steps (modulo-1, divide
-%       by Wk) are computed in double — fi cannot cleanly express the
-%       division by a near-unity value without large word lengths, and
-%       restoring the result to T.nco bounds it back into the design range.
+%     - The NCO fractional state (Etamn, mun) is stored at fi precision
+%       (T.nco) but the in-loop recurrence steps (modulo-1, divide by Wk)
+%       are computed in double — fi cannot cleanly express the division by
+%       a near-unity value without large word lengths, and restoring the
+%       result to T.nco bounds it back into the design range.
+%     - The loop-filter state (Wk, LF_I) and PI recurrence are kept in
+%       double: the gains ki, kp (~1e-7/1e-6) underflow to zero at the
+%       swept data-path fraction lengths, which would freeze Wk and stop
+%       the NCO tracking the SFO.  T.lf is therefore unused.
 %     - Integer-valued bookkeeping (mn, n, l) is kept as double for
 %       portable indexing semantics.
 
@@ -45,11 +49,16 @@ function Out = recovery_fxp(In, NSymb, ki, kp, NLanes, T) %#codegen
     %% Initial state (matches float recovery.m)
     Etamn = cast(0.5, 'like', T.nco);
     mun   = cast(0,   'like', T.nco);
-    Wk    = cast(1,   'like', T.lf);
-    LF_I  = cast(1,   'like', T.lf);
 
-    ki_fi = cast(ki, 'like', T.lf);
-    kp_fi = cast(kp, 'like', T.lf);
+    %% Loop-filter state (Wk, LF_I) kept in DOUBLE.  The PI gains ki, kp are
+    %  ~1e-7 / 1e-6; at the swept data-path fraction lengths (e.g. FL=16,
+    %  resolution 1.5e-5) both gains — and the products ki*ek, kp*ek —
+    %  quantise to zero, freezing Wk at 1 so the NCO never tracks the SFO.
+    %  The integrator is a tiny-coefficient recurrence, exactly the case the
+    %  NCO update below already handles in double; do the same here so the
+    %  loop closes regardless of data-path precision.
+    Wk    = 1;
+    LF_I  = 1;
 
     %% Output buffer (one polarisation, column vector) — T.x precision.
     %  The float reference silently grows Out via out-of-bounds assignment
@@ -164,10 +173,12 @@ function Out = recovery_fxp(In, NSymb, ki, kp, NLanes, T) %#codegen
         end
 
         %% -------- Loop filter update (once per block) -----------------
-        ek_lf = cast(ek_sum, 'like', T.lf);
-        LF_I(:) = LF_I + ki_fi * ek_lf;
-        LF_P    = kp_fi * ek_lf;
-        Wk(:)   = LF_P + LF_I;
+        %  Computed in double (see loop-filter state note above).  ek_sum
+        %  stays a fixed-point T.ek accumulator (it is data-derived); only
+        %  the tiny-gain PI recurrence is promoted to double.
+        ek_lf = double(ek_sum);
+        LF_I  = LF_I + ki * ek_lf;
+        Wk    = kp * ek_lf + LF_I;
 
         %% Commit block-final NCO state ---------------------------------
         mn    = mnL;

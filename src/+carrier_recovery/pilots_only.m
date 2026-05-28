@@ -33,16 +33,22 @@ function [v, ThetaPU] = pilots_only(x, NPol, BlockLen, Pilots)
     %% ================================================================
     %  Step 1 – Pilot phase estimation  (vectorised per block)
     %
-    %  ThetaEst(b, pol) = angle( conj(Pilots(b,:)) .* x(blockStart,:) )
+    %  ThetaEst(b, pol) = angle( conj(Pilots(b,pol)) * x(blockStart,pol) )
     %  where blockStart = (b-1)*BlockLen + 1.
     %  This is the direct phase-noise readout; no ambiguity needs resolving.
+    %
+    %  The estimate is formed INDEPENDENTLY per polarisation.  After a
+    %  butterfly equaliser (CMA/RDE) the two polarisations carry different,
+    %  slowly-drifting carrier phases (the equaliser's per-pol phase
+    %  ambiguity adapts independently), so collapsing the pols into a single
+    %  shared phase (angle(sum_pol(...))) tracks neither and floors the BER.
     %% ================================================================
     ThetaEst = zeros(NBlocks, NPol);
 
     for b = 1:NBlocks
         blockStart = (b - 1) * BlockLen + 1;
         if blockStart <= Nsym
-            ThetaEst(b, :) = angle(sum(conj(Pilots(b, :)) .* x(blockStart, :)));
+            ThetaEst(b, :) = angle(conj(Pilots(b, :)) .* x(blockStart, :));
         end
     end
 

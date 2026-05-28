@@ -7,8 +7,13 @@ function [v, ThetaPU] = pilots_only_fxp(x, NPol, BlockLen, Pilots, ~, T) %#codeg
 %   One phase estimate is obtained per block from pilot correlation at the
 %   block start and then held constant over the full block.
 %
-%   Phase estimate per block (shared across polarisations):
-%       theta_blk = angle(sum_pol(conj(Pilot) .* x(blockStart)))
+%   Phase estimate per block, formed INDEPENDENTLY per polarisation:
+%       theta_blk(pol) = angle(conj(Pilot(pol)) * x(blockStart, pol))
+%
+%   After a butterfly equaliser (CMA/RDE) the two polarisations carry
+%   different, slowly-drifting carrier phases (the equaliser's per-pol phase
+%   ambiguity adapts independently), so collapsing the pols into a single
+%   shared phase (angle(sum_pol(...))) tracks neither and floors the BER.
 %
 %   The final phase correction is applied with complex multiplication.
 
@@ -16,22 +21,18 @@ function [v, ThetaPU] = pilots_only_fxp(x, NPol, BlockLen, Pilots, ~, T) %#codeg
         T = carrier_recovery.fxp_types('fixed16');
     end
 
-    ZERO_ACC = cast(0, 'like', T.acc);
-
     Nsym    = size(x, 1);
     NBlocks = ceil(Nsym / BlockLen);
 
     x_fi      = cast(x, 'like', T.x);
     Pilots_fi = cast(Pilots, 'like', T.x);
 
-    ThetaBlk = zeros(NBlocks, 1, 'like', T.theta);
+    ThetaBlk = zeros(NBlocks, NPol, 'like', T.theta);
 
-    % One pilot-based phase estimate per block.
+    % One pilot-based phase estimate per block, per polarisation.
     for b = 1:NBlocks
         blockStart = (b - 1) * BlockLen + 1;
         if blockStart <= Nsym
-            corr_re = ZERO_ACC;
-            corr_im = ZERO_ACC;
             for pol = 1:NPol
                 rx = x_fi(blockStart, pol);
 
@@ -40,21 +41,21 @@ function [v, ThetaPU] = pilots_only_fxp(x, NPol, BlockLen, Pilots, ~, T) %#codeg
                 rx_re    =  cast(real(rx), 'like', T.acc);
                 rx_im    =  cast(imag(rx), 'like', T.acc);
 
-                corr_re = corr_re + (pilot_re * rx_re - pilot_im * rx_im);
-                corr_im = corr_im + (pilot_re * rx_im + pilot_im * rx_re);
-            end
+                corr_re = cast(pilot_re * rx_re - pilot_im * rx_im, 'like', T.acc);
+                corr_im = cast(pilot_re * rx_im + pilot_im * rx_re, 'like', T.acc);
 
-            ThetaBlk(b) = cast(atan2(double(corr_im), double(corr_re)), 'like', T.theta);
+                ThetaBlk(b, pol) = cast(atan2(double(corr_im), double(corr_re)), 'like', T.theta);
+            end
         end
     end
 
-    % Hold phase estimate over each block for all polarisations.
+    % Hold each polarisation's phase estimate over its block.
     ThetaPU = zeros(Nsym, NPol, 'like', T.theta);
     for b = 1:NBlocks
         iStart = (b - 1) * BlockLen + 1;
         iEnd   = min(b * BlockLen, Nsym);
         for pol = 1:NPol
-            ThetaPU(iStart:iEnd, pol) = ThetaBlk(b);
+            ThetaPU(iStart:iEnd, pol) = ThetaBlk(b, pol);
         end
     end
 

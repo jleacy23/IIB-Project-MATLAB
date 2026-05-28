@@ -29,9 +29,10 @@
 \newlabel{chapter:energy}{{2}{5}{}{chapter.2}{}}
 \newlabel{chapter:energy@cref}{{[chapter][2][]2}{[1][5][]5}{}{}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {2.1}Simulation Framework}{5}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2.1}{\ignorespaces DSP pipeline of the simulated coherent receiver. The analogue stages (orange) and the digital stages (blue) are distinguished by colour. The optical front end mixes the received signal with a local-oscillator laser to produce four baseband photocurrents, which the ADCs digitise; orthogonalisation and deskew correct front-end imbalances; equalisation and timing recovery compensate the linear channel and recover the symbol-rate sampling phase; carrier recovery removes the residual CFO and laser phase noise; the final stage maps each symbol to bits.}}{5}{}\protected@file@percent }
+\newlabel{fig:receiver_pipeline}{{2.1}{5}{}{figure.2.1}{}}
+\newlabel{fig:receiver_pipeline@cref}{{[figure][1][2]2.1}{[1][5][]5}{}{}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.1.1}Fixed-Point Arithmetic}{5}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.1.2}System Parameters}{5}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {2.2}Energy Estimation}{5}{}\protected@file@percent }
 \abx@aux@cite{0}{horowitz2014computing}
 \abx@aux@segm{0}{0}{horowitz2014computing}
 \abx@aux@cite{0}{horowitz2014computing}
@@ -40,39 +41,41 @@
 \abx@aux@segm{0}{0}{Esmaeilzadeh;11}
 \abx@aux@cite{0}{Shahidi;19}
 \abx@aux@segm{0}{0}{Shahidi;19}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1.2}System Parameters}{6}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2.2}Energy Estimation}{6}{}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.2.1}Receiver Energy}{6}{}\protected@file@percent }
 \newlabel{sec:rx_energy}{{2.2.1}{6}{}{subsection.2.2.1}{}}
-\newlabel{sec:rx_energy@cref}{{[subsection][1][2,2]2.2.1}{[1][5][]6}{}{}{}}
+\newlabel{sec:rx_energy@cref}{{[subsection][1][2,2]2.2.1}{[1][6][]6}{}{}{}}
 \@writefile{lot}{\contentsline {table}{\numberline {2.1}{\ignorespaces Energy cost of arithmetic operations for different bit widths in 45\,nm CMOS \blx@tocontentsinit {0}\cite {horowitz2014computing}.}}{6}{}\protected@file@percent }
 \newlabel{tab:energy}{{2.1}{6}{}{table.2.1}{}}
 \newlabel{tab:energy@cref}{{[table][1][2]2.1}{[1][6][]6}{}{}{}}
 \@writefile{toc}{\contentsline {paragraph}{Dependence on Word Length}{6}{}\protected@file@percent }
 \newlabel{eq:arithmetic_45}{{2.1}{6}{}{equation.2.1}{}}
 \newlabel{eq:arithmetic_45@cref}{{[equation][1][2]2.1}{[1][6][]6}{}{}{}}
-\newlabel{eq:arithmetic_14}{{2.2}{6}{}{equation.2.2}{}}
-\newlabel{eq:arithmetic_14@cref}{{[equation][2][2]2.2}{[1][6][]6}{}{}{}}
-\@writefile{toc}{\contentsline {paragraph}{Amortisation}{6}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{CORDIC}{6}{}\protected@file@percent }
+\newlabel{eq:arithmetic_14}{{2.2}{7}{}{equation.2.2}{}}
+\newlabel{eq:arithmetic_14@cref}{{[equation][2][2]2.2}{[1][7][]7}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{Amortisation}{7}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{CORDIC}{7}{}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{Total Energy and Power}{7}{}\protected@file@percent }
 \newlabel{eq:rx_energy}{{2.5}{7}{}{equation.2.5}{}}
 \newlabel{eq:rx_energy@cref}{{[equation][5][2]2.5}{[1][7][]7}{}{}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.2.2}Transmitter Energy}{7}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Minimum Required SNR}{7}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Noise}{7}{}\protected@file@percent }
-\newlabel{eq:snr_shot}{{2.6}{7}{}{equation.2.6}{}}
-\newlabel{eq:snr_shot@cref}{{[equation][6][2]2.6}{[1][7][]7}{}{}{}}
 \abx@aux@cite{0}{Mello;21}
 \abx@aux@segm{0}{0}{Mello;21}
+\@writefile{toc}{\contentsline {paragraph}{Minimum Required SNR}{8}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Noise}{8}{}\protected@file@percent }
+\newlabel{eq:snr_shot}{{2.6}{8}{}{equation.2.6}{}}
+\newlabel{eq:snr_shot@cref}{{[equation][6][2]2.6}{[1][8][]8}{}{}{}}
+\newlabel{eq:tx_bit_energy}{{2.8}{8}{}{equation.2.8}{}}
+\newlabel{eq:tx_bit_energy@cref}{{[equation][8][2]2.8}{[1][8][]8}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2.3}Combined Energy}{8}{}\protected@file@percent }
 \abx@aux@cite{0}{Zhang;24}
 \abx@aux@segm{0}{0}{Zhang;24}
 \abx@aux@cite{0}{Vaskasi;22}
 \abx@aux@segm{0}{0}{Vaskasi;22}
-\newlabel{eq:tx_bit_energy}{{2.8}{8}{}{equation.2.8}{}}
-\newlabel{eq:tx_bit_energy@cref}{{[equation][8][2]2.8}{[1][7][]8}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.2.3}Combined Energy}{8}{}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {2.1}{\ignorespaces Dual-polarisation coherent modulator using MZMs.}}{8}{}\protected@file@percent }
-\newlabel{fig:mzm}{{2.1}{8}{}{figure.2.1}{}}
-\newlabel{fig:mzm@cref}{{[figure][1][2]2.1}{[1][8][]8}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2.2}{\ignorespaces Dual-polarisation coherent modulator using MZMs.}}{9}{}\protected@file@percent }
+\newlabel{fig:mzm}{{2.2}{9}{}{figure.2.2}{}}
+\newlabel{fig:mzm@cref}{{[figure][2][2]2.2}{[1][8][]9}{}{}{}}
 \@writefile{toc}{\contentsline {chapter}{\numberline {3}Equalisation and Clock Recovery}{10}{}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
@@ -82,6 +85,8 @@
 \@writefile{toc}{\contentsline {section}{\numberline {3.2}Equalisation}{10}{}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.2.1}Channel Impairments}{10}{}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{Chromatic dispersion}{10}{}\protected@file@percent }
+\abx@aux@cite{0}{coherent_receivers}
+\abx@aux@segm{0}{0}{coherent_receivers}
 \newlabel{eq:cd_channel}{{3.1}{11}{}{equation.3.1}{}}
 \newlabel{eq:cd_channel@cref}{{[equation][1][3]3.1}{[1][11][]11}{}{}{}}
 \@writefile{toc}{\contentsline {paragraph}{Polarisation-mode dispersion}{11}{}\protected@file@percent }
@@ -94,6 +99,8 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.2.3}Adaptive Equalisation}{11}{}\protected@file@percent }
 \newlabel{eq:adaptive_output}{{3.4}{11}{}{equation.3.4}{}}
 \newlabel{eq:adaptive_output@cref}{{[equation][4][3]3.4}{[1][11][]11}{}{}{}}
+\abx@aux@cite{0}{coherent_receivers}
+\abx@aux@segm{0}{0}{coherent_receivers}
 \abx@aux@cite{0}{Liu;09}
 \abx@aux@segm{0}{0}{Liu;09}
 \abx@aux@cite{0}{Cardenas:14}
@@ -132,7 +139,7 @@
 \@writefile{lot}{\contentsline {table}{\numberline {3.1}{\ignorespaces Per-symbol real multiplication (RM) and real addition (RA) counts for the three CD equaliser implementations. $N$ is the overlap-save FFT size, $N_\mathrm  {CD}$ the filter length from \cref  {eq:cd_len}, and $\eta $ the receiver oversampling factor.}}{14}{}\protected@file@percent }
 \newlabel{tab:cd_cost}{{3.1}{14}{}{table.3.1}{}}
 \newlabel{tab:cd_cost@cref}{{[table][1][3]3.1}{[1][13][]14}{}{}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {3.2}{\ignorespaces Per-symbol real-operation counts for the parallel-lane butterfly CMA equaliser with $N$ taps per FIR. Sign-sign refers to the multiplier-free update described in \cref  {sec:sign_sign_cma}.}}{14}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3.2}{\ignorespaces Per-symbol real-operation counts for the parallel-lane butterfly CMA equaliser with $N_\mathrm  {AEQ}$ taps per FIR. Sign-sign refers to the multiplier-free update described in \cref  {sec:sign_sign_cma}.}}{14}{}\protected@file@percent }
 \newlabel{tab:aeq_cost}{{3.2}{14}{}{table.3.2}{}}
 \newlabel{tab:aeq_cost@cref}{{[table][2][3]3.2}{[1][14][]14}{}{}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {3.3}Clock Recovery}{14}{}\protected@file@percent }
@@ -155,33 +162,34 @@
 \newlabel{tab:clk_cost}{{3.3}{16}{}{table.3.3}{}}
 \newlabel{tab:clk_cost@cref}{{[table][3][3]3.3}{[1][15][]16}{}{}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {3.4}Combined Implementations}{16}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {3.5}Results \& Discussion}{16}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.1}Combined Performance}{16}{}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {3.4}{\ignorespaces SNR @ FEC limit (mean $\pm $ standard deviation over trials) for each combined equalisation/clock recovery configuration in the absence of CFO. $N_\mathrm  {SEQ}, N_\mathrm  {AEQ}$ are the number of taps in the static and adaptive equalisers respectively.}}{17}{}\protected@file@percent }
-\newlabel{tab:combined_eq_clk_no_cfo}{{3.4}{17}{}{table.3.4}{}}
-\newlabel{tab:combined_eq_clk_no_cfo@cref}{{[table][4][3]3.4}{[1][17][]17}{}{}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3.1}{\ignorespaces SNR @ FEC limit as CFO varies for each implementation, plotted points stop when the FEC limit is no longer reached at any SNR.}}{17}{}\protected@file@percent }
-\newlabel{fig:cfo_sweep_float}{{3.1}{17}{}{figure.3.1}{}}
-\newlabel{fig:cfo_sweep_float@cref}{{[figure][1][3]3.1}{[1][17][]17}{}{}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.5}Methodology}{16}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3.6}Results \& Discussion}{17}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.6.1}Combined Performance}{17}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3.4}{\ignorespaces SNR @ FEC limit (mean $\pm $ standard deviation over trials) for each combined equalisation/clock recovery configuration in the absence of CFO. $N_\mathrm  {CD}$ and $N_\mathrm  {AEQ}$ are the number of taps in the static CD/matched-filter and the adaptive equaliser respectively.}}{18}{}\protected@file@percent }
+\newlabel{tab:combined_eq_clk_no_cfo}{{3.4}{18}{}{table.3.4}{}}
+\newlabel{tab:combined_eq_clk_no_cfo@cref}{{[table][4][3]3.4}{[1][17][]18}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.1}{\ignorespaces SNR @ FEC limit as CFO varies for each implementation. Points are omitted when the FEC limit is no longer reached at any SNR.}}{18}{}\protected@file@percent }
+\newlabel{fig:cfo_sweep_float}{{3.1}{18}{}{figure.3.1}{}}
+\newlabel{fig:cfo_sweep_float@cref}{{[figure][1][3]3.1}{[1][18][]18}{}{}{}}
 \@writefile{toc}{\contentsline {paragraph}{Correcting CFO}{18}{}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {3.2}{\ignorespaces SNR @ FEC limit as CFO varies with coarse CFO correction.}}{18}{}\protected@file@percent }
-\newlabel{fig:cfo_corrected_float}{{3.2}{18}{}{figure.3.2}{}}
-\newlabel{fig:cfo_corrected_float@cref}{{[figure][2][3]3.2}{[1][18][]18}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.2}Fixed Point Precision}{18}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3.2}{\ignorespaces SNR @ FEC limit as CFO varies with coarse CFO correction.}}{19}{}\protected@file@percent }
+\newlabel{fig:cfo_corrected_float}{{3.2}{19}{}{figure.3.2}{}}
+\newlabel{fig:cfo_corrected_float@cref}{{[figure][2][3]3.2}{[1][18][]19}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.6.2}Fixed Point Precision}{19}{}\protected@file@percent }
 \@writefile{lot}{\contentsline {table}{\numberline {3.5}{\ignorespaces Energy breakdown (pJ/bit) and SNR at the FEC limit for the Gardner implementation with and without $2^k$ twiddles at $4$ and $6$ bits of fractional precision (the same precision is used in every block). $E_\mathrm  {stat}$, $E_\mathrm  {aeq}$, and $E_\mathrm  {clk}$ are the per-bit energies of the static FD CD/matched-filter, the adaptive equaliser, and the clock-recovery loop respectively.}}{19}{}\protected@file@percent }
 \newlabel{tab:gardner_energy_breakdown}{{3.5}{19}{}{table.3.5}{}}
-\newlabel{tab:gardner_energy_breakdown@cref}{{[table][5][3]3.5}{[1][18][]19}{}{}{}}
-\newlabel{fig:fxp_sweep_combined_snr}{{3.3a}{19}{}{subfigure.3.3.1}{}}
-\newlabel{fig:fxp_sweep_combined_snr@cref}{{[subfigure][1][3,3]3.3a}{[1][18][]19}{}{}{}}
-\newlabel{sub@fig:fxp_sweep_combined_snr}{{a}{19}{}{subfigure.3.3.1}{}}
-\newlabel{sub@fig:fxp_sweep_combined_snr@cref}{{[subfigure][1][3,3]3.3a}{[1][18][]19}{}{}{}}
-\newlabel{fig:fxp_sweep_combined_energy}{{3.3b}{19}{}{subfigure.3.3.2}{}}
-\newlabel{fig:fxp_sweep_combined_energy@cref}{{[subfigure][2][3,3]3.3b}{[1][18][]19}{}{}{}}
-\newlabel{sub@fig:fxp_sweep_combined_energy}{{b}{19}{}{subfigure.3.3.2}{}}
-\newlabel{sub@fig:fxp_sweep_combined_energy@cref}{{[subfigure][2][3,3]3.3b}{[1][18][]19}{}{}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3.3}{\ignorespaces Performance and energy of each implementation as fixed-point precision varies with 3\,GHz of CFO applied.}}{19}{}\protected@file@percent }
-\newlabel{fig:fxp_sweep_combined}{{3.3}{19}{}{figure.3.3}{}}
-\newlabel{fig:fxp_sweep_combined@cref}{{[figure][3][3]3.3}{[1][18][]19}{}{}{}}
+\newlabel{tab:gardner_energy_breakdown@cref}{{[table][5][3]3.5}{[1][19][]19}{}{}{}}
+\newlabel{fig:fxp_sweep_combined_snr}{{3.3a}{20}{}{subfigure.3.3.1}{}}
+\newlabel{fig:fxp_sweep_combined_snr@cref}{{[subfigure][1][3,3]3.3a}{[1][19][]20}{}{}{}}
+\newlabel{sub@fig:fxp_sweep_combined_snr}{{a}{20}{}{subfigure.3.3.1}{}}
+\newlabel{sub@fig:fxp_sweep_combined_snr@cref}{{[subfigure][1][3,3]3.3a}{[1][19][]20}{}{}{}}
+\newlabel{fig:fxp_sweep_combined_energy}{{3.3b}{20}{}{subfigure.3.3.2}{}}
+\newlabel{fig:fxp_sweep_combined_energy@cref}{{[subfigure][2][3,3]3.3b}{[1][19][]20}{}{}{}}
+\newlabel{sub@fig:fxp_sweep_combined_energy}{{b}{20}{}{subfigure.3.3.2}{}}
+\newlabel{sub@fig:fxp_sweep_combined_energy@cref}{{[subfigure][2][3,3]3.3b}{[1][19][]20}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.3}{\ignorespaces Performance and energy of each implementation as fixed-point precision varies with 3\,GHz of CFO applied.}}{20}{}\protected@file@percent }
+\newlabel{fig:fxp_sweep_combined}{{3.3}{20}{}{figure.3.3}{}}
+\newlabel{fig:fxp_sweep_combined@cref}{{[figure][3][3]3.3}{[1][19][]20}{}{}{}}
 \@writefile{toc}{\contentsline {paragraph}{Oversampling rate.}{20}{}\protected@file@percent }
 \@writefile{toc}{\contentsline {chapter}{\numberline {4}Carrier Recovery}{21}{}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
@@ -260,38 +268,39 @@
 \@writefile{lof}{\contentsline {figure}{\numberline {4.6}{\ignorespaces Performance comparison of V\&V and Pilots-Only phase correction}}{30}{}\protected@file@percent }
 \newlabel{fig:vv_vs_pilots}{{4.6}{30}{}{figure.4.6}{}}
 \newlabel{fig:vv_vs_pilots@cref}{{[figure][6][4]4.6}{[1][29][]30}{}{}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.7}{\ignorespaces Phase recovery performance vs fixed-point precision at 1\,MHz laser linewidth, with Rife \& Boorstyn used to remove the initial CFO.}}{31}{}\protected@file@percent }
-\newlabel{fig:CR_precision}{{4.7}{31}{}{figure.4.7}{}}
-\newlabel{fig:CR_precision@cref}{{[figure][7][4]4.7}{[1][30][]31}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.5.2}Blind vs Data-Aided Operation}{31}{}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {4.8}{\ignorespaces SNR at the FEC limit vs blind observation length for the Rife \& Boorstyn and differential phase and Kay estimators.}}{32}{}\protected@file@percent }
-\newlabel{fig:observation_length}{{4.8}{32}{}{figure.4.8}{}}
-\newlabel{fig:observation_length@cref}{{[figure][8][4]4.8}{[1][31][]32}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.5.3}Frequency Recovery Performance}{32}{}\protected@file@percent }
-\newlabel{fig:FR_precision_performance}{{4.9a}{33}{}{subfigure.4.9.1}{}}
-\newlabel{fig:FR_precision_performance@cref}{{[subfigure][1][4,9]4.9a}{[1][32][]33}{}{}{}}
-\newlabel{sub@fig:FR_precision_performance}{{a}{33}{}{subfigure.4.9.1}{}}
-\newlabel{sub@fig:FR_precision_performance@cref}{{[subfigure][1][4,9]4.9a}{[1][32][]33}{}{}{}}
-\newlabel{fig:FR_precision_energy}{{4.9b}{33}{}{subfigure.4.9.2}{}}
-\newlabel{fig:FR_precision_energy@cref}{{[subfigure][2][4,9]4.9b}{[1][32][]33}{}{}{}}
-\newlabel{sub@fig:FR_precision_energy}{{b}{33}{}{subfigure.4.9.2}{}}
-\newlabel{sub@fig:FR_precision_energy@cref}{{[subfigure][2][4,9]4.9b}{[1][32][]33}{}{}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.9}{\ignorespaces Frequency recovery as fixed-point precision varies, comparing data-aided differential phase and Kay, data-aided Rife \& Boorstyn, and blind Rife \& Boorstyn, with the corresponding energy savings when switching to differential phase and Kay. FR energy amortised over one subframe (3712 symbols).}}{33}{}\protected@file@percent }
-\newlabel{fig:FR_precision}{{4.9}{33}{}{figure.4.9}{}}
-\newlabel{fig:FR_precision@cref}{{[figure][9][4]4.9}{[1][32][]33}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.5.4}Energy Breakdown}{33}{}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {4.10}{\ignorespaces Receiver energy breakdown of carrier recovery for 4 bits (left) and 2 bits (right) of precision.}}{34}{}\protected@file@percent }
-\newlabel{fig:cr_energy_breakdown}{{4.10}{34}{}{figure.4.10}{}}
-\newlabel{fig:cr_energy_breakdown@cref}{{[figure][10][4]4.10}{[1][33][]34}{}{}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {4.5}{\ignorespaces Combined energy and SNR at the FEC limit of the differential phase and Kay estimator and blind Rife \& Boorstyn, both using pilots-only phase recovery.}}{34}{}\protected@file@percent }
-\newlabel{tab:cr_energy_breakdown}{{4.5}{34}{}{table.4.5}{}}
-\newlabel{tab:cr_energy_breakdown@cref}{{[table][5][4]4.5}{[1][33][]34}{}{}{}}
-\@writefile{toc}{\contentsline {chapter}{\numberline {5}Full DSP Pipeline}{35}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4.7}{\ignorespaces Phase recovery performance vs fixed-point precision at 1\,MHz laser linewidth, with Rife \& Boorstyn used to remove the initial CFO.}}{30}{}\protected@file@percent }
+\newlabel{fig:CR_precision}{{4.7}{30}{}{figure.4.7}{}}
+\newlabel{fig:CR_precision@cref}{{[figure][7][4]4.7}{[1][30][]30}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5.2}Blind vs Data-Aided Operation}{30}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4.8}{\ignorespaces SNR at the FEC limit vs blind observation length for the Rife \& Boorstyn and differential phase and Kay estimators.}}{31}{}\protected@file@percent }
+\newlabel{fig:observation_length}{{4.8}{31}{}{figure.4.8}{}}
+\newlabel{fig:observation_length@cref}{{[figure][8][4]4.8}{[1][30][]31}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5.3}Frequency Recovery Performance}{31}{}\protected@file@percent }
+\newlabel{fig:FR_precision_performance}{{4.9a}{32}{}{subfigure.4.9.1}{}}
+\newlabel{fig:FR_precision_performance@cref}{{[subfigure][1][4,9]4.9a}{[1][31][]32}{}{}{}}
+\newlabel{sub@fig:FR_precision_performance}{{a}{32}{}{subfigure.4.9.1}{}}
+\newlabel{sub@fig:FR_precision_performance@cref}{{[subfigure][1][4,9]4.9a}{[1][31][]32}{}{}{}}
+\newlabel{fig:FR_precision_energy}{{4.9b}{32}{}{subfigure.4.9.2}{}}
+\newlabel{fig:FR_precision_energy@cref}{{[subfigure][2][4,9]4.9b}{[1][31][]32}{}{}{}}
+\newlabel{sub@fig:FR_precision_energy}{{b}{32}{}{subfigure.4.9.2}{}}
+\newlabel{sub@fig:FR_precision_energy@cref}{{[subfigure][2][4,9]4.9b}{[1][31][]32}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.9}{\ignorespaces Frequency recovery as fixed-point precision varies, comparing data-aided differential phase and Kay, data-aided Rife \& Boorstyn, and blind Rife \& Boorstyn, with the corresponding energy savings when switching to differential phase and Kay. FR energy amortised over one subframe (3712 symbols).}}{32}{}\protected@file@percent }
+\newlabel{fig:FR_precision}{{4.9}{32}{}{figure.4.9}{}}
+\newlabel{fig:FR_precision@cref}{{[figure][9][4]4.9}{[1][31][]32}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5.4}Energy Breakdown}{32}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4.10}{\ignorespaces Receiver energy breakdown of carrier recovery for 4 bits (left) and 2 bits (right) of precision.}}{33}{}\protected@file@percent }
+\newlabel{fig:cr_energy_breakdown}{{4.10}{33}{}{figure.4.10}{}}
+\newlabel{fig:cr_energy_breakdown@cref}{{[figure][10][4]4.10}{[1][32][]33}{}{}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4.5}{\ignorespaces Combined energy and SNR at the FEC limit of the differential phase and Kay estimator and blind Rife \& Boorstyn, both using pilots-only phase recovery.}}{33}{}\protected@file@percent }
+\newlabel{tab:cr_energy_breakdown}{{4.5}{33}{}{table.4.5}{}}
+\newlabel{tab:cr_energy_breakdown@cref}{{[table][5][4]4.5}{[1][33][]33}{}{}{}}
+\@writefile{toc}{\contentsline {chapter}{\numberline {5}Full DSP Pipeline}{34}{}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\newlabel{chapter:full_pipeline}{{5}{35}{}{chapter.5}{}}
-\newlabel{chapter:full_pipeline@cref}{{[chapter][5][]5}{[1][35][]35}{}{}{}}
-\abx@aux@read@bbl@mdfivesum{2B3A1E07C0E6755CA34AF4AC7DFE8CEA}
+\newlabel{chapter:full_pipeline}{{5}{34}{}{chapter.5}{}}
+\newlabel{chapter:full_pipeline@cref}{{[chapter][5][]5}{[1][34][]34}{}{}{}}
+\@writefile{toc}{\contentsline {chapter}{Bibliography}{35}{}\protected@file@percent }
+\abx@aux@read@bbl@mdfivesum{50BADB5DD219E0F1E9BC7E5AF6C0DC02}
 \abx@aux@defaultrefcontext{0}{CPON_PMD_2025}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{Cardenas:14}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{Cheng2013PilotCycleSlip}{nty/global//global/global/global}
@@ -308,8 +317,9 @@
 \abx@aux@defaultrefcontext{0}{Liu;09}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{Mantzoukis:11}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{Mello;21}{nty/global//global/global/global}
+\abx@aux@defaultrefcontext{0}{coherent_receivers}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{Shahidi;19}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{Vaskasi;22}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{Zhang;24}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{Zhou;10}{nty/global//global/global/global}
-\gdef \@abspage@last{38}
+\gdef \@abspage@last{36}

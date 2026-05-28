@@ -8,16 +8,16 @@
 \contentsline {chapter}{\numberline {2}Network and Receiver Models}{5}{}%
 \contentsline {section}{\numberline {2.1}Simulation Framework}{5}{}%
 \contentsline {subsection}{\numberline {2.1.1}Fixed-Point Arithmetic}{5}{}%
-\contentsline {subsection}{\numberline {2.1.2}System Parameters}{5}{}%
-\contentsline {section}{\numberline {2.2}Energy Estimation}{5}{}%
+\contentsline {subsection}{\numberline {2.1.2}System Parameters}{6}{}%
+\contentsline {section}{\numberline {2.2}Energy Estimation}{6}{}%
 \contentsline {subsection}{\numberline {2.2.1}Receiver Energy}{6}{}%
 \contentsline {paragraph}{Dependence on Word Length}{6}{}%
-\contentsline {paragraph}{Amortisation}{6}{}%
-\contentsline {paragraph}{CORDIC}{6}{}%
+\contentsline {paragraph}{Amortisation}{7}{}%
+\contentsline {paragraph}{CORDIC}{7}{}%
 \contentsline {paragraph}{Total Energy and Power}{7}{}%
 \contentsline {subsection}{\numberline {2.2.2}Transmitter Energy}{7}{}%
-\contentsline {paragraph}{Minimum Required SNR}{7}{}%
-\contentsline {paragraph}{Noise}{7}{}%
+\contentsline {paragraph}{Minimum Required SNR}{8}{}%
+\contentsline {paragraph}{Noise}{8}{}%
 \contentsline {subsection}{\numberline {2.2.3}Combined Energy}{8}{}%
 \contentsline {chapter}{\numberline {3}Equalisation and Clock Recovery}{10}{}%
 \contentsline {section}{\numberline {3.1}Introduction}{10}{}%
@@ -38,10 +38,11 @@
 \contentsline {subsection}{\numberline {3.3.2}Modified Godard Timing Recovery}{15}{}%
 \contentsline {subsection}{\numberline {3.3.3}Computational Complexity}{15}{}%
 \contentsline {section}{\numberline {3.4}Combined Implementations}{16}{}%
-\contentsline {section}{\numberline {3.5}Results \& Discussion}{16}{}%
-\contentsline {subsection}{\numberline {3.5.1}Combined Performance}{16}{}%
+\contentsline {section}{\numberline {3.5}Methodology}{16}{}%
+\contentsline {section}{\numberline {3.6}Results \& Discussion}{17}{}%
+\contentsline {subsection}{\numberline {3.6.1}Combined Performance}{17}{}%
 \contentsline {paragraph}{Correcting CFO}{18}{}%
-\contentsline {subsection}{\numberline {3.5.2}Fixed Point Precision}{18}{}%
+\contentsline {subsection}{\numberline {3.6.2}Fixed Point Precision}{19}{}%
 \contentsline {paragraph}{Oversampling rate.}{20}{}%
 \contentsline {chapter}{\numberline {4}Carrier Recovery}{21}{}%
 \contentsline {section}{\numberline {4.1}Introduction}{21}{}%
@@ -68,7 +69,8 @@
 \contentsline {subsection}{\numberline {4.4.2}System Energy Comparison}{29}{}%
 \contentsline {section}{\numberline {4.5}Results \& Discussion}{29}{}%
 \contentsline {subsection}{\numberline {4.5.1}Phase Recovery Performance}{29}{}%
-\contentsline {subsection}{\numberline {4.5.2}Blind vs Data-Aided Operation}{31}{}%
-\contentsline {subsection}{\numberline {4.5.3}Frequency Recovery Performance}{32}{}%
-\contentsline {subsection}{\numberline {4.5.4}Energy Breakdown}{33}{}%
-\contentsline {chapter}{\numberline {5}Full DSP Pipeline}{35}{}%
+\contentsline {subsection}{\numberline {4.5.2}Blind vs Data-Aided Operation}{30}{}%
+\contentsline {subsection}{\numberline {4.5.3}Frequency Recovery Performance}{31}{}%
+\contentsline {subsection}{\numberline {4.5.4}Energy Breakdown}{32}{}%
+\contentsline {chapter}{\numberline {5}Full DSP Pipeline}{34}{}%
+\contentsline {chapter}{Bibliography}{35}{}%

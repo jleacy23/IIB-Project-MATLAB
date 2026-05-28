@@ -40,23 +40,15 @@
       \field{sortinithash}{4d103a86280481745c9c897c925753c0}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{month}{12}
-      \field{note}{Issued specification, version I01}
       \field{number}{CPON-SP-PMDv1.0-I01-251216}
-      \field{title}{{Coherent PON Physical Media Dependent Layer 1.0 Specification}}
+      \field{title}{Coherent {PON} Physical Media Dependent Layer 1.0 Specification}
       \field{type}{techreport}
       \field{year}{2025}
-      \verb{urlraw}
-      \verb https://www.cablelabs.com
-      \endverb
-      \verb{url}
-      \verb https://www.cablelabs.com
-      \endverb
     \endentry
     \entry{Cardenas:14}{inproceedings}{}{}
       \name{author}{4}{}{%
-        {{hash=0dba2f2fa9762599f45b3681888e8111}{%
-           family={Cardenas},
+        {{hash=3bf7b5c4547f0c94805d7a96d2cae822}{%
+           family={Cárdenas},
            familyi={C\bibinitperiod},
            given={Daniel},
            giveni={D\bibinitperiod}}}%
@@ -76,38 +68,26 @@
            given={Seb\bibnamedelima J.},
            giveni={S\bibinitperiod\bibinitdelim J\bibinitperiod}}}%
       }
-      \list{publisher}{1}{%
-        {Optica Publishing Group}%
-      }
-      \strng{namehash}{b624aaf94cfa31edddfa5514bd5588ba}
-      \strng{fullhash}{c7639684ae60e523c5bba45bc14f3ddd}
-      \strng{fullhashraw}{c7639684ae60e523c5bba45bc14f3ddd}
-      \strng{bibnamehash}{b624aaf94cfa31edddfa5514bd5588ba}
-      \strng{authorbibnamehash}{b624aaf94cfa31edddfa5514bd5588ba}
-      \strng{authornamehash}{b624aaf94cfa31edddfa5514bd5588ba}
-      \strng{authorfullhash}{c7639684ae60e523c5bba45bc14f3ddd}
-      \strng{authorfullhashraw}{c7639684ae60e523c5bba45bc14f3ddd}
+      \strng{namehash}{c96964bbdf00800e63e1e3000386b2ef}
+      \strng{fullhash}{fcba791aa12ff2c2e4fa1bb1e3702914}
+      \strng{fullhashraw}{fcba791aa12ff2c2e4fa1bb1e3702914}
+      \strng{bibnamehash}{c96964bbdf00800e63e1e3000386b2ef}
+      \strng{authorbibnamehash}{c96964bbdf00800e63e1e3000386b2ef}
+      \strng{authornamehash}{c96964bbdf00800e63e1e3000386b2ef}
+      \strng{authorfullhash}{fcba791aa12ff2c2e4fa1bb1e3702914}
+      \strng{authorfullhashraw}{fcba791aa12ff2c2e4fa1bb1e3702914}
       \field{sortinit}{C}
       \field{sortinithash}{4d103a86280481745c9c897c925753c0}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{abstract}{A reduced complexity multiplier-free CMA equalizer update is proposed and synthesized for a 10 Gb/s receiver using a 45-nm CMOS process. The proposed algorithm allows up to 52\% power consumption reduction without penalty in performance.}
-      \field{booktitle}{Optical Fiber Communication Conference}
-      \field{journaltitle}{Optical Fiber Communication Conference}
-      \field{title}{Reducing the Power Consumption of the CMA Equalizer Update for a Digital Coherent Receiver}
+      \field{booktitle}{Optical Fiber Communication Conference (OFC)}
+      \field{title}{Reducing the Power Consumption of the {CMA} Equalizer Update for a Digital Coherent Receiver}
       \field{year}{2014}
       \field{pages}{Th4D.5}
       \range{pages}{-1}
       \verb{doi}
       \verb 10.1364/OFC.2014.Th4D.5
       \endverb
-      \verb{urlraw}
-      \verb https://opg.optica.org/abstract.cfm?URI=OFC-2014-Th4D.5
-      \endverb
-      \verb{url}
-      \verb https://opg.optica.org/abstract.cfm?URI=OFC-2014-Th4D.5
-      \endverb
-      \keyw{Coherent communications; Fiber optics communications; Optical fields; Optical signals; Passive optical networks; Quadrature phase shift keying; Single mode fibers; Wavelength division multiplexing}
     \endentry
     \entry{Cheng2013PilotCycleSlip}{article}{}{}
       \name{author}{8}{}{%
@@ -164,9 +144,9 @@
       \field{sortinithash}{4d103a86280481745c9c897c925753c0}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{journaltitle}{Optics Express}
+      \field{journaltitle}{Opt. Express}
       \field{number}{19}
-      \field{title}{Pilot-symbols-aided cycle slip mitigation for DP-16QAM optical communication systems}
+      \field{title}{Pilot-symbols-aided cycle slip mitigation for {DP-16QAM} optical communication systems}
       \field{volume}{21}
       \field{year}{2013}
       \field{pages}{22166\bibrangedash 22172}
@@ -180,34 +160,33 @@
         {{hash=808624665f528cb2a386566150e28112}{%
            family={D'Andrea},
            familyi={D\bibinitperiod},
-           given={A.N.},
-           giveni={A\bibinitperiod}}}%
-        {{hash=0f3bd93dcaca184bf812365b28e84351}{%
+           given={A.\bibnamedelimi N.},
+           giveni={A\bibinitperiod\bibinitdelim N\bibinitperiod}}}%
+        {{hash=618e6978fabbf24e6b0b977d1cc62322}{%
            family={Mengali},
            familyi={M\bibinitperiod},
-           given={Umberto},
+           given={U.},
            giveni={U\bibinitperiod}}}%
-        {{hash=2a3f1fe2bde6ec842344eea82dc453f7}{%
+        {{hash=ded6ac36879abc2a7527ef7c207265b8}{%
            family={Reggiannini},
            familyi={R\bibinitperiod},
-           given={Ruggero},
+           given={R.},
            giveni={R\bibinitperiod}}}%
       }
-      \strng{namehash}{bb21694dde653053a5f452d0a84dc5eb}
-      \strng{fullhash}{bb21694dde653053a5f452d0a84dc5eb}
-      \strng{fullhashraw}{bb21694dde653053a5f452d0a84dc5eb}
-      \strng{bibnamehash}{bb21694dde653053a5f452d0a84dc5eb}
-      \strng{authorbibnamehash}{bb21694dde653053a5f452d0a84dc5eb}
-      \strng{authornamehash}{bb21694dde653053a5f452d0a84dc5eb}
-      \strng{authorfullhash}{bb21694dde653053a5f452d0a84dc5eb}
-      \strng{authorfullhashraw}{bb21694dde653053a5f452d0a84dc5eb}
+      \strng{namehash}{9e4ae308cc5964e283870f134f025766}
+      \strng{fullhash}{9e4ae308cc5964e283870f134f025766}
+      \strng{fullhashraw}{9e4ae308cc5964e283870f134f025766}
+      \strng{bibnamehash}{9e4ae308cc5964e283870f134f025766}
+      \strng{authorbibnamehash}{9e4ae308cc5964e283870f134f025766}
+      \strng{authornamehash}{9e4ae308cc5964e283870f134f025766}
+      \strng{authorfullhash}{9e4ae308cc5964e283870f134f025766}
+      \strng{authorfullhashraw}{9e4ae308cc5964e283870f134f025766}
       \field{sortinit}{D}
       \field{sortinithash}{6f385f66841fb5e82009dc833c761848}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{journaltitle}{Communications, IEEE Transactions on}
-      \field{month}{03}
-      \field{title}{The Modified Cramer-Rao Bound and Its Applications to Synchronization Problems}
+      \field{journaltitle}{IEEE Trans. Commun.}
+      \field{title}{The Modified {Cramer-Rao} Bound and Its Applications to Synchronization Problems}
       \field{volume}{42}
       \field{year}{1994}
       \field{pages}{1391\bibrangedash 1399}
@@ -244,12 +223,6 @@
            given={Doug},
            giveni={D\bibinitperiod}}}%
       }
-      \list{location}{1}{%
-        {San Jose, California, USA}%
-      }
-      \list{publisher}{1}{%
-        {Association for Computing Machinery}%
-      }
       \strng{namehash}{8d750009a61d1f452ae74e0c8ce8d3db}
       \strng{fullhash}{c6431e4f5f2bd59687b19343f5ef836f}
       \strng{fullhashraw}{c6431e4f5f2bd59687b19343f5ef836f}
@@ -262,8 +235,7 @@
       \field{sortinithash}{8da8a182d344d5b9047633dfc0cc9131}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{isbn}{9781450304726}
-      \field{series}{ISCA '11}
+      \field{booktitle}{Int. Symp. Computer Architecture (ISCA)}
       \field{title}{Dark silicon and the end of multicore scaling}
       \field{year}{2011}
       \field{pages}{365\bibrangedash 376}
@@ -271,21 +243,14 @@
       \verb{doi}
       \verb 10.1145/2000064.2000108
       \endverb
-      \verb{urlraw}
-      \verb https://doi.org/10.1145/2000064.2000108
-      \endverb
-      \verb{url}
-      \verb https://doi.org/10.1145/2000064.2000108
-      \endverb
-      \keyw{dark silicon,modeling,multicore,power,technology scaling}
     \endentry
     \entry{Farrow;88}{inproceedings}{}{}
       \name{author}{1}{}{%
         {{hash=4b7d50a15058f032aca99fe9b89ab2b6}{%
            family={Farrow},
            familyi={F\bibinitperiod},
-           given={C.W.},
-           giveni={C\bibinitperiod}}}%
+           given={C.\bibnamedelimi W.},
+           giveni={C\bibinitperiod\bibinitdelim W\bibinitperiod}}}%
       }
       \strng{namehash}{4b7d50a15058f032aca99fe9b89ab2b6}
       \strng{fullhash}{4b7d50a15058f032aca99fe9b89ab2b6}
@@ -299,15 +264,14 @@
       \field{sortinithash}{2638baaa20439f1b5a8f80c6c08a13b4}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{booktitle}{1988., IEEE International Symposium on Circuits and Systems}
+      \field{booktitle}{IEEE Int. Symp. Circuits and Systems (ISCAS)}
       \field{title}{A continuously variable digital delay element}
       \field{year}{1988}
-      \field{pages}{2641\bibrangedash 2645 vol.3}
-      \range{pages}{-1}
+      \field{pages}{2641\bibrangedash 2645}
+      \range{pages}{5}
       \verb{doi}
       \verb 10.1109/ISCAS.1988.15483
       \endverb
-      \keyw{Clocks;Finite impulse response filter;Modems;Digital signal processing;Echo cancellers;Signal generators;Digital filters;Delay lines;Transmitters;Analog-digital conversion}
     \endentry
     \entry{Faruk;21}{article}{}{}
       \name{author}{6}{}{%
@@ -354,7 +318,7 @@
       \field{sortinithash}{2638baaa20439f1b5a8f80c6c08a13b4}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{journaltitle}{IEEE Communications Magazine}
+      \field{journaltitle}{IEEE Commun. Mag.}
       \field{number}{12}
       \field{title}{Coherent Passive Optical Networks: Why, When, and How}
       \field{volume}{59}
@@ -364,7 +328,6 @@
       \verb{doi}
       \verb 10.1109/MCOM.010.2100503
       \endverb
-      \keyw{Physical layer;Optics;Passive optical networks;Next generation networking}
     \endentry
     \entry{Faruk:11}{article}{}{}
       \name{author}{2}{}{%
@@ -379,9 +342,6 @@
            given={Kazuro},
            giveni={K\bibinitperiod}}}%
       }
-      \list{publisher}{1}{%
-        {Optica Publishing Group}%
-      }
       \strng{namehash}{5ee55e4bd7ddc50e8233d4bedec1e9ba}
       \strng{fullhash}{5ee55e4bd7ddc50e8233d4bedec1e9ba}
       \strng{fullhashraw}{5ee55e4bd7ddc50e8233d4bedec1e9ba}
@@ -395,7 +355,6 @@
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{journaltitle}{Opt. Express}
-      \field{month}{6}
       \field{number}{13}
       \field{title}{Adaptive frequency-domain equalization in digital coherent optical receivers}
       \field{volume}{19}
@@ -405,13 +364,6 @@
       \verb{doi}
       \verb 10.1364/OE.19.012789
       \endverb
-      \verb{urlraw}
-      \verb https://opg.optica.org/oe/abstract.cfm?URI=oe-19-13-12789
-      \endverb
-      \verb{url}
-      \verb https://opg.optica.org/oe/abstract.cfm?URI=oe-19-13-12789
-      \endverb
-      \keyw{Coherent communications; Fiber optics communications; Homodyning; Analog to digital converters; Optical networks; Optical receivers; Polarization mode dispersion; Quadrature phase shift keying; Signal processing}
     \endentry
     \entry{horowitz2014computing}{inproceedings}{}{}
       \name{author}{1}{}{%
@@ -433,7 +385,7 @@
       \field{sortinithash}{23a3aa7c24e56cfa16945d55545109b5}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{booktitle}{2014 IEEE International Solid-State Circuits Conference (ISSCC) Digest of Technical Papers}
+      \field{booktitle}{IEEE Int. Solid-State Circuits Conf. (ISSCC)}
       \field{title}{Computing's Energy Problem (and what we can do about it)}
       \field{year}{2014}
       \field{pages}{10\bibrangedash 14}
@@ -467,7 +419,7 @@
       \field{sortinithash}{8d291c51ee89b6cd86bf5379f0b151d8}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{journaltitle}{Journal of Lightwave Technology}
+      \field{journaltitle}{J. Lightwave Technol.}
       \field{number}{8}
       \field{title}{Digital Equalization of Chromatic Dispersion and Polarization Mode Dispersion}
       \field{volume}{25}
@@ -477,7 +429,6 @@
       \verb{doi}
       \verb 10.1109/JLT.2007.900889
       \endverb
-      \keyw{Chromatic dispersion;Polarization mode dispersion;Optical receivers;Optical distortion;Equalizers;Optical pulse shaping;Optical filters;Sampling methods;Optical sensors;Optical signal processing;Chromatic dispersion (CD);coherent detection;digital signal processing;equalizers;optical fiber communication;polarization mode dispersion (PMD)}
     \endentry
     \entry{Jacobsen2007}{article}{}{}
       \name{author}{2}{}{%
@@ -504,8 +455,7 @@
       \field{sortinithash}{b2f54a9081ace9966a7cb9413811edb4}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{journaltitle}{IEEE Signal Processing Magazine}
-      \field{month}{5}
+      \field{journaltitle}{IEEE Signal Process. Mag.}
       \field{number}{3}
       \field{title}{Fast, Accurate Frequency Estimators}
       \field{volume}{24}
@@ -561,20 +511,15 @@
       \field{sortinithash}{b2f54a9081ace9966a7cb9413811edb4}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{issn}{2076-3417}
       \field{journaltitle}{Applied Sciences}
       \field{number}{7}
-      \field{title}{Modified Godard Timing Recovery for Non Integer Oversampling Receivers}
+      \field{title}{Modified {Godard} Timing Recovery for Non Integer Oversampling Receivers}
       \field{volume}{7}
       \field{year}{2017}
+      \field{pages}{655}
+      \range{pages}{1}
       \verb{doi}
       \verb 10.3390/app7070655
-      \endverb
-      \verb{urlraw}
-      \verb https://www.mdpi.com/2076-3417/7/7/655
-      \endverb
-      \verb{url}
-      \verb https://www.mdpi.com/2076-3417/7/7/655
       \endverb
     \endentry
     \entry{Cheng;20}{article}{}{}
@@ -607,23 +552,15 @@
       \field{sortinithash}{b2f54a9081ace9966a7cb9413811edb4}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{issn}{0030-4018}
-      \field{journaltitle}{Optics Communications}
-      \field{title}{An efficient adaptive equalization architecture for high-speed coherent PON systems}
+      \field{journaltitle}{Opt. Commun.}
+      \field{title}{An efficient adaptive equalization architecture for high-speed coherent {PON} systems}
       \field{volume}{460}
       \field{year}{2020}
       \field{pages}{125022}
       \range{pages}{1}
       \verb{doi}
-      \verb https://doi.org/10.1016/j.optcom.2019.125022
+      \verb 10.1016/j.optcom.2019.125022
       \endverb
-      \verb{urlraw}
-      \verb https://www.sciencedirect.com/science/article/pii/S0030401819310727
-      \endverb
-      \verb{url}
-      \verb https://www.sciencedirect.com/science/article/pii/S0030401819310727
-      \endverb
-      \keyw{Coherent receiver,Adaptive equalization,Low-complexity,Passive optical network,Field-programmable gate array}
     \endentry
     \entry{Liu;09}{inproceedings}{}{}
       \name{author}{6}{}{%
@@ -670,12 +607,11 @@
       \field{sortinithash}{7c47d417cecb1f4bd38d1825c427a61a}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{booktitle}{2009 Conference on Optical Fiber Communication}
+      \field{booktitle}{Optical Fiber Communication Conference (OFC)}
       \field{title}{Initial tap setup of constant modulus algorithm for polarization de-multiplexing in optical coherent receivers}
       \field{year}{2009}
       \field{pages}{1\bibrangedash 3}
       \range{pages}{3}
-      \keyw{Optical receivers;Optical polarization;Finite impulse response filter;Optical fiber polarization;Optical filters;Research and development;Poles and towers;Oceans;Chaotic communication;Laboratories;(060.1660) Coherent communications;(060.2360) Fiber optics links and subsystems}
     \endentry
     \entry{Mantzoukis:11}{article}{}{}
       \name{author}{5}{}{%
@@ -705,9 +641,6 @@
            given={Thomas},
            giveni={T\bibinitperiod}}}%
       }
-      \list{publisher}{1}{%
-        {Optica Publishing Group}%
-      }
       \strng{namehash}{3b88f8eb4999d04271df91691bbea513}
       \strng{fullhash}{397afe631487de3ec64267b262554b17}
       \strng{fullhashraw}{397afe631487de3ec64267b262554b17}
@@ -721,20 +654,12 @@
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{journaltitle}{J. Lightwave Technol.}
-      \field{month}{6}
       \field{number}{11}
-      \field{title}{Performance Comparison of Electronic PMD Equalizers for Coherent PDM QPSK Systems}
+      \field{title}{Performance Comparison of Electronic {PMD} Equalizers for Coherent {PDM-QPSK} Systems}
       \field{volume}{29}
       \field{year}{2011}
       \field{pages}{1721\bibrangedash 1728}
       \range{pages}{8}
-      \verb{urlraw}
-      \verb https://opg.optica.org/jlt/abstract.cfm?URI=jlt-29-11-1721
-      \endverb
-      \verb{url}
-      \verb https://opg.optica.org/jlt/abstract.cfm?URI=jlt-29-11-1721
-      \endverb
-      \keyw{Coherent systems; Optical systems; Phase recovery; Polarization division multiplexing; Polarization mode dispersion; Quadrature phase shift keying}
     \endentry
     \entry{Mello;21}{book}{}{}
       \name{author}{2}{}{%
@@ -749,6 +674,9 @@
            given={Fabio},
            giveni={F\bibinitperiod}}}%
       }
+      \list{publisher}{1}{%
+        {Springer}%
+      }
       \strng{namehash}{3077c9828fa80c9d0f3fb745fbfd173f}
       \strng{fullhash}{3077c9828fa80c9d0f3fb745fbfd173f}
       \strng{fullhashraw}{3077c9828fa80c9d0f3fb745fbfd173f}
@@ -761,12 +689,41 @@
       \field{sortinithash}{4625c616857f13d17ce56f7d4f97d451}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{isbn}{978-3-030-66540-1}
-      \field{month}{01}
       \field{title}{Digital Coherent Optical Systems: Architecture and Algorithms}
       \field{year}{2021}
       \verb{doi}
       \verb 10.1007/978-3-030-66541-8
+      \endverb
+    \endentry
+    \entry{coherent_receivers}{article}{}{}
+      \name{author}{1}{}{%
+        {{hash=1a67808fa91d6d24e2d13a047c5adfcc}{%
+           family={Savory},
+           familyi={S\bibinitperiod},
+           given={Seb\bibnamedelima J.},
+           giveni={S\bibinitperiod\bibinitdelim J\bibinitperiod}}}%
+      }
+      \strng{namehash}{1a67808fa91d6d24e2d13a047c5adfcc}
+      \strng{fullhash}{1a67808fa91d6d24e2d13a047c5adfcc}
+      \strng{fullhashraw}{1a67808fa91d6d24e2d13a047c5adfcc}
+      \strng{bibnamehash}{1a67808fa91d6d24e2d13a047c5adfcc}
+      \strng{authorbibnamehash}{1a67808fa91d6d24e2d13a047c5adfcc}
+      \strng{authornamehash}{1a67808fa91d6d24e2d13a047c5adfcc}
+      \strng{authorfullhash}{1a67808fa91d6d24e2d13a047c5adfcc}
+      \strng{authorfullhashraw}{1a67808fa91d6d24e2d13a047c5adfcc}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{IEEE J. Sel. Topics Quantum Electron.}
+      \field{number}{5}
+      \field{title}{Digital Coherent Optical Receivers: Algorithms and Subsystems}
+      \field{volume}{16}
+      \field{year}{2010}
+      \field{pages}{1164\bibrangedash 1179}
+      \range{pages}{16}
+      \verb{doi}
+      \verb 10.1109/JSTQE.2010.2044751
       \endverb
     \endentry
     \entry{Shahidi;19}{article}{}{}
@@ -790,7 +747,7 @@
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{journaltitle}{IEEE Access}
-      \field{title}{Chip Power Scaling in Recent CMOS Technology Nodes}
+      \field{title}{Chip Power Scaling in Recent {CMOS} Technology Nodes}
       \field{volume}{7}
       \field{year}{2019}
       \field{pages}{851\bibrangedash 856}
@@ -798,7 +755,6 @@
       \verb{doi}
       \verb 10.1109/ACCESS.2018.2885895
       \endverb
-      \keyw{Bridge circuits;Frequency measurement;CMOS technology;Microprocessors;Benchmark testing;Capacitance;High frequency;Computer performance;CMOS scaling;FinFET;Moore’s law;MOSFET;power dissipation;scaling;technology node}
     \endentry
     \entry{Vaskasi;22}{inproceedings}{}{}
       \name{author}{6}{}{%
@@ -845,15 +801,14 @@
       \field{sortinithash}{afb52128e5b4dc4b843768c0113d673b}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{booktitle}{2022 27th OptoElectronics and Communications Conference (OECC) and 2022 International Conference on Photonics in Switching and Computing (PSC)}
-      \field{title}{High Wall-plug-efficiency III-V-on-silicon C-band DFB Laser Diodes}
+      \field{booktitle}{OptoElectronics and Communications Conference (OECC)}
+      \field{title}{High Wall-plug-efficiency {III-V}-on-silicon {C}-band {DFB} Laser Diodes}
       \field{year}{2022}
       \field{pages}{1\bibrangedash 3}
       \range{pages}{3}
       \verb{doi}
       \verb 10.23919/OECC/PSC53152.2022.9849904
       \endverb
-      \keyw{Temperature measurement;Optical losses;Semiconductor lasers;Power lasers;Scattering;Waveguide lasers;Threshold current;DFB lasers;Heterogeneous integration;Wall-plug efficiency}
     \endentry
     \entry{Zhang;24}{article}{}{}
       \name{author}{20}{}{%
@@ -970,8 +925,7 @@
       \field{sortinithash}{96892c0b0a36bb8557c40c49813d48b3}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{journaltitle}{Nature Communications}
-      \field{month}{09}
+      \field{journaltitle}{Nat. Commun.}
       \field{title}{High-coherence parallelization in integrated photonics}
       \field{volume}{15}
       \field{year}{2024}
@@ -1024,9 +978,9 @@
       \field{sortinithash}{96892c0b0a36bb8557c40c49813d48b3}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{journaltitle}{Journal of Optical Communications and Networking}
+      \field{journaltitle}{J. Opt. Commun. Netw.}
       \field{number}{11}
-      \field{title}{All-Digital Timing Recovery and Adaptive Equalization for 112 Gbit/s POLMUX-NRZ-DQPSK Optical Coherent Receivers}
+      \field{title}{All-Digital Timing Recovery and Adaptive Equalization for 112 {Gbit/s POLMUX-NRZ-DQPSK} Optical Coherent Receivers}
       \field{volume}{2}
       \field{year}{2010}
       \field{pages}{984\bibrangedash 990}
@@ -1034,7 +988,6 @@
       \verb{doi}
       \verb 10.1364/JOCN.2.000984
       \endverb
-      \keyw{Synchronization;Equalizers;Optical receivers;Dispersion;Joints;All-digital timing recovery;Adaptive digital equalization;Polarization multiplexing (POLMUX);Coherent receiver}
     \endentry
   \enddatalist
 \endrefsection

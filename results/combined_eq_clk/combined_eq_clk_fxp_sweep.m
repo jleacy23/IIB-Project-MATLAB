@@ -6,25 +6,45 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
 %       cd_gardner_cma : eq_clk.combined_cd_fd_gardner_adaptive_fxp
 %       cd_godard_cma  : eq_clk.combined_cd_fd_godard_adaptive_fxp
 %   is exercised with the po2-twiddle option both on and off, over a
-%   grid of fixed-point precisions:
+%   THREE-dimensional fixed-point precision grid that sets the fractional
+%   length of each pipeline stage INDEPENDENTLY:
 %
-%       EqPrec_vec  - applied jointly to T.Static and T.AdaptEq
-%       ClkPrec_vec - applied to T.Clk (Gardner) or T.Godard
+%       StaticFL_vec - static equaliser (T.Static): FFT/IFFT twiddles, CD
+%                      response, accumulator, and the application of the
+%                      frequency-domain CD + matched filter.  This stage
+%                      usually needs more fractional bits to absorb FFT
+%                      bit-growth, so its axis is set separately.
+%       AdaptFL_vec  - adaptive equaliser (T.AdaptEq).  In the struct path
+%                      of adaptive_eq.equalize_fxp_types this is the
+%                      *gradient* precision (T.grad); the data path is
+%                      pinned high.
+%       ClkFL_vec    - clock-recovery loop (T.Clk for Gardner / T.Godard
+%                      for the modified-Godard PI loop).
+%
+%   The full sweep is the Cartesian product
+%       blocks x Po2Twiddle_vec x StaticFL_vec x AdaptFL_vec x ClkFL_vec.
+%   Integer bits are fixed at NIntBits; each section forms its struct as
+%   struct('WL', NIntBits + FL, 'FL', FL).
 %
 %   CFO is held at 3 GHz for every configuration; the combined block
 %   performs its one-shot coarse CFO correction in floating point
 %   internally and the post-block exact-CFO removal absorbs the residual.
 %
 %   Codegen MEX dispatch
-%       Each precision combo bakes the per-section fi numerictypes into
-%       a separate MEX (Tcfg is a -args constant at codegen time).  The
-%       TestClassSetup loops over (block, EqFL, ClkFL) and produces one
-%       MEX per combo at
-%           src/+eq_clk/<base>_e<EqFL>c<ClkFL>_mex.mexw64
-%       where <base> is the fxp function's name.  Existing MEX files
-%       are NOT rebuilt; delete them by hand to force a refresh.  The
-%       sweep itself dispatches via feval at runtime, so per-config
-%       overhead is just one MATLAB->MEX call.
+%       Each precision combo bakes the per-section fi numerictypes into a
+%       separate MEX (Tcfg is a -args constant at codegen time).  The
+%       po2-twiddle flag is a runtime argument and so does NOT spawn its
+%       own MEX.  The TestClassSetup loops over
+%       (block, StaticFL, AdaptFL, ClkFL) and produces one MEX per combo at
+%           src/+eq_clk/<base>_a<AdaptFL>c<ClkFL>s<StaticFL>_mex.mexw64
+%       where <base> is the fxp function's name.  The sweep itself
+%       dispatches via feval at runtime, so per-config overhead is just
+%       one MATLAB->MEX call.
+%
+%       NOTE: the number of MEX builds is
+%           numel(blocks) * numel(StaticFL_vec) * numel(AdaptFL_vec)
+%                         * numel(ClkFL_vec)
+%       which grows quickly — trim the FL vectors to keep build time sane.
 %
 %   The user fills in the per-block manual designs (filter lengths and
 %   loop-filter gains).  blocks{di} pairs with NCD(di), NTaps(di), and
@@ -77,9 +97,9 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
         NCD            = [22,   22]
         NTaps          = [1,    1]
         ki             = [1e-6 1e-7; ...
-                          1e-4 1e-5]
+                          1.64 1.64]
         kp             = [1e-4 1e-4; ...
-                          1e-4 1e-5]
+                          0.164 0.164]
 
         % --- Adaptive equaliser (per-block convergence) -------------
         MuGardner   = 1e-3
@@ -97,27 +117,36 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
         % --- Coarse FD CFO correction (floating point inside block) -
         CfoEnable   = true
 
-        % --- Precision sweep ----------------------------------------
-        %  Integer bits are fixed at NIntBits; each entry in *_FL_vec is
-        %  the fractional length to sweep.  At each point the test forms
-        %  the per-section struct as struct('WL', NIntBits + FL, 'FL', FL)
-        %  and passes it through the composite fxp types builder.
+        % --- Precision sweep (3-D, per-stage fractional lengths) ----
+        %  THREE independent swept axes set the fractional length of each
+        %  pipeline stage separately.  The full sweep is the Cartesian
+        %  product blocks x Po2Twiddle_vec x StaticFL_vec x AdaptFL_vec x
+        %  ClkFL_vec.  Integer bits are fixed at NIntBits; each section
+        %  forms its struct as struct('WL', NIntBits + FL, 'FL', FL).
         %
-        %  Note on the adaptive equaliser: the struct path of
-        %  adaptive_eq.equalize_fxp_types interprets WL/FL as the
-        %  *gradient* precision (T.grad) and pins the data path at high
-        %  precision.  EqFL_vec therefore sweeps the joint
-        %  static-equaliser precision and adaptive-equaliser gradient
-        %  precision.
-        %  Default grids kept to 3 x 3 = 9 combos per block (18 builds
-        %  total) so the up-front codegen phase stays roughly within
-        %  ~10 minutes on a typical workstation.  Extend as needed.
-        NIntBits   = 16
-        EqFL_vec   = [2, 4, 6, 8, 10]
-        ClkFL_vec  = [2, 4, 6, 8, 10]
+        %    StaticFL_vec - T.Static (FFT/IFFT twiddles, CD response,
+        %                   accumulator, FD-equaliser application).  Usually
+        %                   higher than the other stages to absorb FFT
+        %                   bit-growth.
+        %    AdaptFL_vec  - T.AdaptEq (the adaptive-equaliser gradient
+        %                   precision; data path is pinned high).
+        %    ClkFL_vec    - T.Clk (Gardner) / T.Godard (modified-Godard PI).
+        NIntBits     = 16
+        StaticFL_vec = [20]
+        AdaptFL_vec  = [20]
+        ClkFL_vec    = [8,10,12,14,16]
 
         % --- FEC threshold used to score designs --------------------
         FEC_BER = 2e-2
+
+        % --- MEX build control --------------------------------------
+        %  false: reuse any existing per-precision MEX
+        %         (*_a<AdaptFL>c<ClkFL>s<StaticFL>_mex) — fast reruns.
+        %  true : force a fresh codegen of EVERY combo at startup, ignoring
+        %         the cache.  Set this after editing any *_fxp.m source (e.g.
+        %         the recovery_fxp / Godard loop-filter changes) so stale
+        %         cached binaries are regenerated.
+        ForceRebuild = false
     end
 
     %% ================================================================
@@ -135,35 +164,43 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
             cfgCoder = coder.config('mex');
             cfgCoder.GenerateReport = false;
 
-            NBlk = numel(P.blocks);
-            NEQ  = numel(P.EqFL_vec);
-            NCLK = numel(P.ClkFL_vec);
-            nTotal = NBlk * NEQ * NCLK;
+            NBlk    = numel(P.blocks);
+            NStatic = numel(P.StaticFL_vec);
+            NAdapt  = numel(P.AdaptFL_vec);
+            NClk    = numel(P.ClkFL_vec);
+            nTotal  = NBlk * NStatic * NAdapt * NClk;
             bi = 0;
             tStart = tic;
-            fprintf('\n=== Building %d MEX combos ===\n', nTotal);
+            if P.ForceRebuild
+                fprintf('\n=== Building %d MEX combos (ForceRebuild ON: cache ignored) ===\n', nTotal);
+            else
+                fprintf('\n=== Building %d MEX combos (using cache where present) ===\n', nTotal);
+            end
             for blk = 1:NBlk
                 blkName = P.blocks{blk};
-                for ei = 1:NEQ
-                    for cli = 1:NCLK
-                        bi = bi + 1;
-                        eqFL  = P.EqFL_vec(ei);
-                        clkFL = P.ClkFL_vec(cli);
-                        mexBase = combined_eq_clk_fxp_sweep.mexBaseName( ...
-                            blkName, eqFL, clkFL);
-                        mexPath = fullfile(repoRoot, 'src', '+eq_clk', ...
-                            [mexBase '.mexw64']);
-                        if isfile(mexPath)
-                            fprintf('  [%2d/%2d] %s -> cached\n', ...
-                                bi, nTotal, mexBase);
-                            continue;
+                for sfi = 1:NStatic
+                    staticFL = P.StaticFL_vec(sfi);
+                    for afi = 1:NAdapt
+                        adaptFL = P.AdaptFL_vec(afi);
+                        for cfi = 1:NClk
+                            clkFL = P.ClkFL_vec(cfi);
+                            bi = bi + 1;
+                            mexBase = combined_eq_clk_fxp_sweep.mexBaseName( ...
+                                blkName, adaptFL, clkFL, staticFL);
+                            mexPath = fullfile(repoRoot, 'src', '+eq_clk', ...
+                                [mexBase '.mexw64']);
+                            if isfile(mexPath) && ~P.ForceRebuild
+                                fprintf('  [%3d/%3d] %s -> cached\n', ...
+                                    bi, nTotal, mexBase);
+                                continue;
+                            end
+                            fprintf('  [%3d/%3d] %s ', bi, nTotal, mexBase);
+                            t1 = tic;
+                            combined_eq_clk_fxp_sweep.buildOneMex( ...
+                                P, cfgCoder, blkName, adaptFL, clkFL, ...
+                                staticFL, mexBase, repoRoot);
+                            fprintf('(%.0fs)\n', toc(t1));
                         end
-                        fprintf('  [%2d/%2d] %s ', bi, nTotal, mexBase);
-                        t1 = tic;
-                        combined_eq_clk_fxp_sweep.buildOneMex( ...
-                            P, cfgCoder, blkName, eqFL, clkFL, ...
-                            mexBase, repoRoot);
-                        fprintf('(%.0fs)\n', toc(t1));
                     end
                 end
             end
@@ -185,12 +222,13 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
         function test_fxp_precision_sweep(testCase)
             P = combined_eq_clk_fxp_sweep.extractParams(testCase);
 
-            NBlk  = numel(P.blocks);
-            NPO2  = numel(P.Po2Twiddle_vec);
-            NEQ   = numel(P.EqFL_vec);
-            NCLK  = numel(P.ClkFL_vec);
-            NSNR  = numel(P.SNR_dB_vec);
-            NCFG  = NBlk * NPO2 * NEQ * NCLK;
+            NBlk    = numel(P.blocks);
+            NPO2    = numel(P.Po2Twiddle_vec);
+            NStatic = numel(P.StaticFL_vec);
+            NAdapt  = numel(P.AdaptFL_vec);
+            NClk    = numel(P.ClkFL_vec);
+            NSNR    = numel(P.SNR_dB_vec);
+            NCFG    = NBlk * NPO2 * NStatic * NAdapt * NClk;
 
             % Validate the manual-design arrays
             assert(numel(P.NCD)   == NBlk && ...
@@ -202,9 +240,9 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
             % --- Build cfg array ---------------------------------------
             cfgs = struct('block',{}, 'NCD',{}, 'NOverlap',{}, ...
                 'NTaps',{}, 'Po2Twiddle',{}, 'ki',{}, 'kp',{}, ...
-                'EqFL',{}, 'ClkFL',{}, ...
+                'StaticFL',{}, 'AdaptFL',{}, 'ClkFL',{}, ...
                 'block_idx',{}, 'po2_idx',{}, ...
-                'eq_idx',{}, 'clk_idx',{});
+                'static_idx',{}, 'adapt_idx',{}, 'clk_idx',{});
             ci = 0;
             for bi = 1:NBlk
                 nCd = P.NCD(bi);
@@ -213,37 +251,44 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
                 for pi = 1:NPO2
                     ki_v = P.ki(bi, pi);
                     kp_v = P.kp(bi, pi);
-                    for ei = 1:NEQ
-                        for cli = 1:NCLK
-                            ci = ci + 1;
-                            cfgs(ci).block      = P.blocks{bi};
-                            cfgs(ci).NCD        = nCd;
-                            cfgs(ci).NOverlap   = nOv;
-                            cfgs(ci).NTaps      = nT;
-                            cfgs(ci).Po2Twiddle = logical(P.Po2Twiddle_vec(pi));
-                            cfgs(ci).ki         = ki_v;
-                            cfgs(ci).kp         = kp_v;
-                            cfgs(ci).EqFL       = P.EqFL_vec(ei);
-                            cfgs(ci).ClkFL      = P.ClkFL_vec(cli);
-                            cfgs(ci).block_idx  = bi;
-                            cfgs(ci).po2_idx    = pi;
-                            cfgs(ci).eq_idx     = ei;
-                            cfgs(ci).clk_idx    = cli;
+                    for sfi = 1:NStatic
+                        staticFL = P.StaticFL_vec(sfi);
+                        for afi = 1:NAdapt
+                            adaptFL = P.AdaptFL_vec(afi);
+                            for cfi = 1:NClk
+                                clkFL = P.ClkFL_vec(cfi);
+                                ci = ci + 1;
+                                cfgs(ci).block      = P.blocks{bi};
+                                cfgs(ci).NCD        = nCd;
+                                cfgs(ci).NOverlap   = nOv;
+                                cfgs(ci).NTaps      = nT;
+                                cfgs(ci).Po2Twiddle = logical(P.Po2Twiddle_vec(pi));
+                                cfgs(ci).ki         = ki_v;
+                                cfgs(ci).kp         = kp_v;
+                                cfgs(ci).StaticFL   = staticFL;
+                                cfgs(ci).AdaptFL    = adaptFL;
+                                cfgs(ci).ClkFL      = clkFL;
+                                cfgs(ci).block_idx  = bi;
+                                cfgs(ci).po2_idx    = pi;
+                                cfgs(ci).static_idx = sfi;
+                                cfgs(ci).adapt_idx  = afi;
+                                cfgs(ci).clk_idx    = cfi;
+                            end
                         end
                     end
                 end
             end
 
-            fprintf('\n=== FXP precision sweep, CFO = %.2f GHz ===\n', P.CFO_GHz);
-            fprintf('Configurations: %d  (blocks=%d, po2=%d, EqFL=%d, ClkFL=%d)  IntBits=%d\n', ...
-                NCFG, NBlk, NPO2, NEQ, NCLK, P.NIntBits);
+            fprintf('\n=== FXP precision sweep (3-D), CFO = %.2f GHz ===\n', P.CFO_GHz);
+            fprintf(['Configurations: %d  (blocks=%d, po2=%d, ' ...
+                'static=%d, adapt=%d, clk=%d)  IntBits=%d\n'], ...
+                NCFG, NBlk, NPO2, NStatic, NAdapt, NClk, P.NIntBits);
             for ci = 1:NCFG
                 fprintf(['  %-16s NCD=%2d NTaps=%d po2=%d  ki=%.2e kp=%.2e  ' ...
-                    'EQ WL=%d FL=%d  Clk WL=%d FL=%d\n'], ...
+                    'AEQ FL=%d  CLK FL=%d  STAT FL=%d\n'], ...
                     cfgs(ci).block, cfgs(ci).NCD, cfgs(ci).NTaps, ...
                     cfgs(ci).Po2Twiddle, cfgs(ci).ki, cfgs(ci).kp, ...
-                    P.NIntBits + cfgs(ci).EqFL, cfgs(ci).EqFL, ...
-                    P.NIntBits + cfgs(ci).ClkFL, cfgs(ci).ClkFL);
+                    cfgs(ci).AdaptFL, cfgs(ci).ClkFL, cfgs(ci).StaticFL);
             end
 
             % --- BER vs SNR per config ---------------------------------
@@ -282,13 +327,16 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
             po2        = false(NCFG, 1);
             ki_col     = nan(NCFG, 1);
             kp_col     = nan(NCFG, 1);
-            eq_wl      = nan(NCFG, 1);
-            eq_fl      = nan(NCFG, 1);
+            adapt_wl   = nan(NCFG, 1);
+            adapt_fl   = nan(NCFG, 1);
             clk_wl     = nan(NCFG, 1);
             clk_fl     = nan(NCFG, 1);
+            static_wl  = nan(NCFG, 1);
+            static_fl  = nan(NCFG, 1);
             block_idx  = nan(NCFG, 1);
             po2_idx    = nan(NCFG, 1);
-            eq_idx     = nan(NCFG, 1);
+            static_idx = nan(NCFG, 1);
+            adapt_idx  = nan(NCFG, 1);
             clk_idx    = nan(NCFG, 1);
             for ci = 1:NCFG
                 cfg = cfgs(ci);
@@ -299,29 +347,34 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
                 po2(ci)        = cfg.Po2Twiddle;
                 ki_col(ci)     = cfg.ki;
                 kp_col(ci)     = cfg.kp;
-                eq_fl(ci)      = cfg.EqFL;
-                eq_wl(ci)      = P.NIntBits + cfg.EqFL;
+                adapt_fl(ci)   = cfg.AdaptFL;
+                adapt_wl(ci)   = P.NIntBits + cfg.AdaptFL;
                 clk_fl(ci)     = cfg.ClkFL;
                 clk_wl(ci)     = P.NIntBits + cfg.ClkFL;
+                static_fl(ci)  = cfg.StaticFL;
+                static_wl(ci)  = P.NIntBits + cfg.StaticFL;
                 block_idx(ci)  = cfg.block_idx;
                 po2_idx(ci)    = cfg.po2_idx;
-                eq_idx(ci)     = cfg.eq_idx;
+                static_idx(ci) = cfg.static_idx;
+                adapt_idx(ci)  = cfg.adapt_idx;
                 clk_idx(ci)    = cfg.clk_idx;
             end
             tbl = table(block_name, n_cd, n_overlap, n_aeq, po2, ...
-                ki_col, kp_col, eq_wl, eq_fl, clk_wl, clk_fl, ...
-                block_idx, po2_idx, eq_idx, clk_idx, ber, fec_snr);
+                ki_col, kp_col, adapt_wl, adapt_fl, clk_wl, clk_fl, ...
+                static_wl, static_fl, block_idx, po2_idx, ...
+                static_idx, adapt_idx, clk_idx, ber, fec_snr);
             tbl.Properties.VariableNames{'ki_col'} = 'ki';
             tbl.Properties.VariableNames{'kp_col'} = 'kp';
 
             % --- Save ------------------------------------------------
-            S.tbl         = tbl;
-            S.SNR_dB_vec  = P.SNR_dB_vec;
-            S.CFO_GHz     = P.CFO_GHz;
-            S.NIntBits    = P.NIntBits;
-            S.EqFL_vec    = P.EqFL_vec;
-            S.ClkFL_vec   = P.ClkFL_vec;
-            S.params      = P;
+            S.tbl          = tbl;
+            S.SNR_dB_vec   = P.SNR_dB_vec;
+            S.CFO_GHz      = P.CFO_GHz;
+            S.NIntBits     = P.NIntBits;
+            S.StaticFL_vec = P.StaticFL_vec;
+            S.AdaptFL_vec  = P.AdaptFL_vec;
+            S.ClkFL_vec    = P.ClkFL_vec;
+            S.params       = P;
 
             outFile = fullfile(fileparts(mfilename('fullpath')), ...
                 'combined_eq_clk_fxp_sweep.mat');
@@ -373,9 +426,11 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
             P.NLanesGard    = tc.NLanesGard;
             P.CfoEnable     = tc.CfoEnable;
             P.NIntBits      = tc.NIntBits;
-            P.EqFL_vec      = tc.EqFL_vec;
+            P.StaticFL_vec  = tc.StaticFL_vec;
+            P.AdaptFL_vec   = tc.AdaptFL_vec;
             P.ClkFL_vec     = tc.ClkFL_vec;
             P.FEC_BER       = tc.FEC_BER;
+            P.ForceRebuild  = tc.ForceRebuild;
         end
 
         function [rxSig, symbols] = buildChannel(P, SNR_dB, trialSeed, cfo)
@@ -409,10 +464,10 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
                 [eqSym, cfoBinsApplied] = ...
                     combined_eq_clk_fxp_sweep.runFxpBlock(P, cfg, rxSig);
             catch ME
-                fprintf(['    %s NCD=%d po2=%d  EQ FL=%d Clk FL=%d ', ...
+                fprintf(['    %s NCD=%d po2=%d  AEQ FL=%d CLK FL=%d Stat FL=%d ', ...
                     '-> ERROR: %s\n'], ...
                     cfg.block, cfg.NCD, cfg.Po2Twiddle, ...
-                    cfg.EqFL, cfg.ClkFL, ME.message);
+                    cfg.AdaptFL, cfg.ClkFL, cfg.StaticFL, ME.message);
                 ber = NaN;
                 return;
             end
@@ -440,25 +495,26 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
                           'Unknown block: %s', cfg.block);
             end
 
-            % Build per-section precision structs from the swept FL
-            % entries (integer bits fixed at P.NIntBits).
-            EqPrec  = struct('WL', P.NIntBits + cfg.EqFL,  'FL', cfg.EqFL);
-            ClkPrec = struct('WL', P.NIntBits + cfg.ClkFL, 'FL', cfg.ClkFL);
+            % Per-stage precisions (independent fractional lengths).
+            % Integer bits are fixed at P.NIntBits.
+            StaticPrec = struct('WL', P.NIntBits + cfg.StaticFL, 'FL', cfg.StaticFL);
+            AdaptPrec  = struct('WL', P.NIntBits + cfg.AdaptFL,  'FL', cfg.AdaptFL);
+            ClkPrec    = struct('WL', P.NIntBits + cfg.ClkFL,    'FL', cfg.ClkFL);
 
             % Build T at runtime: cheap, and needed to know T.Static.x
             % (input cast) and T.AdaptEq.y (Pilots cast) for the MEX.
             switch cfg.block
                 case 'cd_gardner_cma'
                     Tcfg = struct( ...
-                        'Static',  EqPrec, ...
+                        'Static',  StaticPrec, ...
                         'Clk',     ClkPrec, ...
-                        'AdaptEq', EqPrec);
+                        'AdaptEq', AdaptPrec);
                     T = eq_clk.combined_cd_fd_gardner_adaptive_fxp_types(Tcfg);
                 case 'cd_godard_cma'
                     Tcfg = struct( ...
-                        'Static',  EqPrec, ...
+                        'Static',  StaticPrec, ...
                         'Godard',  ClkPrec, ...
-                        'AdaptEq', EqPrec);
+                        'AdaptEq', AdaptPrec);
                     T = eq_clk.combined_cd_fd_godard_adaptive_fxp_types(Tcfg);
                 otherwise
                     error('combined_eq_clk_fxp_sweep:badBlock', ...
@@ -487,7 +543,7 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
 
             % Dispatch to the precision-specific MEX built in TestClassSetup.
             mexBase = combined_eq_clk_fxp_sweep.mexBaseName( ...
-                cfg.block, cfg.EqFL, cfg.ClkFL);
+                cfg.block, cfg.AdaptFL, cfg.ClkFL, cfg.StaticFL);
             mexFn = str2func(['eq_clk.' mexBase]);
 
             switch cfg.block
@@ -586,8 +642,10 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
             snr = NaN;
         end
 
-        function name = mexBaseName(blkName, eqFL, clkFL)
-            % Unique MEX file name per (block, EqFL, ClkFL) combo.
+        function name = mexBaseName(blkName, adaptFL, clkFL, staticFL)
+            % Unique MEX file name per (block, AdaptFL, ClkFL, StaticFL)
+            % combo.  The po2-twiddle flag is a runtime argument and is NOT
+            % part of the name.
             switch blkName
                 case 'cd_gardner_cma'
                     base = 'combined_cd_fd_gardner_adaptive_fxp';
@@ -597,14 +655,16 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
                     error('combined_eq_clk_fxp_sweep:badBlock', ...
                           'Unknown block: %s', blkName);
             end
-            name = sprintf('%s_e%02dc%02d_mex', base, eqFL, clkFL);
+            name = sprintf('%s_a%02dc%02ds%02d_mex', ...
+                base, adaptFL, clkFL, staticFL);
         end
 
-        function buildOneMex(P, cfgCoder, blkName, eqFL, clkFL, ...
-                             mexBase, repoRoot)
+        function buildOneMex(P, cfgCoder, blkName, adaptFL, clkFL, ...
+                             staticFL, mexBase, repoRoot)
             % Codegen one precision-specialised MEX into src/+eq_clk/.
-            EqPrec  = struct('WL', P.NIntBits + eqFL,  'FL', eqFL);
-            ClkPrec = struct('WL', P.NIntBits + clkFL, 'FL', clkFL);
+            StaticPrec = struct('WL', P.NIntBits + staticFL, 'FL', staticFL);
+            AdaptPrec  = struct('WL', P.NIntBits + adaptFL,  'FL', adaptFL);
+            ClkPrec    = struct('WL', P.NIntBits + clkFL,    'FL', clkFL);
             outPath = fullfile(repoRoot, 'src', '+eq_clk', mexBase);
 
             % Pick nominal NCD/NTaps/ki/kp from the first block design;
@@ -615,16 +675,16 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
 
             switch blkName
                 case 'cd_gardner_cma'
-                    Tcfg = struct('Static',  EqPrec, ...
+                    Tcfg = struct('Static',  StaticPrec, ...
                                   'Clk',     ClkPrec, ...
-                                  'AdaptEq', EqPrec);
+                                  'AdaptEq', AdaptPrec);
                     T = eq_clk.combined_cd_fd_gardner_adaptive_fxp_types(Tcfg);
                     muVal = P.MuGardner;
                     n1Val = P.N1Gardner;
                 case 'cd_godard_cma'
-                    Tcfg = struct('Static',  EqPrec, ...
+                    Tcfg = struct('Static',  StaticPrec, ...
                                   'Godard',  ClkPrec, ...
-                                  'AdaptEq', EqPrec);
+                                  'AdaptEq', AdaptPrec);
                     T = eq_clk.combined_cd_fd_godard_adaptive_fxp_types(Tcfg);
                     muVal = P.MuGodard;
                     n1Val = P.N1Godard;

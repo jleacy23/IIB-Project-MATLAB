@@ -1,16 +1,16 @@
 # Fdb version 4
-["biber full"] 1779992687.57078 "full.bcf" "full.bbl" "full" 1780002932.34451 0
+["biber full"] 1780050154.68063 "full.bcf" "full.bbl" "full" 1780059911.51339 0
   "../clk_recovery/ref.bib" 1779992321 1635 99a0f261cdfc64aafcdae8831ba000bf ""
   "../energy/ref.bib" 1779992274 993 f84b4165d0ec281362af2a8a255965cd ""
   "../equalisation/ref.bib" 1779992308 3542 903f521c8a7421158c79e3a0c4487227 ""
   "../frequency_recovery/ref.bib" 1779992285 1310 07fa60de58e5b21efdbd702257b029ad ""
-  "full.bcf" 1780002932 110511 a6fac48ae24e8d8c72d9bc68de4b1764 "pdflatex"
+  "full.bcf" 1780059911 110650 b1226982f44502a1ff8e8807c7c00146 "pdflatex"
   "ref.bib" 1779992349 3608 83dc6013e5a54a35b9a13fa8009239bc ""
   (generated)
   "full.bbl"
   "full.blg"
   (rewritten before read)
-["pdflatex"] 1780002930.55378 "c:/Users/joele/Downloads/iib_project/report/full/full.tex" "full.pdf" "full" 1780002932.34574 0
+["pdflatex"] 1780059909.58034 "c:/Users/joele/Downloads/iib_project/report/full/full.tex" "full.pdf" "full" 1780059911.51453 0
   "../frequency_recovery/CR_precision_comparison.png" 1779818578 37872 a79e9e4dc7ba6efc9bb3ea37aebf66ae ""
   "../frequency_recovery/FR_precision_comparison.png" 1779818686 61087 46df9f443f305bf84a1ff3c398c24d2e ""
   "../frequency_recovery/FR_precision_energy.png" 1779363661 67071 4ef1e796f1b21195abc6f1e18814ba74 ""
@@ -23,6 +23,7 @@
   "../frequency_recovery/receiver_energy_breakdown_CR.png" 1779367563 46919 f68d811f372c6f6f78a90dbfbe7ff182 ""
   "../frequency_recovery/vv_vs_pilots.png" 1779280895 96506 603a2fb5fc419ed61dcb4fbf2b539001 ""
   "MZM.jpeg" 1779214511 58704 0ab67457ff68e93ec6feefed72464dd5 ""
+  "aeq_fxp_sweep.png" 1780056421 60834 8f55485d286396d88147acb159580587 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy5.tfm" 1772596518 1120 1e8878807317373affa7f7bba4cf2f6a ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy6.tfm" 1772596518 1124 14ccf5552bc7f77ca02a8a402bea8bfb ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy7.tfm" 1772596518 1120 7f9f170e8aa57527ad6c49feafd45d54 ""
@@ -210,16 +211,15 @@
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1772596550 94259 aec9939469efac8f0cf917369f632359 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/web2c/pdftex/pdflatex.fmt" 1772596566 2236130 036198fdb3bbb46401ac4d671e71ba73 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf.cnf" 1772596498 903 164c5b127cd0d6dc91abad2f62421ea2 ""
-  "c:/Users/joele/Downloads/iib_project/report/full/full.tex" 1780002928 79328 361e4d4db6c03b90a60e8a099ba89e69 ""
-  "cfo_sweep_corrected_float.png" 1779965513 52825 6600c9ea3ddb37401553a82134b17f0b ""
-  "full.aux" 1780002932 28532 5971a213ce3f30928f0e2c0f72268beb "pdflatex"
-  "full.bbl" 1779992690 41004 564209f1a2f1d3787bdf4aadf10b0c41 "biber full"
-  "full.run.xml" 1780002932 2470 b201c3512d6c50d3be3b3780315b62f5 "pdflatex"
-  "full.tex" 1780002928 79328 361e4d4db6c03b90a60e8a099ba89e69 ""
-  "full.toc" 1780002932 5147 299d5210a777d8709658929b066aeee3 "pdflatex"
-  "fxp_sweep_combined_3GHz.png" 1779977447 48686 a0e9632d1e58ed70a7695e936bd295a5 ""
-  "fxp_sweep_energy.png" 1779978763 66464 6721c975f953d2160f489965111ac5b4 ""
+  "c:/Users/joele/Downloads/iib_project/report/full/full.tex" 1780059908 81468 80f4f8824c36637ee6b5ca1609609f12 ""
+  "cfo_sweep_corrected_float.png" 1780034069 54900 1c6e3f4690e90e46f530aab9ff7ab801 ""
+  "full.aux" 1780059911 28070 e152c517bb9291abd83f30c6e6a0e927 "pdflatex"
+  "full.bbl" 1780050165 41004 564209f1a2f1d3787bdf4aadf10b0c41 "biber full"
+  "full.run.xml" 1780059911 2470 b201c3512d6c50d3be3b3780315b62f5 "pdflatex"
+  "full.tex" 1780059908 81468 80f4f8824c36637ee6b5ca1609609f12 ""
+  "full.toc" 1780059911 5364 2ecefb9b9fcb1786354b4f90927f409a "pdflatex"
   "max_cfo_combined_float.png" 1779957798 54446 ad4dba6dee1cb1ddbbe9c1b3f16057e3 ""
+  "seq_fxp_sweep.png" 1780057622 51319 b085a8a1f0ab75eb9a988906fe237344 ""
   (generated)
   "full.aux"
   "full.bcf"

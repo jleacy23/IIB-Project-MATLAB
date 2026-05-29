@@ -59,7 +59,7 @@ function G = godardTypes(dt)
             'SumFractionLength',     fl);
         G.metric = fi([], 1, wl, fl, F);
         G.ek     = fi([], 1, wl, fl, F);
-        G.lf     = fi([], 1, wl, fl, F);
+        G.lf     = wideLfType();   % wide accumulator, independent of swept fl
         G.tw     = fi([], 1, wl, fl, F);
         return;
     end
@@ -89,7 +89,7 @@ function G = godardTypes(dt)
                 'SumFractionLength',     8);
             G.metric = fi([], 1, 32, 8,  F);
             G.ek     = fi([], 1, 32, 8,  F);
-            G.lf     = fi([], 1, 32, 16, F);
+            G.lf     = wideLfType();
             G.tw     = fi([], 1, 32, 14, F);
 
         case 'fixed32'
@@ -104,7 +104,7 @@ function G = godardTypes(dt)
                 'SumFractionLength',     16);
             G.metric = fi([], 1, 32, 16, F);
             G.ek     = fi([], 1, 32, 16, F);
-            G.lf     = fi([], 1, 32, 24, F);
+            G.lf     = wideLfType();
             G.tw     = fi([], 1, 32, 24, F);
 
         otherwise
@@ -120,4 +120,24 @@ function v = getOr(s, name, dflt)
     else
         v = dflt;
     end
+end
+
+
+function lf = wideLfType()
+%WIDELFTYPE  Wide fixed-point Godard loop-filter accumulator (LF_I, tauSamp,
+%   ki*e).  Its width is a FIXED design constant — NOT the swept data-path
+%   precision — sized so the tiny PI gains (ki ~ 1e-6/1e-4) and their
+%   products neither underflow nor lose the integral.  The swept "specified"
+%   precision is applied downstream to the FD phase-ramp twiddle (G.tw).
+    WL = 48; FL = 40;
+    F  = fimath( ...
+        'RoundingMethod',       'Floor', ...
+        'OverflowAction',       'Wrap',  ...
+        'ProductMode',          'SpecifyPrecision', ...
+        'ProductWordLength',     WL, ...
+        'ProductFractionLength', FL, ...
+        'SumMode',              'SpecifyPrecision', ...
+        'SumWordLength',         WL, ...
+        'SumFractionLength',     FL);
+    lf = fi([], 1, WL, FL, F);
 end

@@ -37,7 +37,7 @@ function T = recovery_fxp_types(dt) %#codegen
         T.coef = fi([], 1, wl, fl, F);
         T.acc  = fi([], 1, wl, fl, F);
         T.ek   = fi([], 1, wl, fl, F);
-        T.lf   = fi([], 1, wl, fl, F);
+        T.lf   = wideLfType();   % wide accumulator, independent of swept fl
         T.nco  = fi([], 1, wl, fl, F);
         return;
     end
@@ -76,7 +76,7 @@ function T = recovery_fxp_types(dt) %#codegen
             T.coef = fi([], 1, 32, 16, F);
             T.acc  = fi([], 1, 32, 8,  F);
             T.ek   = fi([], 1, 32, 8,  F);
-            T.lf   = fi([], 1, 32, 20, F);
+            T.lf   = wideLfType();
             T.nco  = fi([], 1, 32, 14, F);
 
         case 'fixed32'
@@ -93,11 +93,32 @@ function T = recovery_fxp_types(dt) %#codegen
             T.coef = fi([], 1, 32, 24, F);
             T.acc  = fi([], 1, 32, 16, F);
             T.ek   = fi([], 1, 32, 16, F);
-            T.lf   = fi([], 1, 32, 24, F);
+            T.lf   = wideLfType();
             T.nco  = fi([], 1, 32, 24, F);
 
         otherwise
             error('recovery_fxp_types:BadType', ...
                 'Unknown type configuration ''%s''.', dt);
     end
+end
+
+
+function lf = wideLfType()
+%WIDELFTYPE  Wide fixed-point loop-filter accumulator (Wk, LF_I, ki*ek).
+%   Its width is a FIXED design constant — NOT the swept data-path precision
+%   — sized so the tiny PI gains (ki ~ 1e-7) and their products neither
+%   underflow nor lose the integral.  A real DPLL integrator is a wide
+%   accumulator; the swept "specified" precision is applied downstream to
+%   the Farrow interval mun (T.nco), not to the integrator.
+    WL = 48; FL = 40;     % 8 integer bits (Wk, LF_I ~ O(1)), 40 fractional
+    F  = fimath( ...
+        'RoundingMethod',       'Floor', ...
+        'OverflowAction',       'Wrap',  ...
+        'ProductMode',          'SpecifyPrecision', ...
+        'ProductWordLength',     WL, ...
+        'ProductFractionLength', FL, ...
+        'SumMode',              'SpecifyPrecision', ...
+        'SumWordLength',         WL, ...
+        'SumFractionLength',     FL);
+    lf = fi([], 1, WL, FL, F);
 end

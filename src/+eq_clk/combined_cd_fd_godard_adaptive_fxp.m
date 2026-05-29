@@ -95,11 +95,17 @@ function [y, cfoBinsApplied] = combined_cd_fd_godard_adaptive_fxp(...
     %% ================================================================
     %  3. Overlap-save loop with embedded Godard PI
     %  ================================================================
+    %% Loop-filter state and gains use T.Godard.lf — a WIDE fixed-point
+    %  accumulator (combined_cd_fd_godard_adaptive_fxp_types) whose width is
+    %  a fixed design constant, sized so the tiny PI gains (ki ~ 1e-6/1e-4)
+    %  and the products ki*e / kp*e do not underflow.  Faithful fixed point;
+    %  the swept "specified" precision is applied to the APPLIED correction
+    %  — the frequency-domain phase ramp, quantised to T.Godard.tw below.
+    %  imag(S) stays the fixed-point T.Godard.ek metric (it is data-derived).
     LF_I    = cast(0, 'like', T.Godard.lf);
     tauSamp = cast(0, 'like', T.Godard.lf);
-
-    ki_fi = cast(ki, 'like', T.Godard.lf);
-    kp_fi = cast(kp, 'like', T.Godard.lf);
+    ki_fi   = cast(ki, 'like', T.Godard.lf);
+    kp_fi   = cast(kp, 'like', T.Godard.lf);
 
     % FFT buffers and the corrected spectrum (kept across pols within a
     % block so the Godard metric can sum over polarisations).
@@ -108,8 +114,11 @@ function [y, cfoBinsApplied] = combined_cd_fd_godard_adaptive_fxp(...
     for i = 1:nBlocks
         % --- Build the per-block phase ramp from current tauSamp -------
         %  Computed in double, then cast to T.Godard.tw (unit-magnitude
-        %  complex twiddle).  Matches the fft_search_fxp pattern of
-        %  computing exp(.) in double and casting back.
+        %  complex twiddle).  This cast is the SPECIFIED-precision quantiser
+        %  of the applied FD timing correction (the swept ClkFL precision):
+        %  the wide accumulator integrates the tiny gains, and only the
+        %  per-bin correction actually applied to the spectrum is rounded to
+        %  T.Godard.tw.  Matches the fft_search_fxp exp-in-double pattern.
         tau_d  = double(tauSamp);
         ramp_d = exp(-1j * 2*pi * k_idx * tau_d / NFFT);
         ramp   = cast(ramp_d, 'like', T.Godard.tw);
@@ -146,11 +155,15 @@ function [y, cfoBinsApplied] = combined_cd_fd_godard_adaptive_fxp(...
                 S(:) = S + a * conj(b);
             end
         end
-        e = cast(imag(S), 'like', T.Godard.ek);
+        e = cast(imag(S), 'like', T.Godard.ek);   % fixed-point metric readout
 
-        % --- PI update for the next block ------------------------------
-        e_lf    = cast(e, 'like', T.Godard.lf);
-        LF_I(:) = LF_I + ki_fi * e_lf;
+        % --- PI update for the next block (wide fixed-point; see note) -
+        %  ek metric cast into the wide T.Godard.lf accumulator; the gain
+        %  products and integral stay wide so the tiny gains survive.  The
+        %  resulting tauSamp drives the FD phase ramp, which is where the
+        %  swept precision (T.Godard.tw) is applied.
+        e_lf       = cast(e, 'like', T.Godard.lf);
+        LF_I(:)    = LF_I + ki_fi * e_lf;
         tauSamp(:) = kp_fi * e_lf + LF_I;
     end
 

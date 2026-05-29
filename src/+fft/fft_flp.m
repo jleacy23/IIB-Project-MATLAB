@@ -19,8 +19,10 @@ function X = fft_flp(x, inverse, po2Twiddle)
 %                  trailing dimensions are processed independently
 %                  (matches fft's column-wise behaviour on matrices and
 %                  arrays).
-%     inverse    - logical; true -> IFFT (conjugate twiddles + 1/N).
-%                  Default false.
+%     inverse    - logical; true -> IFFT (conjugate twiddles, no
+%                  scaling).  The forward FFT applies 1/2 scaling between
+%                  each butterfly stage, spreading the full 1/N
+%                  normalisation across the log2(N) stages.  Default false.
 %     po2Twiddle - logical; true -> snap each twiddle component to the
 %                  nearest signed power of two.  Default false.
 %
@@ -79,15 +81,19 @@ function X = fft_flp(x, inverse, po2Twiddle)
                 u = X(idx_top, :);
                 t = W .* X(idx_bot, :);
 
-                X(idx_top, :) = u + t;
-                X(idx_bot, :) = u - t;
+                if inverse
+                    % IFFT: no scaling
+                    X(idx_top, :) = u + t;
+                    X(idx_bot, :) = u - t;
+                else
+                    % Forward FFT: 1/2 inter-stage scaling so the full
+                    % 1/N normalisation is spread across the log2(N)
+                    % stages (mirrors the fixed-point fft_fxp path).
+                    X(idx_top, :) = (u + t) / 2;
+                    X(idx_bot, :) = (u - t) / 2;
+                end
             end
         end
-    end
-
-    %% IFFT: scale output by 1/N
-    if inverse
-        X = X / N;
     end
 
     X = reshape(X, inSize);

@@ -66,7 +66,7 @@ classdef pipeline_fxp_sweep < matlab.unittest.TestCase
         % --- Monte-Carlo ----------------------------------------------
         N_sub_target = 8         % CPON subframes per trial (Tx)
         NTrials      = 5
-        SNR_dB_vec   = 10 : 1 : 20
+        SNR_dB_vec   = 0 : 1 : 20
         % --- Equaliser (overlap-save + Gardner + adaptive) -----------
         NFFT        = 128
         NCD         = 22

@@ -71,14 +71,14 @@ A passive optical network (PON) uses a point-to-multipoint (P2MP) topology in wh
 \end{figure}
 
 \section{Coherent PON}
-Traditional intensity-modulation direct-detection (IM-DD) passive optical networks are approaching their practical limits at data rates approaching 50 Gbps per wavelength. Coherent technology encodes information in the amplitude and phase of the optical signal, allowing modulation formats like QPSK that can carry more bits per symbol. Coherent receivers are also more sensitive, allowing for lower transmit powers. These factors make them a promising alternative to achieve rates of 200 Gbps on an acceptable power budget \cite{Faruk;21}.
+Traditional intensity-modulation direct-detection (IM-DD) passive optical networks are reaching their practical limits at data rates around 50 Gbit/s per wavelength. Coherent technology encodes information in the amplitude and phase of the optical signal, allowing modulation formats like QPSK that can carry more bits per symbol. Coherent receivers are also more sensitive, allowing for lower transmit powers. These factors make them a promising alternative to achieve rates of 200 Gbit/s on an acceptable power budget \cite{Faruk;21}.
 
 
 \section{Specification}
-The Coherent Passive Optical Network (CPON) specification \cite{CPON_PMD_2025} defines a 100 Gbps single-wavelength P2MP system. This will be used as an example to test receiver implementations. This report focuses on the \emph{downstream} direction (OLT to ONU) where receiver optimisations can be shared by all ONUs; the key physical-layer parameters are described in the following sections.
+The Coherent Passive Optical Network (CPON) specification \cite{CPON_PMD_2025} defines a single-wavelength P2MP system and serves as the reference specification for the receiver implementations evaluated in this report. This report focuses on the \emph{downstream} direction (OLT to ONU) where receiver optimisations can be shared by all ONUs; the key physical-layer parameters are described in the following sections.
 
 \subsection{Modulation and Symbol Rate}
-The downstream signal uses non-differential DP-QPSK at a symbol rate of $R_s = 30.5$\,GBd. Each polarisation carries 2\,bits per symbol by mapping consecutive bit pairs to in-phase and quadrature amplitudes $I,Q\in\{-1,+1\}$, giving QPSK constellation points at $\pm1\pm j$. Training and pilot symbols use the same mapping but at amplitude $\pm 3$, placing them outside the data constellation for unambiguous identification. Soft-decision forward error correction (FEC) is used with a 22\% coding overhead.
+The downstream signal uses non-differential dual-polarisation QPSK (DP-QPSK) at a symbol rate of $R_s = 30.5$\,GBd. Each polarisation carries 2\,bits per symbol by mapping consecutive bit pairs to in-phase and quadrature amplitudes $I,Q\in\{-1,+1\}$, giving QPSK constellation points at $\pm1\pm j$. Training and pilot symbols use the same mapping but at amplitude $\pm 3$, placing them outside the data constellation for unambiguous identification. Soft-decision forward error correction (FEC) is used with a 22\% coding overhead.
 
 \subsection{Downstream Frame Structure}
 \label{sec:cpon_frame}
@@ -88,7 +88,28 @@ The fundamental framing unit is the \emph{DSP subframe} of 3\,712 symbols, organ
 \subsection{Key System Tolerances}
 \label{sec:cpon_tolerances}
 
-The standard supports a 35 dB loss budget from OLT to ONU. To account for impairments in the core network, an SNR of 35 dB at the OLT must be supported. The OLT transmitter laser must be within $\pm1.5$\,GHz of its DWDM channel centre, and the ONU must acquire signals within $\pm1.8$\,GHz of the grid. In the worst case, the combined transmitter and LO offsets yield a carrier frequency offset (CFO) of up to $\approx3$\,GHz that the receiver DSP must correct. Both OLT and ONU lasers must have a linewidth of at most 1\,MHz. The sampling frequency offset (SFO) between OLT and ONU can be at most 40 ppm. The ONU must tolerate a chromatic dispersion of up to 1600 ps/nm and a polarisation mode dispersion of up to 8 ps to support reaches up to 80 km.
+The key physical-layer tolerances that the receiver DSP must accommodate are summarised in \cref{tab:cpon_tolerances}. The transmitter SNR of 35\,dB is the back-to-back signal quality at the OLT, accounting for impairments in the core network before the access link, and sets the noise floor $\mathrm{NSR}_0$ used in the transmitter-energy model of \cref{chapter:energy}. The OLT transmitter laser must be within $\pm1.5$\,GHz of its DWDM channel centre, and the ONU must acquire signals within $\pm1.8$\,GHz of the grid, so in the worst case the combined transmitter and local-oscillator (LO) offsets yield a carrier frequency offset (CFO) of up to $\approx3$\,GHz that the receiver DSP must correct.
+
+\begin{table}[H]
+    \centering
+    \small
+    \caption{Key downstream tolerances from the CPON specification \cite{CPON_PMD_2025}.}
+    \label{tab:cpon_tolerances}
+    \begin{tabular}{lc}
+        \toprule
+        Parameter & Value \\
+        \midrule
+        Loss budget (OLT to ONU)        & $35$\,dB \\
+        Transmitter SNR                 & $35$\,dB \\
+        Worst-case CFO                  & $\approx 3$\,GHz \\
+        Laser linewidth (OLT and ONU)   & $\leq 1$\,MHz \\
+        Sampling frequency offset (SFO) & $\leq 40$\,ppm \\
+        Chromatic dispersion            & $\leq 1600$\,ps/nm \\
+        Polarisation-mode dispersion    & $\leq 8$\,ps \\
+        Reach                           & $\leq 80$\,km \\
+        \bottomrule
+    \end{tabular}
+\end{table}
 
 The specification requires a pre-FEC bit error ratio of $\leq 2\times10^{-2}$, which the soft-decision LDPC FEC reduces to a post-FEC BER of $\leq10^{-12}$.
 
@@ -126,14 +147,13 @@ All DSP algorithms in this report are designed, characterised, and compared thro
 \end{figure}
 
 \subsection{Fixed-Point Arithmetic}
-The receiver is evaluated with fixed-point arithmetic, as used in ASIC designs. This captures the effect of quantisation error on each implementation's performance, and underpins a bit-accurate energy model that goes beyond algorithmic complexity. All fixed-point modelling uses the MATLAB Fixed-Point Designer toolkit.
-
+The receiver is evaluated with fixed-point arithmetic, as used in ASIC designs. This captures the effect of quantisation error on each implementation's performance, and underpins a bit-accurate energy model that goes beyond algorithmic complexity. All fixed-point modelling uses the MATLAB Fixed-Point Designer toolkit. To account for pilots at $\pm3\pm3j$ and any small increase in magnitude from channel impairments, the signal is allocated 3 integer bits to give a range of $[-4, 4 - 2^{-m}]$ for the real and imaginary parts in 2's complement, where $m$ is the number of fractional bits determining precision. These integer bits are ignored in energy comparisons between different precisions: they are unaffected by the number of fractional bits, and are often unused since the data symbols sit at $\pm1\pm j$. Real and imaginary parts of equaliser weights are normalised to [-1,1].
 
 \subsection{System Parameters}
 The network under investigation assumes a loss budget of 35\,dB from OLT to ONU and an initial transmitter SNR of 35\,dB, both taken from the CPON downstream specification of \cref{chapter:cpon}. The central wavelength is assumed to be 1550\,nm. The chromatic dispersion, polarisation-mode dispersion, and pulse-shaping models used throughout the receiver chain are introduced in the chapters that use them.
 
 \section{Energy Estimation}
-The energy-efficiency of a receiver implementation cannot be determined from the receiver energy alone. A simple architecure may reduce receiver energy but incur an SNR penalty for acceptable operation due to a drop in accuracy. This calls for a system-level model of the energy consumption where an SNR penalty can be converted to an equivalent increase in transmitter energy, allowing receiver implementations to be compared by their combined energy.
+The energy-efficiency of a receiver implementation cannot be determined from the receiver energy alone. A simpler architecture may reduce receiver energy but, through a drop in accuracy, incur an SNR penalty that raises the transmit power needed for acceptable operation. This calls for a system-level model of the energy consumption where an SNR penalty can be converted to an equivalent increase in transmitter energy, allowing receiver implementations to be compared by their combined energy.
 \subsection{Receiver Energy}\label{sec:rx_energy}
 The energy consumption of the receiver can be estimated from the number of real multiplications \(N_M\) and real additions \(N_A\) it performs to process each symbol. The true cost of these operations depends on the hardware implementation. The reference values shown in \cref{tab:energy} provide a useful estimate to compare DSP algorithms but a more accurate estimate would require power simulations for an ASIC implementation.
 
@@ -187,10 +207,9 @@ where \(M\) is the modulation order.
 The downstream link considered here consists of a single OLT transmitting through a 1:\(K\) passive splitter to \(K\) ONUs, as shown in \cref{fig:pon_intro}. The OLT power is divided equally between branches, so each ONU receives a \(1/K\) share.
 
 \paragraph{Minimum Required SNR}
-The CPON standard specifies a maximum pre-FEC bit-error rate (BER) of \(10^{-2}\) that must not be exceeded for the forward error-correction (FEC) scheme to function correctly. Each receiver implementation therefore has a minimum required SNR to meet this FEC threshold. This SNR, together with the noise characteristics of the optical network, determines the minimum transmitter power.
+The CPON standard specifies a maximum pre-FEC bit-error rate (BER) of \(2\times10^{-2}\) that must not be exceeded for the forward error-correction (FEC) scheme to function correctly. Each receiver implementation therefore has a minimum required SNR to meet this FEC threshold. This SNR, together with the noise characteristics of the optical network, determines the minimum transmitter power.
 
 \paragraph{Noise}
-% \paragraph{Shot Noise}
 The relationship between SNR and transmitter power \(P_\mathrm{tx}\) depends on the dominant source of noise in the network. Optical access networks typically operate over short lengths at low power, so amplifiers can be omitted and non-linear noise neglected, leaving shot noise as the dominant impairment. The shot noise power referred to the optical input of a balanced coherent receiver is \(2h\nu B_\mathrm{eff}\), where the factor of 2 captures the contributions from the signal and LO arms of the balanced detector summed in quadrature, and \(B_\mathrm{eff}\) is the receiver electrical bandwidth, set equal to the symbol rate by a matched bandpass filter after the 1:\(K\) splitter in \cref{fig:pon_intro}. The power per polarisation received by each ONU is \(P_\mathrm{tx}/2\Gamma K\), where $\Gamma$ is the loss from OLT to ONU. This gives a per-ONU NSR of
 \begin{equation}
     \mathrm{NSR} = \frac{4\Gamma K h\nu B_\mathrm{eff}}{P_\mathrm{tx}} + \mathrm{NSR}_0,
@@ -320,6 +339,9 @@ A variant of the CMA update replaces the error and output terms by their signs: 
 \end{equation}
 This removes all multiplications at no performance cost \cite{Cardenas:14} so will be employed in the later analysis.
 
+\paragraph{Fixed point}
+The step size $\mu$ is typically $\approx 10^{-3}$. This means there must be different precisions for the filter weights and the gradient term $e_x\mathbf{x}_\mathrm{in}x_\mathrm{out}$. Choosing $\mu$ as a power of 2 allows the gradient to be quantised to a low precision then bit-shifted before updating the weights.
+
 \subsection{Matched Filtering}
 The receiver maximises signal-to-noise ratio at the symbol decision instants by filtering the received signal with a matched filter, the time-reversed conjugate of the transmit pulse. For the RRC pulse used here the matched filter is itself an RRC; the cascade of transmit and receive RRCs is a raised cosine that satisfies the Nyquist criterion. Two implementations are possible. The matched filter may be implemented explicitly as a frequency-domain mask multiplied into the overlap-save CD stage at no additional cost: $H_\mathrm{eq}(\omega)$ is replaced by $H_\mathrm{eq}(\omega)H_\mathrm{RRC}(\omega)$ and the same overlap-save block performs CD compensation and matched filtering simultaneously. Alternatively the matched filter can be folded into the taps of the adaptive equaliser, provided the adaptive FIR is long enough to span both the matched-filter response and the channel memory it tracks; this saves the explicit filter but requires a longer adaptive FIR.
 
@@ -421,6 +443,9 @@ The two detectors operate on blocks of different sizes -- Gardner on a block of 
     \label{tab:clk_cost}
 \end{table}
 
+\subsection{Fixed Point}
+The loop filter used in both clock recovery algorithms requires care when implementing in fixed point arithmetic. The proportional and integral constants $k_p, k_i$ can be very small so the loop filter output will be quantised to 0 if it shares the same dynamic range as the error estimate. This can be corrected by choosing $k_p, k_i$ to be powers of 2 such that the quantised error terms can be bit-shifted then combined to give the loop-filter output $W[n] = k_pe[n] + k_i\sum_{l=0}^{n-1}e[n-l]$. This requires $W[n]$ to be a high precision accumulator, but the energy consumption from bits changing in the accumulator is determined by the precision of the error terms. To perform energy-efficient timing correction, $W[n]$ is quantised to low precision before being used either in the phase ramp for Godard or the NCO and Farrow interpolator for Gardner.
+
 \section{Combined Implementations}
 A common architecture for short-range access-network receivers uses a single butterfly adaptive equaliser to perform all equalisation roles in one $2\times 2$ MIMO structure \cite{Cheng;20}. For a longer network like the one under investigation, however, this filter must be at least $N_\mathrm{CD} = 22$ taps long (\cref{eq:cd_len}), or up to $22 + 2\times10 - 1 = 41$ taps for a conservative equaliser that fully compensates CD and the RRC span.
 
@@ -433,7 +458,7 @@ Each combined block is exercised on a DP-QPSK channel sized to the worst-case CP
 
 An initial algorithm comparison is performed in floating-point arithmetic to determine the effects of CFO and to give benchmark values for the fixed-point implementation.
 
-The fixed-point implementation then computes the SNR at the FEC limit over a range of precisions, with the same precision applied to every arithmetic block. Energy per bit is then computed using the operation counts per symbol and the receiver energy model in \cref{chapter:energy}.
+The fixed-point implementation then computes the SNR at the FEC limit over a range of precisions. The specified precision is applied to both equalisers, and the error estimation and correction parts of clock recovery. The loop filter still retains a high precision. The energy consumption of each implementation is then computed from the operation counts for each algorithm and the receiver energy model from \cref{chapter:energy}.
 
 
 \section{Results \& Discussion}
@@ -483,7 +508,7 @@ An energy-efficient coarse CFO correction can be built from the FFT already prod
 \begin{equation}
     \hat{k} = \frac{\sum_{k} k\,|X[k]|^2}{\sum_{k} |X[k]|^2}, \qquad k \in \{0,\dots,\tfrac{N}{2}-1,-\tfrac{N}{2},\dots,-1\},
 \end{equation}
-with bin spacing $\eta R_s / N$. The estimate is then applied as a continuous-valued time-domain phasor $\exp(-j 2\pi \hat{k}n / N)$ to later samples before they reach the FFT. The estimator is placed before the matched filter, whose pass-band is centred at DC and would otherwise bias the centroid toward zero. \Cref{fig:cfo_corrected_float} shows the SNR at the FEC limit for each implementation. The coarse estimate allows both Godard and Gardner to achieve the FEC limit at the 3 GHz tolerance, but the residual CFO is still impactful for Godard. $2^k$ twiddles consistently underperform the standard FFT/IFFT for Gardner. For Godard near the 3 GHz limit they appear to offer the same performance within the measured variance, while saving energy.
+with bin spacing $\eta R_s / N$. The estimate is then applied as a continuous-valued time-domain phasor $\exp(-j 2\pi \hat{k}n / N)$ to later samples before they reach the FFT. Estimating the CFO only requires an average over a small number of blocks and applying the phasor only requires one application of CORDIC so the energy consumption of the CFO correction is negligible compared to equalisation and clock recovery. The estimator is placed before the matched filter, whose pass-band is centred at DC and would otherwise bias the centroid toward zero. \Cref{fig:cfo_corrected_float} shows the SNR at the FEC limit for each implementation. The coarse estimate removes enough CFO for all implementations to achieve the FEC limit at the 3 GHz tolerance. Godard and Gardner with the standard FFT/IFFT exhibit the same performance but Godard performs better once the $2^k$ twiddle factors are included. Rounding the twiddle factors impacts both the FFT and IFFT; as Godard operates on data after the FFT it is not affected by the additional loss in accuracy of the IFFT like Gardner.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.6\textwidth]{cfo_sweep_corrected_float.png}
@@ -492,38 +517,21 @@ with bin spacing $\eta R_s / N$. The estimate is then applied as a continuous-va
 \end{figure}
 
 \subsection{Fixed Point Precision}
-So far implementations have been compared in floating-point arithmetic, which avoids the quantisation error present in a real coherent receiver. \Cref{fig:fxp_sweep_combined_snr} shows the performance for a bit-accurate model of each combination. The most notable change from the SNRs at 3 GHz in \cref{fig:cfo_corrected_float} is for Godard with $2^k$ twiddles, increasing by $\approx 5$\,dB and no longer making it a viable choice. Gardner with a standard FFT/IFFT still offers the best performance, and from \cref{fig:fxp_sweep_combined_energy} Gardner with $2^k$ twiddles narrowly beats Godard as the low-energy alternative. Precision can go as low as 6 bits for both Gardner implementations with only a small SNR penalty at 4 bits, so the most promising combinations for an energy-efficient receiver are shown in \cref{tab:gardner_energy_breakdown}. Clock recovery and static equalisation dominate the energy consumption, but $2^k$ twiddles significantly reduce the static-equaliser contribution.
-\begin{table}[H]
-    \centering
-    \begin{tabular}{ccccccc}
-        \toprule
-        $2^k$ twiddles & Precision (bits) & SNR @ FEC (dB) & $E_\mathrm{stat}$ & $E_\mathrm{aeq}$ & $E_\mathrm{clk}$ & $E_\mathrm{tot}$ \\
-        \midrule
-        no  & 4 &  $6.39 \pm 0.16$ & $24.94$ & $3.28$ & $25.39$ & $53.61$ \\
-        yes & 4 & $9.55 \pm 0.42$ & $4.57$  & $3.28$ & $25.39$ & $33.24$ \\
-        no  & 6 & $5.50 \pm 0.08$ & $29.99$ & $3.94$ & $30.61$ & $64.54$ \\
-        yes & 6 & $8.02 \pm 0.50$ & $5.35$  & $3.94$ & $30.61$ & $39.90$ \\
-        \bottomrule
-    \end{tabular}
-    \caption{Energy breakdown (pJ/bit) and SNR at the FEC limit for the Gardner implementation with and without $2^k$ twiddles at $4$ and $6$ bits of fractional precision (the same precision is used in every block). $E_\mathrm{stat}$, $E_\mathrm{aeq}$, and $E_\mathrm{clk}$ are the per-bit energies of the static FD CD/matched-filter, the adaptive equaliser, and the clock-recovery loop respectively.}
-    \label{tab:gardner_energy_breakdown}
-\end{table}
+So far implementations have been compared in floating point arithmetic, avoiding the quantisation error present in a real coherent receiver. Each stage will have different precision requirements, so a search over precision combinations is required.
+
+\paragraph{Adaptive equaliser.} \Cref{fig:aeq_fxp} shows how the precision of the adaptive equaliser impacts performance for each implementation while the static equaliser and clock recovery operate at high precision. Without $2^k$ twiddle factors performance of Godard and Gardner doesn't change until 4 bits of precision, with a large SNR penalty at 2 bits. 6 bits of precision seems optimal when $2^k$ twiddle factors are used before an SNR penalty at 4 bits, and at 2 bits the quantisation error is enough to stop the FEC limit being reached at any SNR.
+
+\paragraph{Static equalisr.} \Cref{fig:seq_fxp} shows the same precision sweep for the static equaliser. The precision requirement is much greater here, with no performance change down to 8 bits before the equaliser abruptly fails at 6 bits and below. This can be explained by the FFT implementation: the forwards radix-2 FFT scales values by 1/2 at each stage to stop overflow. With an FFT of size 128, this is 7 stages. Below 8 bits of precision the FFT can collapse all values to 0 and the equaliser fails. $2^k$ twiddle factors perform worse when the static equaliser operates at low precision as compared to the adaptive equaliser because the twiddle factors experience compounding erros from the rounding and quantisation.
 \begin{figure}[H]
     \centering
-    \begin{subfigure}[t]{0.65\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{fxp_sweep_combined_3GHz.png}
-        \caption{SNR @ FEC limit vs fixed-point precision.}
-        \label{fig:fxp_sweep_combined_snr}
-    \end{subfigure}
-    \begin{subfigure}[t]{0.65\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{fxp_sweep_energy.png}
-        \caption{Energy per bit vs fixed-point precision.}
-        \label{fig:fxp_sweep_combined_energy}
-    \end{subfigure}
-    \caption{Performance and energy of each implementation as fixed-point precision varies with 3\,GHz of CFO applied.}
-    \label{fig:fxp_sweep_combined}
+    \includegraphics[width=0.65\textwidth]{aeq_fxp_sweep.png}
+    \label{fig:aeq_fxp}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.65\textwidth]{seq_fxp_sweep.png}
+    \label{fig:seq_fxp}
 \end{figure}
 \paragraph{Oversampling rate.} It is important to note the impact of performing this analysis with an oversampling rate of 2. Modern coherent receivers operate below 2 samples per symbol to reduce the load on analogue-digital converters (ADCs). A standard adaptive equaliser requires 2 samples per symbol as it effectively splits the signal into odd and even samples, which is not possible with fractional oversampling rates. This means the output of the ADC must eventually be upsampled but the clock recovery can be done at the lower sampling rate if Modified Godard is used, reducing the operation counts per symbol in \cref{tab:clk_cost}. Thus for lower oversampling rates Godard may be the preferred choice.
 % =====================================================================

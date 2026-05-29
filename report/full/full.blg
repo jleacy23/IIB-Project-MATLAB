@@ -1,0 +1,29 @@
+[0] Config.pm:328> INFO - This is Biber 2.21
+[0] Config.pm:331> INFO - Logfile is 'full.blg'
+[317] biber-MSWIN64:342> INFO - === 
+[451] Biber.pm:421> INFO - Reading 'full.bcf'
+[576] Biber.pm:1002> INFO - Found 21 citekeys in bib section 0
+[590] Biber.pm:4487> INFO - Processing section 0
+[622] Biber.pm:4678> INFO - Looking for bibtex file '../energy/ref.bib' for section 0
+[702] bibtex.pm:1713> INFO - LaTeX decoding ...
+[715] bibtex.pm:1519> INFO - Found BibTeX data source '../energy/ref.bib'
+[800] Biber.pm:4678> INFO - Looking for bibtex file '../frequency_recovery/ref.bib' for section 0
+[878] bibtex.pm:1713> INFO - LaTeX decoding ...
+[898] bibtex.pm:1519> INFO - Found BibTeX data source '../frequency_recovery/ref.bib'
+[918] Biber.pm:4678> INFO - Looking for bibtex file '../equalisation/ref.bib' for section 0
+[998] bibtex.pm:1713> INFO - LaTeX decoding ...
+[1016] bibtex.pm:1519> INFO - Found BibTeX data source '../equalisation/ref.bib'
+[1050] Biber.pm:4678> INFO - Looking for bibtex file '../clk_recovery/ref.bib' for section 0
+[1127] bibtex.pm:1713> INFO - LaTeX decoding ...
+[1143] bibtex.pm:1519> INFO - Found BibTeX data source '../clk_recovery/ref.bib'
+[1162] Biber.pm:4678> INFO - Looking for bibtex file 'ref.bib' for section 0
+[1248] bibtex.pm:1713> INFO - LaTeX decoding ...
+[1270] bibtex.pm:1519> INFO - Found BibTeX data source 'ref.bib'
+[1360] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'normalization = NFD' with 'normalization = prenormalized'
+[1360] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'variable = shifted' with 'variable = non-ignorable'
+[1360] Biber.pm:4307> INFO - Sorting list 'nty/global//global/global/global' of type 'entry' with template 'nty' and locale 'en-US'
+[1360] Biber.pm:4313> INFO - No sort tailoring available for locale 'en-US'
+[1383] bbl.pm:676> INFO - Writing 'full.bbl' with encoding 'UTF-8'
+[1401] bbl.pm:779> INFO - Output to full.bbl
+[1401] Biber.pm:132> WARN - Duplicate entry key: 'CPON_PMD_2025' in file '../frequency_recovery/ref.bib', skipping ...
+[1401] Biber.pm:134> INFO - WARNINGS: 1

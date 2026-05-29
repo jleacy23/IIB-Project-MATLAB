@@ -26,11 +26,15 @@ function Out = recovery_fxp(In, NSymb, ki, kp, NLanes, T) %#codegen
 %       (T.nco) but the in-loop recurrence steps (modulo-1, divide by Wk)
 %       are computed in double — fi cannot cleanly express the division by
 %       a near-unity value without large word lengths, and restoring the
-%       result to T.nco bounds it back into the design range.
-%     - The loop-filter state (Wk, LF_I) and PI recurrence are kept in
-%       double: the gains ki, kp (~1e-7/1e-6) underflow to zero at the
-%       swept data-path fraction lengths, which would freeze Wk and stop
-%       the NCO tracking the SFO.  T.lf is therefore unused.
+%       result to T.nco bounds it back into the design range.  mun (the
+%       Farrow fractional interval) is quantised to T.nco, the swept
+%       "specified" precision feeding the energy-intensive Farrow MAC.
+%     - The loop-filter state (Wk, LF_I) and PI gains use T.lf, a WIDE
+%       fixed-point accumulator (recovery_fxp_types): its width is a fixed
+%       design constant, sized so the tiny gains ki, kp (~1e-7/1e-6) and the
+%       products ki*ek / kp*ek do not underflow.  This is the faithful
+%       fixed-point integrator (a real DPLL accumulator is wide); the
+%       precision sweep acts on the applied correction (mun) via T.nco.
 %     - Integer-valued bookkeeping (mn, n, l) is kept as double for
 %       portable indexing semantics.
 
@@ -54,11 +58,15 @@ function Out = recovery_fxp(In, NSymb, ki, kp, NLanes, T) %#codegen
     %  ~1e-7 / 1e-6; at the swept data-path fraction lengths (e.g. FL=16,
     %  resolution 1.5e-5) both gains — and the products ki*ek, kp*ek —
     %  quantise to zero, freezing Wk at 1 so the NCO never tracks the SFO.
-    %  The integrator is a tiny-coefficient recurrence, exactly the case the
-    %  NCO update below already handles in double; do the same here so the
-    %  loop closes regardless of data-path precision.
-    Wk    = 1;
-    LF_I  = 1;
+    %  Loop-filter state and gains in T.lf — a WIDE fixed-point accumulator
+    %  (recovery_fxp_types) sized so ki, kp (~1e-7/1e-6) and the products
+    %  ki*ek / kp*ek do not underflow.  Faithful fixed point; the swept
+    %  precision is applied to mun (the Farrow interval) via T.nco, below.
+    Wk    = cast(1, 'like', T.lf);
+    LF_I  = cast(1, 'like', T.lf);
+
+    ki_fi = cast(ki, 'like', T.lf);
+    kp_fi = cast(kp, 'like', T.lf);
 
     %% Output buffer (one polarisation, column vector) — T.x precision.
     %  The float reference silently grows Out via out-of-bounds assignment
@@ -154,6 +162,8 @@ function Out = recovery_fxp(In, NSymb, ki, kp, NLanes, T) %#codegen
             end
 
             EtamnL = cast(eta_next_d, 'like', T.nco);
+            % mun (Farrow fractional interval) quantised to T.nco — the
+            % swept "specified" precision feeding the Farrow MAC above.
             munL   = cast(mun_next_d, 'like', T.nco);
         end
 
@@ -173,12 +183,12 @@ function Out = recovery_fxp(In, NSymb, ki, kp, NLanes, T) %#codegen
         end
 
         %% -------- Loop filter update (once per block) -----------------
-        %  Computed in double (see loop-filter state note above).  ek_sum
-        %  stays a fixed-point T.ek accumulator (it is data-derived); only
-        %  the tiny-gain PI recurrence is promoted to double.
-        ek_lf = double(ek_sum);
-        LF_I  = LF_I + ki * ek_lf;
-        Wk    = kp * ek_lf + LF_I;
+        %  Wide fixed-point PI: ek_sum (T.ek) cast into the wide T.lf
+        %  accumulator; the gain products and the integral stay wide so the
+        %  tiny gains survive.  Wk feeds the NCO recurrence (read as double).
+        ek_lf   = cast(ek_sum, 'like', T.lf);
+        LF_I(:) = LF_I + ki_fi * ek_lf;
+        Wk(:)   = kp_fi * ek_lf + LF_I;
 
         %% Commit block-final NCO state ---------------------------------
         mn    = mnL;

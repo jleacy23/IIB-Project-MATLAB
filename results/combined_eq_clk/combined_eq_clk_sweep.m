@@ -85,7 +85,7 @@ classdef combined_eq_clk_sweep < matlab.unittest.TestCase
         % NOverlap is derived per-config as 2*ceil((NCD-1)/2) so the
         % overlap-save extension is even.
         NFFT        = 128
-        NCD_FD_vec  = [22, 41]
+        NCD_FD_vec  = [22]
 
         % --- Adaptive-equaliser tap sweep ---------------------------
         NTaps_vec = [1]
@@ -110,10 +110,18 @@ classdef combined_eq_clk_sweep < matlab.unittest.TestCase
         PLanesAEQ   = 32
 
         % --- Clock-recovery loop-filter gain sweeps -----------------
+        %  Gardner gains operate on the TIME-DOMAIN TED (post static
+        %  IFFT); the forward(1/N) x inverse(1) round trip is unchanged by
+        %  the FFT renormalisation, so these are unaffected.
         ki_gardner_vec = logspace(-7, -4, 4)
         kp_gardner_vec = logspace(-6, -3, 4)
-        ki_godard_vec  = logspace(-6, -3, 4)
-        kp_godard_vec  = logspace(-5, -2, 4)
+        %  Godard gains act on the FREQUENCY-DOMAIN metric S, which is
+        %  quadratic in the spectrum.  Since the forward FFT is now
+        %  1/N-normalised (1/2 per stage), the spectrum scales 1/N and S
+        %  scales 1/N^2, so the gains are scaled up by NFFT^2 (= 128^2) to
+        %  keep ki*e / kp*e — and the tau trajectory — invariant.
+        ki_godard_vec  = logspace(-6, -3, 4) * 128^2
+        kp_godard_vec  = logspace(-5, -2, 4) * 128^2
         NLanesGard     = 32
 
         % --- Coarse FD CFO correction (eq_clk.coarse_cfo_fd) --------
@@ -133,13 +141,15 @@ classdef combined_eq_clk_sweep < matlab.unittest.TestCase
         %   (design_row, Po2Twiddle_vec_column), so each po2 variant
         %   can have its own loop-filter gains.  Default: same gains
         %   for both po2 columns.
+        %  Godard rows are scaled by NFFT^2 (= 128^2) for the 1/N-normalised
+        %  forward FFT (metric ~ 1/N^2); Gardner rows are unchanged.
         Cfo_blocks  = {'cd_gardner_cma', 'cd_godard_cma'}
         Cfo_NCD     = [22,   22]
         Cfo_NTaps   = [1,    1]
-        Cfo_ki      = [1e-6 1e-7; ...
-                       1e-4 1e-4]
-        Cfo_kp      = [1e-4 1e-4; ...
-                       1e-5 1e-5]
+        Cfo_ki      = [1e-6       1e-7; ...
+                       1e-4*128^2 1e-4*128^2]
+        Cfo_kp      = [1e-4       1e-4; ...
+                       1e-5*128^2 1e-5*128^2]
     end
 
     %% ================================================================

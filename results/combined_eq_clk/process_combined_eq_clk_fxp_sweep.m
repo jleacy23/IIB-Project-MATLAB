@@ -6,11 +6,22 @@ function process_combined_eq_clk_fxp_sweep(varargin)
 %                                     'Node', '45nm', 'M', 4)
 %
 %   Loads combined_eq_clk_fxp_sweep.mat and prints:
-%     1. A long-form table — one row per (block, po2, EqFL, ClkFL) with
-%        FEC SNR (mean ± std across trials) and energy per bit (per
-%        stage and total).
-%     2. Pivot grids per (block, po2): EqFL rows x ClkFL columns,
-%        first for FEC SNR (dB), then for total energy per bit (pJ).
+%     1. A long-form table — one row per (block, po2, StaticFL, AdaptFL,
+%        ClkFL) with FEC SNR (mean ± std across trials) and energy per bit
+%        (per stage and total).
+%     2. FEC-SNR and total-energy curves vs the swept precision axis, one
+%        line per (block, po2) implementation (further split if more than
+%        one precision axis varies).
+%
+%   Precision model (3-D sweep)
+%     The sweep sets the fractional length of each pipeline stage
+%     INDEPENDENTLY over three axes (S.StaticFL_vec, S.AdaptFL_vec,
+%     S.ClkFL_vec).  Each stage's word length is NIntBits + FL:
+%       static_wl = NIntBits + StaticFL   (FFT/IFFT + FD CD/MF application)
+%       adapt_wl  = NIntBits + AdaptFL    (adaptive-eq gradient precision)
+%       clk_wl    = NIntBits + ClkFL      (Gardner / modified-Godard loop)
+%     The plotting x-axis is chosen automatically as whichever of the three
+%     axes actually varies; any other varying axis splits the lines.
 %
 %   Energy model
 %     Per-symbol real-multiplication and real-addition counts come from
@@ -18,20 +29,21 @@ function process_combined_eq_clk_fxp_sweep(varargin)
 %     overlap-save), tab:aeq_cost (sign-sign butterfly CMA), and
 %     tab:clk_cost (Gardner / Modified-Godard).  Each stage's energy is
 %     computed via energy.receiver(NAdd, NMult, E_A, E_M, M, 1, n) with
-%     n = eq_wl for the static and adaptive stages, n = clk_wl for the
-%     clock-recovery stage.  Per-symbol formulas already include the
-%     oversampling factor eta, so Oversampling = 1 is passed in.
+%     n = static_wl / adapt_wl / clk_wl for the static, adaptive, and
+%     clock-recovery stages respectively.  Per-symbol formulas already
+%     include the oversampling factor eta, so Oversampling = 1 is passed
+%     in.
 %
 %   Name/Value options:
 %     'MatFile'   - path to the .mat (default: alongside this script)
 %     'FECBER'    - FEC threshold used to score designs (default 2e-2)
 %     'Node'      - '14nm' (scaled estimate, default) or '45nm' (calibrated)
 %     'M'         - modulation order (default 4 for QPSK)
-%     'SavePlots'   - true to write the diagonal-precision plot PNG
-%                     alongside the .mat (default true)
-%     'GardnerFLs'  - vector of FL values to include in the Gardner
-%                     energy-breakdown table at the end (default [4, 6]).
-%                     EqFL == ClkFL == FL is enforced.
+%     'SavePlots' - true to write the precision-sweep plot PNGs
+%                   alongside the .mat (default true)
+%     'GardnerFLs'- vector of swept-axis FL values to include in the
+%                   Gardner energy-breakdown table at the end
+%                   (default [4, 6]).
 
     here = fileparts(mfilename('fullpath'));
     p = inputParser;
@@ -65,7 +77,22 @@ function process_combined_eq_clk_fxp_sweep(varargin)
     fprintf('\nEnergy coefficients (%s): E_A = %.2f*n fJ, E_M = %.2f*n^2 fJ\n', ...
         node, EAdd, EMult);
 
-    tbl = sortrows(tbl, {'block_name', 'po2', 'eq_fl', 'clk_fl'});
+    % --- Pick the precision axis to sweep along --------------------
+    %  Whichever of {AdaptFL, ClkFL, StaticFL} varies most becomes the
+    %  plotting x-axis; ties break adapt > clk > static.  Any *other*
+    %  axis that also varies is used to split the plotted lines.
+    flCols   = {'adapt_fl', 'clk_fl', 'static_fl'};
+    flLabels = {'AdaptEq FL', 'Clock-recovery FL', 'Static-eq FL'};
+    nUnique  = cellfun(@(c) numel(unique(tbl.(c))), flCols);
+    [~, xIdx] = max(nUnique);
+    xCol      = flCols{xIdx};
+    xLabelTxt = flLabels{xIdx};
+    % Other FL axes that still vary -> extra grouping keys for the lines.
+    extraCols = flCols((1:numel(flCols)) ~= xIdx);
+    extraCols = extraCols(cellfun(@(c) numel(unique(tbl.(c))) > 1, extraCols));
+
+    tbl = sortrows(tbl, ...
+        {'block_name', 'po2', 'static_fl', 'clk_fl', 'adapt_fl'});
 
     %% --- Per-row FEC SNR (mean/std across trials) ----------------
     nRow = height(tbl);
@@ -88,20 +115,22 @@ function process_combined_eq_clk_fxp_sweep(varargin)
 
     %% --- Per-row energy per bit ----------------------------------
     %  energy.receiver returns energy per bit in the same units as
-    %  (EAdd, EMult) — fJ here.
+    %  (EAdd, EMult) — fJ here.  Each stage runs at its own word length:
+    %  static_wl / adapt_wl / clk_wl.
     E_static = nan(nRow, 1);
     E_adapt  = nan(nRow, 1);
     E_clk    = nan(nRow, 1);
     for k = 1:nRow
-        blk    = char(tbl.block_name(k));
-        po2    = tbl.po2(k);
-        eqWL   = tbl.eq_wl(k);
-        clkWL  = tbl.clk_wl(k);
-        nCD    = tbl.n_cd(k);
-        nAEQ   = tbl.n_aeq(k);
-        N      = P.NFFT;
-        eta    = P.SpS;
-        beta   = P.Rolloff;
+        blk      = char(tbl.block_name(k));
+        po2      = tbl.po2(k);
+        statWL   = tbl.static_wl(k);
+        adaptWL  = tbl.adapt_wl(k);
+        clkWL    = tbl.clk_wl(k);
+        nCD      = tbl.n_cd(k);
+        nAEQ     = tbl.n_aeq(k);
+        N        = P.NFFT;
+        eta      = P.SpS;
+        beta     = P.Rolloff;
 
         [NM_s, NA_s] = staticOps(N, nCD, eta, po2);
         [NM_a, NA_a] = adaptOpsSignSign(nAEQ);
@@ -114,8 +143,8 @@ function process_combined_eq_clk_fxp_sweep(varargin)
                 NM_c = NaN; NA_c = NaN;
         end
 
-        E_static(k) = energy.receiver(NA_s, NM_s, EAdd, EMult, M, 1, eqWL);
-        E_adapt(k)  = energy.receiver(NA_a, NM_a, EAdd, EMult, M, 1, eqWL);
+        E_static(k) = energy.receiver(NA_s, NM_s, EAdd, EMult, M, 1, statWL);
+        E_adapt(k)  = energy.receiver(NA_a, NM_a, EAdd, EMult, M, 1, adaptWL);
         E_clk(k)    = energy.receiver(NA_c, NM_c, EAdd, EMult, M, 1, clkWL);
     end
     E_total = E_static + E_adapt + E_clk;
@@ -124,8 +153,8 @@ function process_combined_eq_clk_fxp_sweep(varargin)
     fprintf(['\n--- FEC SNR & energy/bit per configuration ', ...
              '(FEC BER = %.0e, CFO = %.2f GHz, %s, M = %d) ---\n'], ...
         fecBer, S.CFO_GHz, node, M);
-    fprintf('%-18s %-4s %-6s %-6s %-7s %-7s %-8s %-8s %-8s %-8s %-8s\n', ...
-        'block', 'po2', 'EqWL', 'ClkWL', 'FEC',  'std', ...
+    fprintf('%-18s %-4s %-5s %-5s %-6s %-7s %-7s %-8s %-8s %-8s %-8s %-8s\n', ...
+        'block', 'po2', 'AeqFL', 'ClkFL', 'StatFL', 'FEC',  'std', ...
         'E_stat',  'E_aeq', 'E_clk', 'E_tot', 'units');
     for k = 1:nRow
         meanStr = '  ---';
@@ -137,72 +166,47 @@ function process_combined_eq_clk_fxp_sweep(varargin)
             stdStr = sprintf('%6.2f', fecStd(k));
         end
         % Energies are in fJ/bit; convert to pJ/bit for display.
-        fprintf('%-18s %-4d %-6d %-6d %-7s %-7s %-8.3f %-8.3f %-8.3f %-8.3f %-8s\n', ...
+        fprintf(['%-18s %-4d %-5d %-5d %-6d %-7s %-7s %-8.3f %-8.3f ', ...
+                 '%-8.3f %-8.3f %-8s\n'], ...
             char(tbl.block_name(k)), tbl.po2(k), ...
-            tbl.eq_wl(k), tbl.clk_wl(k), meanStr, stdStr, ...
+            tbl.adapt_fl(k), tbl.clk_fl(k), tbl.static_fl(k), ...
+            meanStr, stdStr, ...
             E_static(k) * 1e-3, E_adapt(k) * 1e-3, ...
             E_clk(k)    * 1e-3, E_total(k) * 1e-3, 'pJ/bit');
     end
 
-    %% --- Pivot grids per (block, po2) -----------------------------
-    eqFL_vec  = unique(tbl.eq_fl);
-    clkFL_vec = unique(tbl.clk_fl);
-    pairs     = unique(tbl(:, {'block_name', 'po2'}), 'rows', 'stable');
-
-    for pi = 1:height(pairs)
-        blk = pairs.block_name(pi);
-        p2  = pairs.po2(pi);
-
-        % FEC SNR grid
-        fprintf('\n--- %s   po2 = %d   FEC SNR (dB) ---\n', char(blk), p2);
-        printPivot(tbl, fecMean, blk, p2, eqFL_vec, clkFL_vec, '%8.2f');
-
-        % Energy per bit grid (pJ)
-        fprintf('\n--- %s   po2 = %d   Total energy (pJ/bit) ---\n', ...
-            char(blk), p2);
-        printPivot(tbl, E_total * 1e-3, blk, p2, eqFL_vec, clkFL_vec, '%8.3f');
-    end
-
-    %% --- Diagonal-precision plot: FEC SNR vs FL (= EqFL = ClkFL) ---
-    % One line per (block, po2) implementation.  Restricts the table
-    % to rows where EqFL == ClkFL so the single x-axis is unambiguous.
-    diagMask = tbl.eq_fl == tbl.clk_fl;
-    tbDiag   = tbl(diagMask, :);
-    fecDiag  = fecMean(diagMask);
-    stdDiag  = fecStd(diagMask);
-    eDiag    = E_total(diagMask);
-
-    if isempty(tbDiag)
-        warning('process_combined_eq_clk_fxp_sweep:noDiag', ...
-            'No rows with EqFL == ClkFL — skipping diagonal plot.');
+    if nRow == 0
+        warning('process_combined_eq_clk_fxp_sweep:empty', ...
+            'Empty sweep table — nothing to plot.');
         return;
     end
 
-    figure('Name', 'FXP sweep: FEC SNR vs precision (EqFL = ClkFL)', ...
+    %% --- Line grouping for the sweep plots ------------------------
+    %  Each line is one (block, po2) implementation, further split by any
+    %  non-x precision axis that varies.
+    groupCols = [{'block_name', 'po2'}, extraCols];
+    groups    = unique(tbl(:, groupCols), 'rows', 'stable');
+    nGroup    = height(groups);
+    colors    = lines(nGroup);
+
+    %% --- Precision-sweep plot: FEC SNR vs swept axis ---------------
+    figure('Name', 'FXP sweep: FEC SNR vs precision', ...
         'Position', [80 80 720 480]);
     ax = axes; hold(ax, 'on'); grid(ax, 'on'); box(ax, 'on');
 
-    impl   = unique(tbDiag(:, {'block_name', 'po2'}), 'rows', 'stable');
-    nImpl  = height(impl);
-    colors = lines(nImpl);
-    for ii = 1:nImpl
-        blk = impl.block_name(ii);
-        p2  = impl.po2(ii);
-        sel = (tbDiag.block_name == blk) & (tbDiag.po2 == p2);
-        sub = tbDiag(sel, :);
-        % Sort by FL so the line is monotonic in precision
-        [~, ord] = sort(sub.eq_fl);
-        sub      = sub(ord, :);
-        fSel     = fecDiag(sel); fSel = fSel(ord);
-        sSel     = stdDiag(sel); sSel = sSel(ord);
+    for ii = 1:nGroup
+        [sel, label] = selectGroup(tbl, groups(ii, :), extraCols);
+        sub      = tbl(sel, :);
+        [xv, ord] = sort(sub.(xCol));
+        fSel     = fecMean(sel); fSel = fSel(ord);
+        sSel     = fecStd(sel);  sSel = sSel(ord);
 
-        label = sprintf('%s, po2=%d', char(blk), p2);
-        errorbar(ax, sub.eq_fl, fSel, sSel, ...
+        errorbar(ax, xv, fSel, sSel, ...
             '-o', 'Color', colors(ii, :), 'LineWidth', 1.4, ...
             'MarkerSize', 5, 'CapSize', 8, ...
             'DisplayName', label);
     end
-    xlabel(ax, sprintf('FL (EqFL = ClkFL),  WL = %d + FL', P.NIntBits));
+    xlabel(ax, sprintf('%s (N),  WL = %d + N', xLabelTxt, P.NIntBits));
     ylabel(ax, 'FEC SNR (dB)');
     title(ax, sprintf(['FEC SNR vs fxp precision (CFO = %.2f GHz, ', ...
         'BER = %.0e)'], S.CFO_GHz, fecBer));
@@ -211,34 +215,27 @@ function process_combined_eq_clk_fxp_sweep(varargin)
     if savePlots
         outFile = fullfile(here, 'combined_eq_clk_fxp_fec_snr.png');
         exportgraphics(gcf, outFile, 'Resolution', 200);
-        fprintf('Saved diagonal-precision FEC SNR plot to %s\n', outFile);
+        fprintf('Saved FEC SNR plot to %s\n', outFile);
     end
 
-    %% --- Complementary plot: total energy/bit vs FL ----------------
+    %% --- Complementary plot: total energy/bit vs swept axis --------
     %  Total energy is the sum of all three stages from energy.receiver
-    %  (in fJ/bit); displayed here in pJ/bit.  Word length follows the
-    %  same WL = NIntBits + FL mapping as the FEC SNR plot — eq_wl is
-    %  used for the static and adaptive stages and clk_wl for the clock
-    %  recovery stage, but on the diagonal they coincide.
-    figure('Name', 'FXP sweep: total energy/bit vs precision (EqFL = ClkFL)', ...
+    %  (in fJ/bit); displayed here in pJ/bit.
+    figure('Name', 'FXP sweep: total energy/bit vs precision', ...
         'Position', [80 80 720 480]);
     axE = axes; hold(axE, 'on'); grid(axE, 'on'); box(axE, 'on');
-    for ii = 1:nImpl
-        blk = impl.block_name(ii);
-        p2  = impl.po2(ii);
-        sel = (tbDiag.block_name == blk) & (tbDiag.po2 == p2);
-        sub = tbDiag(sel, :);
-        [~, ord] = sort(sub.eq_fl);
-        sub      = sub(ord, :);
-        eSel     = eDiag(sel) * 1e-3;     % fJ -> pJ
+    for ii = 1:nGroup
+        [sel, label] = selectGroup(tbl, groups(ii, :), extraCols);
+        sub      = tbl(sel, :);
+        [xv, ord] = sort(sub.(xCol));
+        eSel     = E_total(sel) * 1e-3;     % fJ -> pJ
         eSel     = eSel(ord);
 
-        label = sprintf('%s, po2=%d', char(blk), p2);
-        plot(axE, sub.eq_fl, eSel, '-o', ...
+        plot(axE, xv, eSel, '-o', ...
             'Color', colors(ii, :), 'LineWidth', 1.4, ...
             'MarkerSize', 5, 'DisplayName', label);
     end
-    xlabel(axE, sprintf('FL (EqFL = ClkFL),  WL = %d + FL', P.NIntBits));
+    xlabel(axE, sprintf('%s (N),  WL = %d + N', xLabelTxt, P.NIntBits));
     ylabel(axE, 'Total energy (pJ / bit)');
     title(axE, sprintf(['Energy per bit vs fxp precision (CFO = %.2f GHz, ', ...
         '%s, M = %d)'], S.CFO_GHz, node, M));
@@ -247,29 +244,32 @@ function process_combined_eq_clk_fxp_sweep(varargin)
     if savePlots
         outFile = fullfile(here, 'combined_eq_clk_fxp_energy.png');
         exportgraphics(gcf, outFile, 'Resolution', 200);
-        fprintf('Saved diagonal-precision energy plot to %s\n', outFile);
+        fprintf('Saved energy plot to %s\n', outFile);
     end
 
-    %% --- Gardner energy breakdown at requested FL values ----------
-    %  Same precision everywhere (EqFL == ClkFL == FL).  One row per
-    %  (po2, FL) combination, with per-stage and total energy/bit plus
-    %  FEC SNR mean / std.
-    fprintf(['\n--- Gardner energy breakdown (EqFL = ClkFL, %s, ', ...
-             'M = %d, FEC BER = %.0e) ---\n'], node, M, fecBer);
-    fprintf('%-4s %-3s %-7s %-7s %-8s %-8s %-8s %-8s %-8s\n', ...
-        'po2', 'FL', 'WL', 'FEC',  'std', ...
+    %% --- Gardner energy breakdown at requested swept-axis values ---
+    %  One row per (po2, swept FL) combination, with per-stage and total
+    %  energy/bit plus FEC SNR mean / std.  The requested values are
+    %  matched against the swept axis (%s); if other axes also vary the
+    %  first matching row is used.
+    fprintf(['\n--- Gardner energy breakdown (%s, ', ...
+             'M = %d, FEC BER = %.0e, swept axis = %s) ---\n'], ...
+             node, M, fecBer, xCol);
+    fprintf('%-4s %-5s %-6s %-6s %-6s %-7s %-7s %-8s %-8s %-8s %-8s\n', ...
+        'po2', xCol, 'AeqWL', 'ClkWL', 'StatWL', 'FEC',  'std', ...
         'E_stat', 'E_aeq', 'E_clk', 'E_tot');
     isGardner = tbl.block_name == "cd_gardner_cma";
     for fl = gardnerFLs(:).'
         for p2v = [false, true]
             mask = isGardner & ...
-                   (tbl.po2    == p2v) & ...
-                   (tbl.eq_fl  == fl)  & ...
-                   (tbl.clk_fl == fl);
+                   (tbl.po2     == p2v) & ...
+                   (tbl.(xCol)  == fl);
             idx = find(mask, 1);
             if isempty(idx)
-                fprintf('%-4d %-3d %-7s %-7s %-8s %-8s %-8s %-8s %-8s\n', ...
-                    p2v, fl, '---', '---', '---', '---', '---', '---', '---');
+                fprintf(['%-4d %-5d %-6s %-6s %-6s %-7s %-7s %-8s %-8s ', ...
+                    '%-8s %-8s\n'], ...
+                    p2v, fl, '---', '---', '---', '---', '---', ...
+                    '---', '---', '---', '---');
                 continue;
             end
             fStr = '  ---'; sStr = '  ---';
@@ -279,9 +279,10 @@ function process_combined_eq_clk_fxp_sweep(varargin)
             if isfinite(fecStd(idx))
                 sStr = sprintf('%6.2f', fecStd(idx));
             end
-            fprintf(['%-4d %-3d %-7d %-7s %-7s %-8.3f %-8.3f %-8.3f ', ...
-                     '%-8.3f\n'], ...
-                p2v, fl, tbl.eq_wl(idx), fStr, sStr, ...
+            fprintf(['%-4d %-5d %-6d %-6d %-6d %-7s %-7s %-8.3f %-8.3f ', ...
+                     '%-8.3f %-8.3f\n'], ...
+                p2v, fl, tbl.adapt_wl(idx), tbl.clk_wl(idx), ...
+                tbl.static_wl(idx), fStr, sStr, ...
                 E_static(idx) * 1e-3, E_adapt(idx) * 1e-3, ...
                 E_clk(idx)    * 1e-3, E_total(idx) * 1e-3);
         end
@@ -291,27 +292,22 @@ end
 
 
 % =====================================================================
-function printPivot(tbl, vals, blk, p2, eqFL_vec, clkFL_vec, fmt)
-    fprintf('%-10s', 'EqFL\ClkFL');
-    for cj = 1:numel(clkFL_vec)
-        fprintf(' %8d', clkFL_vec(cj));
-    end
-    fprintf('\n');
-    for ri = 1:numel(eqFL_vec)
-        fprintf('%-10d', eqFL_vec(ri));
-        for cj = 1:numel(clkFL_vec)
-            mask = (tbl.block_name == blk) & ...
-                   (tbl.po2        == p2)  & ...
-                   (tbl.eq_fl      == eqFL_vec(ri)) & ...
-                   (tbl.clk_fl     == clkFL_vec(cj));
-            idx = find(mask, 1);
-            if isempty(idx) || ~isfinite(vals(idx))
-                fprintf(' %8s', '---');
-            else
-                fprintf([' ' fmt], vals(idx));
-            end
-        end
-        fprintf('\n');
+%  Grouping helper
+% =====================================================================
+
+function [sel, label] = selectGroup(tbl, grow, extraCols)
+%SELECTGROUP  Row mask + legend label for one plotted line.
+%   grow is a single-row table over groupCols (block_name, po2, plus any
+%   extra varying FL axes).
+    blk = grow.block_name;
+    p2  = grow.po2;
+    sel = (tbl.block_name == blk) & (tbl.po2 == p2);
+    label = sprintf('%s, po2=%d', char(blk), p2);
+    for c = 1:numel(extraCols)
+        col = extraCols{c};
+        val = grow.(col);
+        sel = sel & (tbl.(col) == val);
+        label = sprintf('%s, %s=%d', label, col, val);
     end
 end
 

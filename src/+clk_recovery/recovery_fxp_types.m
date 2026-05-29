@@ -19,7 +19,9 @@ function T = recovery_fxp_types(dt) %#codegen
 %     T.acc   - interpolator MAC accumulator (complex)
 %     T.ek    - per-block Gardner timing error accumulator (real)
 %     T.lf    - loop filter state (Wk, LF_I) and gain products (ki*e, kp*e)
-%     T.nco   - NCO fractional state (Etamn, mun)  in [0, 1)
+%     T.nco   - NCO fractional state (Etamn, mun) in [0, 1).  Pinned to the
+%               same wide fixed type as T.lf (NOT the swept data-path fl),
+%               so the Farrow interval mun keeps its fractional resolution.
 
     if isstruct(dt)
         wl = dt.WL;
@@ -38,7 +40,7 @@ function T = recovery_fxp_types(dt) %#codegen
         T.acc  = fi([], 1, wl, fl, F);
         T.ek   = fi([], 1, wl, fl, F);
         T.lf   = wideLfType();   % wide accumulator, independent of swept fl
-        T.nco  = fi([], 1, wl, fl, F);
+        T.nco  = wideLfType();   % NCO state pinned to the same wide type as lf
         return;
     end
 

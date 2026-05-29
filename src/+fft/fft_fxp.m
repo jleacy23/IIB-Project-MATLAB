@@ -19,24 +19,22 @@ function X = fft_fxp(x, inverse, po2Twiddle, T) %#codegen
 %     X          - complex column vector [N x 1], type T.acc
 %
 %   Normalisation / precision strategy
-%     The radix-2 butterflies run UNSCALED in a WIDE internal accumulator
-%     (wideAccLike), whose word length is a fixed design constant with
-%     enough integer headroom for the ~N-fold magnitude growth of an
-%     unscaled transform and generous fractional bits.  The transform is
-%     normalised and quantised to the output type T.acc ONLY at the end:
-%       * forward FFT: divide by N (single exact power-of-2 shift) then
-%         cast to T.acc, so the output is 1/N-normalised (== fft(x)/N);
-%       * inverse FFT: no scaling, cast to T.acc (== ifft(X)*N).
-%     The forward<->inverse round trip is therefore the identity.  Keeping
-%     the accumulator wide avoids the per-stage truncation noise (and DC
-%     bias) of a scaled FFT, so the only quantisation is the T.acc output
-%     register precision and the T.tw twiddle-ROM precision.  Float configs
-%     (T.acc double/single) run natively in that type.
+%     The FFT runs at a SINGLE precision, T.acc: the input is cast to T.acc
+%     immediately, the radix-2 butterflies run in T.acc, and the output is
+%     T.acc.  (In the uniform static configuration T.x == T.acc.)
+%       * forward FFT: each radix-2 stage divides its butterfly outputs by
+%         2 and writes them back to the accumulator.  Over the log2(N)
+%         stages this applies the full 1/N normalisation (== fft(x)/N) while
+%         keeping the magnitude bounded (no N-fold growth);
+%       * inverse FFT: NO per-stage division (== ifft(X)*N), so the
+%         forward<->inverse round trip is unit gain.
+%     The only quantisation is the T.acc datapath precision and the T.tw
+%     twiddle-ROM precision.  Float configs run natively in that type.
 %
 %   Types table fields
-%     T.x    - input signal prototype (initial cast)
+%     T.x    - upstream I/O prototype (uniform static config: == T.acc)
 %     T.tw   - twiddle-factor (ROM) prototype
-%     T.acc  - output prototype (the desired quantised precision)
+%     T.acc  - single FFT datapath precision (input cast, butterflies, output)
 
     %% Defaults
     if nargin < 4 || isempty(T)
@@ -46,8 +44,9 @@ function X = fft_fxp(x, inverse, po2Twiddle, T) %#codegen
     N         = size(x, 1);
     numStages = round(log2(double(N)));
 
-    %% Wide internal accumulator (fixed-point) or native float type
-    accWide = wideAccLike(T.acc);
+    %% Internal accumulator: the caller-supplied T.acc type (set in the
+    %  types table / test).  Float configs run natively in that type.
+    accWide = T.acc;
     accIsFi = isfi(accWide);
 
     %% ----------------------------------------------------------------
@@ -60,7 +59,8 @@ function X = fft_fxp(x, inverse, po2Twiddle, T) %#codegen
     end
 
     %% ----------------------------------------------------------------
-    %  Cooley-Tukey butterfly stages (UNSCALED, wide accumulator)
+    %  Cooley-Tukey butterfly stages.  Forward: each stage divides by 2
+    %  (block-floating-point style).  Inverse: unscaled.
     %  ----------------------------------------------------------------
     for s = 1:numStages
         halfLen   = 2^(s - 1);           % half-butterfly span
@@ -95,60 +95,42 @@ function X = fft_fxp(x, inverse, po2Twiddle, T) %#codegen
                 u = Xw(idx_top);
                 t = Wc * Xw(idx_bot);
 
-                Xw(idx_top) = u + t;       % unscaled
-                Xw(idx_bot) = u - t;
+                top = u + t;
+                bot = u - t;
+
+                % Forward pass: divide each stage by 2 (cumulative 1/N over
+                % the log2(N) stages) and write back to the accumulator.
+                % Inverse pass: no scaling, so the round trip is unit gain.
+                if ~inverse
+                    if accIsFi
+                        top = bitshift(top, -1);
+                        bot = bitshift(bot, -1);
+                    else
+                        top = top / 2;
+                        bot = bot / 2;
+                    end
+                end
+
+                Xw(idx_top) = top;
+                Xw(idx_bot) = bot;
             end
         end
     end
 
     %% ----------------------------------------------------------------
-    %  Normalise (1/N on forward only) and quantise to the output type
+    %  Quantise to the output type T.acc (the single FFT precision).
+    %  Forward scaling (1/N) has already been applied per-stage above;
+    %  inverse is unscaled.
     %  ----------------------------------------------------------------
     X = complex(zeros(N, 1, 'like', T.acc));
-    if inverse
-        for i = 1:N
-            X(i) = cast(Xw(i), 'like', T.acc);
-        end
-    elseif accIsFi
-        M = cast(numStages, 'int32');
-        for i = 1:N
-            % 1/N via a single arithmetic right shift in the wide
-            % accumulator (exact, power of two), then quantise to T.acc.
-            X(i) = cast(bitshift(Xw(i), -M), 'like', T.acc);
-        end
-    else
-        for i = 1:N
-            X(i) = cast(Xw(i) / N, 'like', T.acc);
-        end
+    for i = 1:N
+        X(i) = cast(Xw(i), 'like', T.acc);
     end
 end
 
 %% ====================================================================
 %  Local functions
 %  ====================================================================
-
-function w = wideAccLike(proto)
-%WIDEACCLIKE  Wide fixed-point accumulator prototype for the FFT internals.
-%   Word length is a FIXED design constant (not the swept output precision):
-%   ~20 integer bits hold the unscaled ~N-fold magnitude growth and 28
-%   fractional bits keep the butterfly MACs near-lossless.  For
-%   floating-point output types the FFT simply runs in that type.
-    if isfi(proto)
-        WL = 48; FL = 28;
-        F  = fimath( ...
-            'RoundingMethod',       'Floor', ...
-            'OverflowAction',       'Wrap',  ...
-            'ProductMode',          'SpecifyPrecision', ...
-            'ProductWordLength',     WL, ...
-            'ProductFractionLength', FL, ...
-            'SumMode',              'SpecifyPrecision', ...
-            'SumWordLength',         WL, ...
-            'SumFractionLength',     FL);
-        w = fi([], 1, WL, FL, F);
-    else
-        w = proto;
-    end
-end
 
 function rev = bitrev_idx(idx, nbits)
 %BITREV_IDX  Bit-reverse a 0-based index with nbits bits.

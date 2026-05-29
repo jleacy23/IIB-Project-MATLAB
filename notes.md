@@ -3,4 +3,5 @@
 - Technical Abstract
 - MCRB appendix
 - Risk Assessment
-- update results in equalisation + clk recovery for corrected clk recovery
+- Clk + eq methodology explaining what fxp precision means in each case
+- suitable operating points for clk + eq

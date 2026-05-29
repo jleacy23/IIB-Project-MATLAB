@@ -9,11 +9,14 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
 %   THREE-dimensional fixed-point precision grid that sets the fractional
 %   length of each pipeline stage INDEPENDENTLY:
 %
-%       StaticFL_vec - static equaliser (T.Static): FFT/IFFT twiddles, CD
-%                      response, accumulator, and the application of the
-%                      frequency-domain CD + matched filter.  This stage
-%                      usually needs more fractional bits to absorb FFT
-%                      bit-growth, so its axis is set separately.
+%       StaticFL_vec - static equaliser (T.Static): the SINGLE precision of
+%                      the FFT/IFFT (input cast, butterflies, output), the
+%                      twiddles, the CD response, and the frequency-domain
+%                      CD + matched-filter multiply.  The forward FFT
+%                      divides by 2 each stage (cumulative 1/N), losing up
+%                      to log2(NFFT) LSBs, so this stage usually needs more
+%                      fractional bits than the others; its axis is set
+%                      separately.
 %       AdaptFL_vec  - adaptive equaliser (T.AdaptEq).  In the struct path
 %                      of adaptive_eq.equalize_fxp_types this is the
 %                      *gradient* precision (T.grad); the data path is
@@ -82,7 +85,7 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
         % --- Monte-Carlo --------------------------------------------
         Ns          = 37500         % symbols per polarisation per trial
         NTrials     = 5
-        SNR_dB_vec  = 0 : 2 : 20
+        SNR_dB_vec  = 0 : 2 : 24
 
         % --- Static-equaliser FFT size ------------------------------
         NFFT     = 128
@@ -96,10 +99,14 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
         Po2Twiddle_vec = [false, true]
         NCD            = [22,   22]
         NTaps          = [1,    1]
-        ki             = [1e-6 1e-7; ...
-                          1.64 1.64]
-        kp             = [1e-4 1e-4; ...
-                          0.164 0.164]
+        %  Row 1 = Gardner DPLL gains (unchanged).  Row 2 = Godard PI gains,
+        %  divided by sqrt(NFFT=128) to cancel the net sqrt(N) loop-gain
+        %  introduced by the sqrt(N) metric-input rescale in
+        %  combined_cd_fd_godard_adaptive_fxp.
+        ki             = [1e-6           1e-7; ...
+                          1.64/sqrt(128) 1.64/sqrt(128)]
+        kp             = [1e-4            1e-4; ...
+                          0.164/sqrt(128) 0.164/sqrt(128)]
 
         % --- Adaptive equaliser (per-block convergence) -------------
         MuGardner   = 1e-3
@@ -124,17 +131,18 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
         %  ClkFL_vec.  Integer bits are fixed at NIntBits; each section
         %  forms its struct as struct('WL', NIntBits + FL, 'FL', FL).
         %
-        %    StaticFL_vec - T.Static (FFT/IFFT twiddles, CD response,
-        %                   accumulator, FD-equaliser application).  Usually
-        %                   higher than the other stages to absorb FFT
-        %                   bit-growth.
+        %    StaticFL_vec - T.Static: the single FFT/IFFT precision (input
+        %                   cast, butterflies, output), twiddles, CD
+        %                   response, FD CD+MF multiply.  Usually higher
+        %                   than the other stages because the forward FFT's
+        %                   per-stage /2 loses up to log2(NFFT) LSBs.
         %    AdaptFL_vec  - T.AdaptEq (the adaptive-equaliser gradient
         %                   precision; data path is pinned high).
         %    ClkFL_vec    - T.Clk (Gardner) / T.Godard (modified-Godard PI).
         NIntBits     = 16
-        StaticFL_vec = [20]
-        AdaptFL_vec  = [20]
-        ClkFL_vec    = [8,10,12,14,16]
+        StaticFL_vec = [6,8]
+        AdaptFL_vec  = [4,6]
+        ClkFL_vec    = [4,6]
 
         % --- FEC threshold used to score designs --------------------
         FEC_BER = 2e-2
@@ -146,7 +154,7 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
         %         the cache.  Set this after editing any *_fxp.m source (e.g.
         %         the recovery_fxp / Godard loop-filter changes) so stale
         %         cached binaries are regenerated.
-        ForceRebuild = false
+        ForceRebuild = true
     end
 
     %% ================================================================

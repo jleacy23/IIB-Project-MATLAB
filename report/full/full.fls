@@ -345,6 +345,11 @@ INPUT ./seq_fxp_sweep.png
 INPUT ./seq_fxp_sweep.png
 INPUT ./seq_fxp_sweep.png
 INPUT ./seq_fxp_sweep.png
+INPUT ./clk_fxp_sweep.png
+INPUT ./clk_fxp_sweep.png
+INPUT ./clk_fxp_sweep.png
+INPUT ./clk_fxp_sweep.png
+INPUT ./clk_fxp_sweep.png
 INPUT ../frequency_recovery/MCRB_fft_data.png
 INPUT ../frequency_recovery/MCRB_fft_data.png
 INPUT ../frequency_recovery/MCRB_fft_data.png

@@ -61,7 +61,7 @@ function [y, cfoBinsApplied] = combined_cd_fd_godard_adaptive_fxp(...
 
     Tfft.x   = T.Static.x;
     Tfft.tw  = T.Static.tw;
-    Tfft.acc = T.Static.acc;
+    Tfft.acc = T.Static.acc;   % single FFT precision (uniform static config)
 
     %% Godard band parameters (natural order, recovery_godard convention)
     eta   = SpS;
@@ -107,6 +107,17 @@ function [y, cfoBinsApplied] = combined_cd_fd_godard_adaptive_fxp(...
     ki_fi   = cast(ki, 'like', T.Godard.lf);
     kp_fi   = cast(kp, 'like', T.Godard.lf);
 
+    % sqrt(N) rescale of the metric inputs (see metric block below): the
+    % forward FFT is 1/N-normalised, so the spectral bins are small
+    % (~1/sqrt(N)).  Scaling them up by sqrt(N) before the swept-precision
+    % T.Godard.metric quantiser lets the metric inputs use the ClkFL
+    % fractional range; the scaling is unwound on the error (in the wide
+    % loop-filter domain) before the PI update.
+    sqrtN    = sqrt(double(NFFT));
+    sqrtN_fi = cast(sqrtN, 'like', T.Static.acc);  % fi scale (codegen: fi.*fi,
+                                                   % not fi.*runtime-double)
+    invSqrtN = cast(1 / sqrtN, 'like', T.Godard.lf);
+
     % FFT buffers and the corrected spectrum (kept across pols within a
     % block so the Godard metric can sum over polarisations).
     R_corr_all = complex(zeros(NFFT, NPol, 'like', T.Static.acc));
@@ -147,22 +158,28 @@ function [y, cfoBinsApplied] = combined_cd_fd_godard_adaptive_fxp(...
         end
 
         % --- Godard metric on the corrected spectrum (per-pol sum) -----
+        %  Each spectral value is scaled up by sqrt(N) (at the high static
+        %  precision) BEFORE being quantised to the swept-precision
+        %  T.Godard.metric, so the metric inputs occupy the ClkFL fractional
+        %  range.  The metric S is bilinear in the inputs, so this leaves a
+        %  factor of N in S; sqrt(N) of it is unwound on the error below.
         S = complex(cast(0, 'like', T.Godard.metric));
         for pol = 1:NPol
             for kk = kLo:kHi
-                a   = cast(R_corr_all(kk,         pol), 'like', T.Godard.metric);
-                b   = cast(R_corr_all(kk + shift, pol), 'like', T.Godard.metric);
+                a   = cast(R_corr_all(kk,         pol) * sqrtN_fi, 'like', T.Godard.metric);
+                b   = cast(R_corr_all(kk + shift, pol) * sqrtN_fi, 'like', T.Godard.metric);
                 S(:) = S + a * conj(b);
             end
         end
         e = cast(imag(S), 'like', T.Godard.ek);   % fixed-point metric readout
 
         % --- PI update for the next block (wide fixed-point; see note) -
-        %  ek metric cast into the wide T.Godard.lf accumulator; the gain
-        %  products and integral stay wide so the tiny gains survive.  The
-        %  resulting tauSamp drives the FD phase ramp, which is where the
+        %  ek metric cast into the wide T.Godard.lf accumulator, with the
+        %  sqrt(N) input scaling divided back out in that wide domain; the
+        %  gain products and integral stay wide so the tiny gains survive.
+        %  The resulting tauSamp drives the FD phase ramp, which is where the
         %  swept precision (T.Godard.tw) is applied.
-        e_lf       = cast(e, 'like', T.Godard.lf);
+        e_lf       = cast(e, 'like', T.Godard.lf) * invSqrtN;
         LF_I(:)    = LF_I + ki_fi * e_lf;
         tauSamp(:) = kp_fi * e_lf + LF_I;
     end

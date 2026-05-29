@@ -58,8 +58,11 @@ function T = fft_fxp_types(dt) %#codegen
         case 'fixed16'
             %  Uniform 16-bit / FL=8.
             %  Range ±128, LSB = 2^{-8} ≈ 3.9e-3.
-            %  Note: for large N without inter-stage normalisation the
-            %  limited integer range (7 bits + sign) may cause wrap-around.
+            %  Note: fft_fxp now applies 1/2 inter-stage scaling on the
+            %  forward transform, so the magnitude stays bounded (no
+            %  wrap-around), but with only 8 fractional bits each stage's
+            %  right shift loses LSBs — prefer more fractional bits for
+            %  accuracy-critical transforms.
             F = fimath( ...
                 'RoundingMethod',       'Floor', ...
                 'OverflowAction',       'Wrap',  ...

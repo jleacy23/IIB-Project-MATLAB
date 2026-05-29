@@ -69,7 +69,7 @@ function [y, cfoBinsApplied] = combined_cd_fd_gardner_adaptive_fxp(...
 
     Tfft.x   = T.Static.x;
     Tfft.tw  = T.Static.tw;
-    Tfft.acc = T.Static.acc;
+    Tfft.acc = T.Static.acc;   % single FFT precision (uniform static config)
 
     %% Input cyclic extension to integer block count
     NIn    = size(InS, 1);

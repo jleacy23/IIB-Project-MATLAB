@@ -26,15 +26,16 @@ function Out = recovery_fxp(In, NSymb, ki, kp, NLanes, T) %#codegen
 %       (T.nco) but the in-loop recurrence steps (modulo-1, divide by Wk)
 %       are computed in double — fi cannot cleanly express the division by
 %       a near-unity value without large word lengths, and restoring the
-%       result to T.nco bounds it back into the design range.  mun (the
-%       Farrow fractional interval) is quantised to T.nco, the swept
-%       "specified" precision feeding the energy-intensive Farrow MAC.
+%       result to T.nco bounds it back into the design range.  T.nco is
+%       pinned to the same WIDE fixed type as T.lf (NOT the swept data-path
+%       precision), so the NCO phase Etamn and the Farrow fractional
+%       interval mun keep full resolution; the swept precision acts on the
+%       Farrow data path (T.x / T.acc / T.coef) instead.
 %     - The loop-filter state (Wk, LF_I) and PI gains use T.lf, a WIDE
 %       fixed-point accumulator (recovery_fxp_types): its width is a fixed
 %       design constant, sized so the tiny gains ki, kp (~1e-7/1e-6) and the
 %       products ki*ek / kp*ek do not underflow.  This is the faithful
-%       fixed-point integrator (a real DPLL accumulator is wide); the
-%       precision sweep acts on the applied correction (mun) via T.nco.
+%       fixed-point integrator (a real DPLL accumulator is wide).
 %     - Integer-valued bookkeeping (mn, n, l) is kept as double for
 %       portable indexing semantics.
 
@@ -60,8 +61,9 @@ function Out = recovery_fxp(In, NSymb, ki, kp, NLanes, T) %#codegen
     %  quantise to zero, freezing Wk at 1 so the NCO never tracks the SFO.
     %  Loop-filter state and gains in T.lf — a WIDE fixed-point accumulator
     %  (recovery_fxp_types) sized so ki, kp (~1e-7/1e-6) and the products
-    %  ki*ek / kp*ek do not underflow.  Faithful fixed point; the swept
-    %  precision is applied to mun (the Farrow interval) via T.nco, below.
+    %  ki*ek / kp*ek do not underflow.  Faithful fixed point.  T.nco (Etamn,
+    %  mun) is pinned to the same wide type, so the swept precision acts on
+    %  the Farrow data path (T.x / T.acc / T.coef), not on the NCO phase.
     Wk    = cast(1, 'like', T.lf);
     LF_I  = cast(1, 'like', T.lf);
 
@@ -122,8 +124,11 @@ function Out = recovery_fxp(In, NSymb, ki, kp, NLanes, T) %#codegen
                 end
                 Out(outIdx) = Out(idxHold);
             else
-                % Cubic Farrow coefficients (real, T.coef precision)
-                mu1 = munL;
+                % Cubic Farrow coefficients (real, T.coef precision).
+                % munL is held wide (T.nco); quantise it to T.coef here so
+                % the swept precision acts on the Farrow data path and mu1,
+                % mu2, mu3 share one type.
+                mu1 = cast(munL, 'like', T.coef);
                 mu2 = cast(mu1 * mu1, 'like', T.coef);
                 mu3 = cast(mu2 * mu1, 'like', T.coef);
 
@@ -162,8 +167,9 @@ function Out = recovery_fxp(In, NSymb, ki, kp, NLanes, T) %#codegen
             end
 
             EtamnL = cast(eta_next_d, 'like', T.nco);
-            % mun (Farrow fractional interval) quantised to T.nco — the
-            % swept "specified" precision feeding the Farrow MAC above.
+            % mun (Farrow fractional interval) held wide in T.nco; it is
+            % quantised to the swept T.coef where it enters the Farrow
+            % polynomial (mu1, above).
             munL   = cast(mun_next_d, 'like', T.nco);
         end
 

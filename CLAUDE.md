@@ -70,7 +70,7 @@ Each DSP stage is a MATLAB package (`+name/`). Every stage has:
 ### CPON Frame Structure
 
 Subframes are 3712 symbols = 116 × 32-symbol blocks. Each block has:
-- 1 pilot symbol (PRBS10, seeds `0x19E` / `0x0D0` for X/Y polarizations, amplitude `±3±3j`)
+- 1 pilot symbol (PRBS10, seeds `0x19E` / `0x0D0` for X/Y polarizations, amplitude `±1±1j` — same constellation as data symbols)
 - 31 data symbols
 
 Training sequence: 11 fixed symbols prepended per subframe (X and Y polarizations differ). See [docs/cpon_framing_structure.md](docs/cpon_framing_structure.md) for full specification.

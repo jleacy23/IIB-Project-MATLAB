@@ -6,9 +6,9 @@ function process_combined_eq_clk_fxp_sweep(varargin)
 %                                     'Node', '45nm', 'M', 4)
 %
 %   Loads combined_eq_clk_fxp_sweep.mat and prints:
-%     1. A long-form table — one row per (block, po2, StaticFL, AdaptFL,
-%        ClkFL) with FEC SNR (mean ± std across trials) and energy per bit
-%        (per stage and total).
+%     1. One table PER swept combination (block, po2) — rows are the swept
+%        precision points (StaticFL, AdaptFL, ClkFL) with FEC SNR (mean ±
+%        std across trials) and energy per bit (per stage and total).
 %     2. FEC-SNR and total-energy curves vs the swept precision axis, one
 %        line per (block, po2) implementation (further split if more than
 %        one precision axis varies).
@@ -41,6 +41,11 @@ function process_combined_eq_clk_fxp_sweep(varargin)
 %     'M'         - modulation order (default 4 for QPSK)
 %     'SavePlots' - true to write the precision-sweep plot PNGs
 %                   alongside the .mat (default true)
+%     'Axis'      - which precision axis the FEC-SNR / energy plots sweep
+%                   along: 'adapt', 'clk', 'static', or '' (default '')
+%                   to auto-select whichever axis varies most.  Accepts the
+%                   column names 'adapt_fl'/'clk_fl'/'static_fl' too.  Any
+%                   *other* axis that also varies still splits the lines.
 %     'GardnerFLs'- vector of swept-axis FL values to include in the
 %                   Gardner energy-breakdown table at the end
 %                   (default [4, 6]).
@@ -53,6 +58,7 @@ function process_combined_eq_clk_fxp_sweep(varargin)
     p.addParameter('Node', '14nm');
     p.addParameter('M', 4);
     p.addParameter('SavePlots',  true);
+    p.addParameter('Axis',       '');
     p.addParameter('GardnerFLs', [4, 6]);
     p.parse(varargin{:});
     matFile     = p.Results.MatFile;
@@ -60,6 +66,7 @@ function process_combined_eq_clk_fxp_sweep(varargin)
     node        = p.Results.Node;
     M           = p.Results.M;
     savePlots   = p.Results.SavePlots;
+    axisChoice  = p.Results.Axis;
     gardnerFLs  = p.Results.GardnerFLs;
 
     if ~isfile(matFile)
@@ -78,13 +85,18 @@ function process_combined_eq_clk_fxp_sweep(varargin)
         node, EAdd, EMult);
 
     % --- Pick the precision axis to sweep along --------------------
-    %  Whichever of {AdaptFL, ClkFL, StaticFL} varies most becomes the
-    %  plotting x-axis; ties break adapt > clk > static.  Any *other*
-    %  axis that also varies is used to split the plotted lines.
+    %  The plotting x-axis is either forced via 'Axis' or, when that is
+    %  empty, auto-selected as whichever of {AdaptFL, ClkFL, StaticFL}
+    %  varies most (ties break adapt > clk > static).  Any *other* axis
+    %  that also varies is used to split the plotted lines.
     flCols   = {'adapt_fl', 'clk_fl', 'static_fl'};
     flLabels = {'AdaptEq FL', 'Clock-recovery FL', 'Static-eq FL'};
     nUnique  = cellfun(@(c) numel(unique(tbl.(c))), flCols);
-    [~, xIdx] = max(nUnique);
+    if isempty(axisChoice)
+        [~, xIdx] = max(nUnique);
+    else
+        xIdx = axisColIndex(axisChoice, flCols);
+    end
     xCol      = flCols{xIdx};
     xLabelTxt = flLabels{xIdx};
     % Other FL axes that still vary -> extra grouping keys for the lines.
@@ -149,30 +161,34 @@ function process_combined_eq_clk_fxp_sweep(varargin)
     end
     E_total = E_static + E_adapt + E_clk;
 
-    %% --- Long-form table -----------------------------------------
-    fprintf(['\n--- FEC SNR & energy/bit per configuration ', ...
-             '(FEC BER = %.0e, CFO = %.2f GHz, %s, M = %d) ---\n'], ...
+    %% --- Per-combination tables: FEC SNR + energy breakdown -------
+    %  One table per (block, po2) swept combination; rows are the swept
+    %  precision points (StaticFL, AdaptFL, ClkFL) with FEC SNR (mean/std
+    %  across trials) and per-stage + total energy/bit (pJ/bit).  Rows are
+    %  already sorted by (static_fl, clk_fl, adapt_fl).
+    fprintf(['\n=== FEC SNR & energy/bit per swept combination ', ...
+             '(FEC BER = %.0e, CFO = %.2f GHz, %s, M = %d) ===\n'], ...
         fecBer, S.CFO_GHz, node, M);
-    fprintf('%-18s %-4s %-5s %-5s %-6s %-7s %-7s %-8s %-8s %-8s %-8s %-8s\n', ...
-        'block', 'po2', 'AeqFL', 'ClkFL', 'StatFL', 'FEC',  'std', ...
-        'E_stat',  'E_aeq', 'E_clk', 'E_tot', 'units');
-    for k = 1:nRow
-        meanStr = '  ---';
-        stdStr  = '  ---';
-        if isfinite(fecMean(k))
-            meanStr = sprintf('%6.2f', fecMean(k));
-        end
-        if isfinite(fecStd(k))
-            stdStr = sprintf('%6.2f', fecStd(k));
-        end
+
+    impl = unique(tbl(:, {'block_name', 'po2'}), 'rows', 'stable');
+    for ii = 1:height(impl)
+        blk  = impl.block_name(ii);
+        p2   = impl.po2(ii);
+        rows = find(tbl.block_name == blk & tbl.po2 == p2);
+
         % Energies are in fJ/bit; convert to pJ/bit for display.
-        fprintf(['%-18s %-4d %-5d %-5d %-6d %-7s %-7s %-8.3f %-8.3f ', ...
-                 '%-8.3f %-8.3f %-8s\n'], ...
-            char(tbl.block_name(k)), tbl.po2(k), ...
-            tbl.adapt_fl(k), tbl.clk_fl(k), tbl.static_fl(k), ...
-            meanStr, stdStr, ...
-            E_static(k) * 1e-3, E_adapt(k) * 1e-3, ...
-            E_clk(k)    * 1e-3, E_total(k) * 1e-3, 'pJ/bit');
+        Tg = table( ...
+            tbl.static_fl(rows), tbl.adapt_fl(rows), tbl.clk_fl(rows), ...
+            round(fecMean(rows), 2), round(fecStd(rows), 2), ...
+            round(E_static(rows) * 1e-3, 3), round(E_adapt(rows) * 1e-3, 3), ...
+            round(E_clk(rows)    * 1e-3, 3), round(E_total(rows) * 1e-3, 3), ...
+            'VariableNames', {'StaticFL', 'AdaptFL', 'ClkFL', ...
+                'FEC_SNR_dB', 'std_dB', 'E_stat_pJ', 'E_aeq_pJ', ...
+                'E_clk_pJ', 'E_tot_pJ'});
+
+        fprintf('\n--- block = %s, po2 = %d  (energy in pJ/bit) ---\n', ...
+            char(blk), p2);
+        disp(Tg);
     end
 
     if nRow == 0
@@ -294,6 +310,27 @@ end
 % =====================================================================
 %  Grouping helper
 % =====================================================================
+
+function xIdx = axisColIndex(axisChoice, flCols)
+%AXISCOLINDEX  Map a user 'Axis' choice to an index into flCols.
+%   Accepts the short forms 'adapt'/'clk'/'static' or the full column
+%   names 'adapt_fl'/'clk_fl'/'static_fl' (case-insensitive).
+    key = lower(strtrim(axisChoice));
+    switch key
+        case {'adapt', 'adapteq', 'adapt_fl', 'aeq'}
+            target = 'adapt_fl';
+        case {'clk', 'clock', 'clk_fl'}
+            target = 'clk_fl';
+        case {'static', 'stat', 'static_fl'}
+            target = 'static_fl';
+        otherwise
+            error('process_combined_eq_clk_fxp_sweep:badAxis', ...
+                ['Unknown Axis ''%s'' (use ''adapt'', ''clk'', ', ...
+                 '''static'', or '''').'], axisChoice);
+    end
+    xIdx = find(strcmp(target, flCols), 1);
+end
+
 
 function [sel, label] = selectGroup(tbl, grow, extraCols)
 %SELECTGROUP  Row mask + legend label for one plotted line.

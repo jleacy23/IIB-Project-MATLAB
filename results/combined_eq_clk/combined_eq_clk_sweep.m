@@ -598,6 +598,10 @@ classdef combined_eq_clk_sweep < matlab.unittest.TestCase
             rxSig = channel.apply_timing_error(rxSig, P.SFO_ppm, ...
                 0, P.SpS);
             rxSig = channel.add_awgn(rxSig, SNR_dB);
+
+            % Normalise into the unit box before the receiver, using the
+            % 95th-percentile magnitude as the per-pol scale reference.
+            rxSig = modem.normalise(rxSig, 95);
         end
 
         function [eqSym, cfoBinsApplied] = runBlock(P, cfg, rxSig)

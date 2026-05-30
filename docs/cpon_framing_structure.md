@@ -33,7 +33,7 @@
 | (1, 0)                 | +1          | −1          |
 | (1, 1)                 | +1          | +1          |
 
-> Training and pilot symbols use amplitude values of ±3, placing them outside the data constellation and making them unambiguously identifiable.
+> Training and pilot symbols use the same QPSK constellation as the data symbols (±1±1j).
 
 ### 1.3 Bit-to-Symbol Distribution
 

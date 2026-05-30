@@ -1,4 +1,4 @@
-function [v, ThetaPU] = pilots_only_fxp(x, NPol, BlockLen, Pilots, ~, T) %#codegen
+function [v, ThetaPU] = pilots_only_fxp(x, NPol, BlockLen, Pilots, CordicIts, T) %#codegen
 %PILOTS_ONLY_FXP  Fixed-point pilot-only carrier phase recovery.
 %
 %   [v, ThetaPU] = pilots_only_fxp(x, NPol, BlockLen, Pilots, CordicIts, T)
@@ -15,7 +15,10 @@ function [v, ThetaPU] = pilots_only_fxp(x, NPol, BlockLen, Pilots, ~, T) %#codeg
 %   ambiguity adapts independently), so collapsing the pols into a single
 %   shared phase (angle(sum_pol(...))) tracks neither and floors the BER.
 %
-%   The final phase correction is applied with complex multiplication.
+%   Both the per-block angle estimate and the final phase correction use
+%   CORDIC (cordic.vectoring / cordic.rotate); CordicIts sets the angular
+%   resolution (~atan(2^-CordicIts)) and, in the bit-width sweep, equals the
+%   swept fractional-bit precision.
 
     if nargin < 6 || isempty(T)
         T = carrier_recovery.fxp_types('fixed16');
@@ -44,7 +47,7 @@ function [v, ThetaPU] = pilots_only_fxp(x, NPol, BlockLen, Pilots, ~, T) %#codeg
                 corr_re = cast(pilot_re * rx_re - pilot_im * rx_im, 'like', T.acc);
                 corr_im = cast(pilot_re * rx_im + pilot_im * rx_re, 'like', T.acc);
 
-                ThetaBlk(b, pol) = cast(atan2(double(corr_im), double(corr_re)), 'like', T.theta);
+                ThetaBlk(b, pol) = cordic.vectoring(corr_re, corr_im, CordicIts, T);
             end
         end
     end
@@ -59,12 +62,13 @@ function [v, ThetaPU] = pilots_only_fxp(x, NPol, BlockLen, Pilots, ~, T) %#codeg
         end
     end
 
-    % Final phase correction.
+    % Final phase correction via CORDIC rotation.
     v = complex(zeros(Nsym, NPol, 'like', T.x));
     for i = 1:Nsym
         for pol = 1:NPol
-            s_d = complex(double(real(x_fi(i, pol))), double(imag(x_fi(i, pol))));
-            v(i, pol) = cast(s_d * exp(1j * double(-ThetaPU(i, pol))), 'like', T.x);
+            [vr, vi] = cordic.rotate(real(x_fi(i, pol)), imag(x_fi(i, pol)), ...
+                                     -ThetaPU(i, pol), CordicIts, T);
+            v(i, pol) = complex(vr, vi);
         end
     end
 end

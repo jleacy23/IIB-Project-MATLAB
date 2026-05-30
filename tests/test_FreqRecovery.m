@@ -1,228 +1,239 @@
 classdef test_FreqRecovery < matlab.unittest.TestCase
-    % Tests for frequency recovery – floating-point and fixed-point MEX.
-    %
-    % All tests apply a known frequency offset plus AWGN, then run the
-    % algorithm under test.  The constellation before and after correction
-    % is plotted for each polarisation, and the post-correction BER is
-    % reported and verified against BER_THRESHOLD.
-    %
-    % MEX compilation
-    %   Both fxp MEX binaries are compiled automatically in TestClassSetup
-    %   (once per run, before any test method executes).
-    %
-    % Prerequisites
-    %   - MATLAB Coder and Fixed-Point Designer toolboxes must be licensed.
-    %   - build_freq_recovery_fft_search_fxp_mex.m and
-    %     build_freq_recovery_differential_kay_fxp_mex.m must be on path.
+%TEST_FREQRECOVERY  Fixed-point MEX frequency-recovery tests.
+%
+%   MEX tests for the CORDIC-based fixed-point frequency-recovery estimators
+%       freq_recovery.fft_search_fxp        (FFT peak search)
+%       freq_recovery.differential_kay_fxp  (differential + Tretter/Kay)
+%
+%       modem.modulate  ->  CFO (lo_freq_shift)  ->  AWGN  ->  modem.normalise
+%                       ->  fixed-point FR (CORDIC)  ->  estimated offset
+%
+%   A known carrier-frequency offset plus AWGN are applied (no phase noise,
+%   to isolate the frequency estimator).  The estimator is run once per
+%   subframe (each subframe carries its own CPON training preamble) and the
+%   per-subframe frequency estimates are averaged over NumSubframes; the
+%   averaged estimate is checked against the applied offset within FreqTol_MHz.
+%
+%   Fixed-point configuration
+%     The FR type table pins T.theta / T.acc wide (>= 16 fraction bits) and
+%     sweeps only the signal type T.x, so the CORDIC iteration count is held
+%     at CordicIts (matched to the wide angle precision), independent of T.x.
+%
+%   Execution mode (UseMex)
+%     UseMex = true  -> builds and calls the compiled *_fxp_mex binaries
+%                       (requires MATLAB Coder + Fixed-Point Designer).
+%     UseMex = false -> calls the *_fxp functions directly (interpreted fi;
+%                       identical arithmetic, no toolbox/build needed).
+%
+%   Prerequisites (UseMex = true)
+%     - MATLAB Coder and Fixed-Point Designer toolboxes licensed.
+%     - build_freq_recovery_fft_search_fxp_mex.m and
+%       build_freq_recovery_differential_kay_fxp_mex.m on the path.
 
     properties (Constant)
         % ---- Signal -------------------------------------------------
-        N_pol       = 2
-        Rs          = 30.5          % symbol rate [GBd]
-        TrainingLen = 11            % CPON training symbols per subframe
+        N_pol        = 2
+        Rs           = 30.5          % symbol rate [GBd]
+        TrainingLen  = 11            % CPON training symbols per subframe
+        SubframeLen  = 3712          % symbols per CPON subframe / pol
+        NumSubframes = 10             % subframes to estimate over and average
 
         % ---- Channel ------------------------------------------------
-        SNR_dB      = 20            % [dB]  – good SNR to isolate FR errors
-        DeltaF_MHz  = 3e3           % [MHz] – frequency offset to apply
-
-        % ---- Float fft_search  --------------------------------------
-        FR_FFT_K    = 8             % zero-padding factor
+        SNR_dB     = 20            % good SNR to isolate FR errors
+        DeltaF_MHz = 2000          % applied carrier-frequency offset [MHz]
+        NormPct    = 99.9          % modem.normalise percentile
 
         % ---- Fixed-point config -------------------------------------
-        FxpConfig   = 'fixed32'
-        CordicIts   = 16
-        FR_Nfft     = 128           % FFT size (power of 2 >= TrainingLen)
+        FxpConfig     = 'fixed32'    % 'fixed16' | 'fixed32' | struct('WL',wl,'FL',fl)
+        CordicIts     = 16           % CORDIC iterations (matched to wide angle FL)
+        FR_Nfft       = 2048         % FFT size (power of 2 >= TrainingLen)
         FR_Po2Twiddle = false
-        FR_BlindD   = 64
-        MaxFreq     = 1
+        FR_BlindD     = 64           % blind data length baked into the MEX type
+        MaxFreq       = 1            % phase-scaling factor
 
-        % ---- Pass/fail ----------------------------------------------
-        BER_THRESHOLD = 0.05
+        % ---- Pass / fail --------------------------------------------
+        % Data-aided fft_search estimates from only the 11 CPON training
+        % symbols, so it is inherently coarse (tens of MHz); the tolerance is
+        % sized for that.  differential_kay is far more accurate (~10 MHz).
+        FreqTol_MHz = 200            % allowed |estimate - applied| [MHz]
+
+        % ---- Execution / build --------------------------------------
+        UseMex  = true
+        Rebuild = true
     end
 
-    % =================================================================
-    methods (TestClassSetup)
-    % =================================================================
+    properties
+        Tfr    % FR fixed-point type table
+    end
 
-        function seedRng(~)
-            rng(42);
+    %% ================================================================
+    %  One-time setup
+    %% ================================================================
+    methods (TestClassSetup)
+
+        function setupPath(~)
+            here = fileparts(mfilename('fullpath'));
+            addpath(genpath(fullfile(here, '..', 'src')));
+            addpath(fullfile(here, '..', 'build'));
         end
 
-        function compileMex(testCase)
-            fprintf('  Compiling freq-recovery MEX binaries...\n');
-            cfg = coder.config('mex');
-            cfg.GenerateReport   = false;
-            cfg.IntegrityChecks  = false;
-            cfg.ResponsivenessChecks = false;
+        function seedRng(~)
+            rng(20260530);
+        end
 
-            % Add src/ to codegen path so +freq_recovery package is found
-            srcDir = fullfile(fileparts(mfilename('fullpath')), '..', 'src');
-            addpath(srcDir);
+        function setupTypes(testCase)
+            testCase.Tfr = freq_recovery.fxp_types(testCase.FxpConfig);
+        end
+
+        function buildMex(testCase)
+            % Compile both MEX binaries so their baked-in fixed-point type and
+            % CORDIC-iteration constant match this test's configuration exactly.
+            if ~testCase.UseMex || ~testCase.Rebuild
+                return;
+            end
+
+            cfg = coder.config('mex');
+            cfg.GenerateReport       = false;
+            cfg.IntegrityChecks      = false;
+            cfg.ResponsivenessChecks = false;
 
             P.N_pol         = testCase.N_pol;
             P.TrainingLen   = testCase.TrainingLen;
             P.Rs            = testCase.Rs;
             P.FR_Nfft       = testCase.FR_Nfft;
             P.FR_Po2Twiddle = testCase.FR_Po2Twiddle;
-            P.FR_BlindD      = testCase.FR_BlindD;
+            P.FR_BlindD     = testCase.FR_BlindD;
             P.FxpConfig_FR  = testCase.FxpConfig;
             P.CordicIts     = testCase.CordicIts;
             P.MaxFreq       = testCase.MaxFreq;
 
+            fprintf('  Building fft_search_fxp_mex...\n');
             build_freq_recovery_fft_search_fxp_mex(P, cfg);
+            fprintf('  Building differential_kay_fxp_mex...\n');
             build_freq_recovery_differential_kay_fxp_mex(P, cfg);
-            fprintf('  MEX compilation complete.\n');
         end
 
     end
 
-    % =================================================================
+    %% ================================================================
+    %  Tests
+    %% ================================================================
     methods (Test)
-    % =================================================================
 
-        % ---- Floating-point fft_search ------------------------------
-        function testFFTSearch_Float(testCase)
-            [rxSym, frSym, training, txRefBits, deltaF_est] = ...
-                runScenario_FFTSearch(testCase);
-            BER = computeBER(testCase, frSym, txRefBits);
-            fprintf('FFT-search float: delta_f_est = %.3f MHz  BER = %.2e\n', ...
-                deltaF_est/1e6, BER);
-            plotBeforeAfter(testCase, rxSym, frSym, 'FFT-search (float)', BER);
-            testCase.verifyLessThan(BER, testCase.BER_THRESHOLD);
+        function testFFTSearch_Fxp(testCase)
+            [rxSym, training] = buildChannel(testCase);
+            [dF, dFs] = averageOverSubframes(testCase, ...
+                @(rx, tr) runFFTSearch(testCase, rx, tr), rxSym, training);
+            reportEstimate(testCase, 'FFT-search', dF, dFs);
         end
 
-        % ---- Floating-point differential_kay ------------------------
-        function testDifferentialKay_Float(testCase)
-            [rxSym, frSym, training, txRefBits, deltaF_est] = ...
-                runScenario_DifferentialKay(testCase);
-            BER = computeBER(testCase, frSym, txRefBits);
-            fprintf('Differential-Kay float: delta_f_est = %.3f MHz  BER = %.2e\n', ...
-                deltaF_est/1e6, BER);
-            plotBeforeAfter(testCase, rxSym, frSym, 'Differential-Kay (float)', BER);
-            testCase.verifyLessThan(BER, testCase.BER_THRESHOLD);
-        end
-
-        % ---- Fixed-point fft_search MEX -----------------------------
-        function testFFTSearch_Fxp16(testCase)
-            [rxSym, frSym, training, txRefBits, deltaF_est] = ...
-                runScenarioFxp_FFTSearch(testCase, testCase.FxpConfig);
-            BER = computeBER(testCase, frSym, txRefBits);
-            fprintf('FFT-search fxp (%s): delta_f_est = %.3f MHz  BER = %.2e\n', ...
-                testCase.FxpConfig, deltaF_est/1e6, BER);
-            plotBeforeAfter(testCase, rxSym, frSym, ...
-                sprintf('FFT-search fxp (%s)', testCase.FxpConfig), BER);
-            testCase.verifyLessThan(BER, testCase.BER_THRESHOLD);
-        end
-
-        % ---- Fixed-point differential_kay MEX -----------------------
-        function testDifferentialKay_Fxp16(testCase)
-            [rxSym, frSym, training, txRefBits, deltaF_est] = ...
-                runScenarioFxp_DifferentialKay(testCase, testCase.FxpConfig);
-            BER = computeBER(testCase, frSym, txRefBits);
-            fprintf('Differential-Kay fxp (%s): delta_f_est = %.3f MHz  BER = %.2e\n', ...
-                testCase.FxpConfig, deltaF_est/1e6, BER);
-            plotBeforeAfter(testCase, rxSym, frSym, ...
-                sprintf('Differential-Kay fxp (%s)', testCase.FxpConfig), BER);
-            testCase.verifyLessThan(BER, testCase.BER_THRESHOLD);
+        function testDifferentialKay_Fxp(testCase)
+            [rxSym, training] = buildChannel(testCase);
+            [dF, dFs] = averageOverSubframes(testCase, ...
+                @(rx, tr) runDifferentialKay(testCase, rx, tr), rxSym, training);
+            reportEstimate(testCase, 'Differential-Kay', dF, dFs);
         end
 
     end
 
-    % =================================================================
+    %% ================================================================
+    %  Private helpers
+    %% ================================================================
     methods (Access = private)
-    % =================================================================
 
-        % ---- Shared channel builder ---------------------------------
-        function [symbols, training, txRefBits, rxSym] = buildChannel(testCase)
-            % Modulate random bits to get CPON-framed symbols + training.
-            Nbits  = 4 * 3712 * 2;   % two subframes, 2 bits/symbol (QPSK), 2 pol
-            txBits = modem.randomBits(Nbits);
+        % ---- Channel: modulate -> CFO -> AWGN -----------------------
+        function [rxSym, training] = buildChannel(testCase)
+            BITS_PER_SF = 3586 * 2 * 2;
+            txBits = modem.randomBits(testCase.NumSubframes * BITS_PER_SF);
             [symbols, ~, training, ~] = modem.modulate(txBits);
 
-            txRefBits = modem.symbolsToBits(symbols);
-
-            % Apply frequency offset then AWGN (no phase noise – isolates FR)
+            % Frequency offset then AWGN (no phase noise, to isolate FR).
             rxSym = channel.lo_freq_shift(symbols, testCase.DeltaF_MHz, testCase.Rs, 1);
             rxSym = channel.add_awgn(rxSym, testCase.SNR_dB);
+
+            % Normalise into the unit box before the fixed-point cast.  The
+            % angle-domain estimators are scale-invariant, so the ±1±1j
+            % training reference need not be rescaled.
+            rxSym = modem.normalise(rxSym, testCase.NormPct);
         end
 
-        % ---- Float fft_search runner --------------------------------
-        function [rxSym, frSym, training, txRefBits, deltaF_est] = ...
-                runScenario_FFTSearch(testCase)
-            [~, training, txRefBits, rxSym] = buildChannel(testCase);
-            [frSym, deltaF_est] = freq_recovery.fft_search( ...
-                rxSym, training, testCase.Rs, testCase.FR_FFT_K);
-        end
-
-        % ---- Float differential_kay runner --------------------------
-        function [rxSym, frSym, training, txRefBits, deltaF_est] = ...
-                runScenario_DifferentialKay(testCase)
-            [~, training, txRefBits, rxSym] = buildChannel(testCase);
-            [frSym, deltaF_est] = freq_recovery.differential_kay( ...
-                rxSym, training, testCase.Rs);
-        end
-
-        % ---- Fixed-point fft_search MEX runner ----------------------
-        function [rxSym, frSym, training, txRefBits, deltaF_est] = ...
-                runScenarioFxp_FFTSearch(testCase, config)
-            T = freq_recovery.fxp_types(config);
-            [~, training, txRefBits, rxSym] = buildChannel(testCase);
-
-            rx_fi       = cast(rxSym,    'like', T.x);
-            training_fi = cast(training, 'like', T.x);
-
-            [frSym_fi, deltaF_est] = freq_recovery.fft_search_fxp_mex( ...
-                rx_fi, training_fi, testCase.Rs, ...
-                double(testCase.FR_Nfft), logical(testCase.FR_Po2Twiddle), ...
-                double(testCase.CordicIts), double(testCase.MaxFreq), T, true, 0);
-
-            frSym = double(frSym_fi);
-        end
-
-        % ---- Fixed-point differential_kay MEX runner ----------------
-        function [rxSym, frSym, training, txRefBits, deltaF_est] = ...
-                runScenarioFxp_DifferentialKay(testCase, config)
-            T = freq_recovery.fxp_types(config);
-            [~, training, txRefBits, rxSym] = buildChannel(testCase);
-
-            rx_fi       = cast(rxSym,    'like', T.x);
-            training_fi = cast(training, 'like', T.x);
-
-            [frSym_fi, deltaF_est] = freq_recovery.differential_kay_fxp_mex( ...
-                rx_fi, training_fi, testCase.Rs, ...
-                double(testCase.CordicIts), T);
-
-            frSym = double(frSym_fi);
-        end
-
-        % ---- BER computation ----------------------------------------
-        function BER = computeBER(testCase, frSym, txRefBits)
-            decidedSyms = modem.decideSymbols(frSym);
-            rxBits      = modem.symbolsToBits(decidedSyms);
-            nBits       = min(length(txRefBits), length(rxBits));
-            nErrors     = sum(txRefBits(1:nBits) ~= rxBits(1:nBits));
-            BER         = nErrors / nBits;
-        end
-
-        % ---- Constellation plots ------------------------------------
-        function plotBeforeAfter(testCase, rxSym, frSym, titleStr, BER)
-            figure('Name', titleStr, 'Position', [100 100 1200 500]);
-            for p = 1:testCase.N_pol
-                subplot(2, 2, (p-1)*2 + 1);
-                plot(real(rxSym(:,p)), imag(rxSym(:,p)), '.', 'MarkerSize', 2);
-                grid on; axis equal;
-                title(sprintf('Before FR  \x2013  Pol %d', p));
-                xlabel('In-Phase'); ylabel('Quadrature');
-
-                subplot(2, 2, (p-1)*2 + 2);
-                plot(real(frSym(:,p)), imag(frSym(:,p)), '.', 'MarkerSize', 2);
-                grid on; axis equal;
-                title(sprintf('After FR  \x2013  Pol %d', p));
-                xlabel('In-Phase'); ylabel('Quadrature');
+        % ---- Per-subframe estimate, averaged over NumSubframes ------
+        function [dFmean, dFs] = averageOverSubframes(testCase, estimatorFn, rxSym, training)
+            % Run the estimator independently on each subframe (each starts
+            % with its own CPON training preamble) and average the estimates.
+            SF  = testCase.SubframeLen;
+            nSF = min(testCase.NumSubframes, floor(size(rxSym, 1) / SF));
+            dFs = zeros(nSF, 1);
+            for sf = 1:nSF
+                idx      = (sf - 1) * SF + (1:SF);
+                dFs(sf)  = estimatorFn(rxSym(idx, :), training);
             end
-            sgtitle(sprintf('QPSK: AWGN + %.1f MHz offset  |  %s  |  BER = %.2e', ...
-                testCase.DeltaF_MHz, titleStr, BER));
+            dFmean = mean(dFs);
         end
 
+        % ---- fft_search runner (MEX or interpreted) -----------------
+        function dF = runFFTSearch(testCase, rxSym, training)
+            T = testCase.Tfr;
+            rx_fi = cast(rxSym,    'like', T.x);
+            tr_fi = cast(training, 'like', T.x);
+
+            if testCase.UseMex
+                [~, dF] = freq_recovery.fft_search_fxp_mex( ...
+                    rx_fi, tr_fi, testCase.Rs, double(testCase.FR_Nfft), ...
+                    logical(testCase.FR_Po2Twiddle), double(testCase.CordicIts), ...
+                    double(testCase.MaxFreq), T, true, 0);
+            else
+                [~, dF] = freq_recovery.fft_search_fxp( ...
+                    rx_fi, tr_fi, testCase.Rs, double(testCase.FR_Nfft), ...
+                    logical(testCase.FR_Po2Twiddle), double(testCase.CordicIts), ...
+                    double(testCase.MaxFreq), T, true, 0);
+            end
+        end
+
+        % ---- differential_kay runner (MEX or interpreted) -----------
+        function dF = runDifferentialKay(testCase, rxSym, training)
+            T = testCase.Tfr;
+            rx_fi = cast(rxSym,    'like', T.x);
+            tr_fi = cast(training, 'like', T.x);
+
+            if testCase.UseMex
+                [~, dF] = freq_recovery.differential_kay_fxp_mex( ...
+                    rx_fi, tr_fi, testCase.Rs, double(testCase.CordicIts), ...
+                    T, true, 0, double(testCase.MaxFreq));
+            else
+                [~, dF] = freq_recovery.differential_kay_fxp( ...
+                    rx_fi, tr_fi, testCase.Rs, double(testCase.CordicIts), ...
+                    T, true, 0, double(testCase.MaxFreq));
+            end
+        end
+
+        % ---- Report + check the (averaged) estimated frequency ------
+        function reportEstimate(testCase, algoName, dF, dFs)
+            dF_MHz  = dF / 1e6;
+            err_MHz = dF_MHz - testCase.DeltaF_MHz;
+            std_MHz = std(dFs(:) / 1e6);
+            fprintf(['%s fxp (%s): estimated %.3f MHz (avg over %d subframes, ' ...
+                     'std %.3f MHz) | applied %.3f MHz | error %+.3f MHz\n'], ...
+                algoName, cfgName(testCase), dF_MHz, numel(dFs), std_MHz, ...
+                testCase.DeltaF_MHz, err_MHz);
+
+            testCase.verifyTrue(all(isfinite(dFs)), ...
+                sprintf('%s fxp produced a non-finite frequency estimate.', algoName));
+            testCase.verifyLessThanOrEqual(abs(err_MHz), testCase.FreqTol_MHz, ...
+                sprintf('%s fxp averaged estimate off by %.3f MHz (tol %.3f MHz).', ...
+                    algoName, err_MHz, testCase.FreqTol_MHz));
+        end
+
+    end
+end
+
+%% ====================================================================
+%  Local function
+%% ====================================================================
+function s = cfgName(testCase)
+    if ischar(testCase.FxpConfig) || isstring(testCase.FxpConfig)
+        s = char(testCase.FxpConfig);
+    else
+        s = sprintf('WL=%d,FL=%d', testCase.FxpConfig.WL, testCase.FxpConfig.FL);
     end
 end

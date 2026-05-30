@@ -76,11 +76,15 @@ classdef bit_width_full < matlab.unittest.TestCase
         BlindD_vec = [32, 64, 128, 256, 512]
 
         % Phase recovery
+        % CordicIts here applies to the FR builds only.  The CR algorithms
+        % set their CORDIC iteration count equal to the swept fractional-bit
+        % precision (one iteration per fraction bit) — see buildCRMexInSrc and
+        % runSnrSweepStatic.
         CordicIts      = 16
         BlockLen       = 32
         StepSize       = 32
         PilotThreshold = 5 * pi / 9
-        VV_NTaps       = 10
+        VV_NTaps       = 15
 
         % FEC threshold
         FEC_BER = 2e-2
@@ -496,7 +500,11 @@ classdef bit_width_full < matlab.unittest.TestCase
             B.N_pol          = P.N_pol;
             B.FxpConfig_VV   = fxp_cr;
             B.FxpConfig_PO   = fxp_cr;
-            B.CordicIts      = P.CordicIts;
+            % CORDIC iterations track the swept precision: one iteration per
+            % fractional bit.  Baked as a coder.Constant in the CR build, so
+            % the runtime CordicIts argument must equal fxp_cr.FL (see
+            % runSnrSweepStatic, which reads it back from T_cr).
+            B.CordicIts      = fxp_cr.FL;
             B.VV_NTaps       = P.VV_NTaps;
             B.BlockLen       = P.BlockLen;
             B.StepSize       = P.StepSize;
@@ -539,6 +547,11 @@ classdef bit_width_full < matlab.unittest.TestCase
             NSNR    = length(Params.SNR_dB_vec);
             ber_all = zeros(Params.NTrials, NSNR, 2);
 
+            % CORDIC iterations = swept CR precision (the fractional length of
+            % the CR type).  Must equal the coder.Constant baked into the CR
+            % MEX by buildCRMexInSrc (B.CordicIts = fxp_cr.FL).
+            cordicIts = double(T_cr.theta.FractionLength);
+
             for tr = 1:Params.NTrials
                 for si = 1:NSNR
                     [fr_out, pilots, txRefBits] = bit_width_full.buildChannel( ...
@@ -551,13 +564,13 @@ classdef bit_width_full < matlab.unittest.TestCase
                     [cr_vv, ~] = carrier_recovery.viterbiViterbi_fxp_mex( ...
                         fr_fi, Params.N_pol, Params.VV_NTaps, vvfilt_fi, pilots_fi, ...
                         Params.BlockLen, double(Params.StepSize), Params.PilotThreshold, ...
-                        double(Params.CordicIts), T_cr);
+                        cordicIts, T_cr);
                     cr_vv = bit_width_full.resolveAmbiguity(double(cr_vv), txRefBits);
                     ber_all(tr, si, 1) = bit_width_full.computeBER(cr_vv, txRefBits);
 
                     [cr_po, ~] = carrier_recovery.pilots_only_fxp_mex( ...
                         fr_fi, Params.N_pol, Params.BlockLen, pilots_fi, ...
-                        double(Params.CordicIts), T_cr);
+                        cordicIts, T_cr);
                     cr_po = bit_width_full.resolveAmbiguity(double(cr_po), txRefBits);
                     ber_all(tr, si, 2) = bit_width_full.computeBER(cr_po, txRefBits);
                 end

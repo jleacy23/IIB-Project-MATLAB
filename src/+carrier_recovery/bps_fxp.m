@@ -1,5 +1,5 @@
 function [v, ThetaPU] = bps_fxp(z, N, NPol, M, B, BlockLen, StepSize, ...
-                                     Pilots, PilotThreshold, ~, T) %#codegen
+                                     Pilots, PilotThreshold, CordicIts, T) %#codegen
 %bps_FXP  Fixed-point Blind Phase Search (BPS) carrier phase recovery
 %             with step-based phase update and optional pilot-aided
 %             cycle-slip correction.
@@ -23,8 +23,10 @@ function [v, ThetaPU] = bps_fxp(z, N, NPol, M, B, BlockLen, StepSize, ...
 %                 Pilot symbols are treated as regular data by the BPS estimator.
 %     Pilots    - pilot symbols, one per block [NBlocks x NPol] (complex fi or double)
 %     PilotThreshold - threshold for pilot-based cycle-slip correction in radians (double scalar)
-%     CordicIts - number of iterations for CORDIC operations (double scalar)
-%                 Defaults to 'fixed16'.
+%     CordicIts - number of CORDIC iterations for the pilot-reference angle,
+%                 every blind test-phase rotation, and the final per-symbol
+%                 de-rotation (double scalar).  Angular resolution is
+%                 ~atan(2^-CordicIts); equals the swept precision in the sweep.
 %
 %   Outputs
 %     v       - phase-corrected signal [Nsym x NPol], type T.x
@@ -34,7 +36,7 @@ function [v, ThetaPU] = bps_fxp(z, N, NPol, M, B, BlockLen, StepSize, ...
 %
 %   Fixed-point implementation notes
 %     - convmtx is replaced by explicit tap-delay window indexing.
-%     - Test-phase rotations use complex multiplication.
+%     - Test-phase rotations use CORDIC rotation (cordic.rotate).
 %     - The BPS metric accumulator (m_buf) is a plain double vector: it sums
 %       squared distances which grow with L and SNR, making fi overflow likely.
 %       Decisions (modem.slicer) are inherently double; keeping the metric in
@@ -46,10 +48,13 @@ function [v, ThetaPU] = bps_fxp(z, N, NPol, M, B, BlockLen, StepSize, ...
 %       therefore always reflects the last computed (not held) phase.
 %
 %   Fixed-point cast notes
-%     atan2 is computed in double from the fi inputs; the result is cast
-%     immediately to T.theta before any further arithmetic.
-%     Phase correction multiplications are performed in double and the
-%     result cast to T.x to enforce SpecifyPrecision quantisation.
+%     All angles and rotations go through CORDIC (cordic.vectoring /
+%     cordic.rotate): the pilot-reference angle, each blind test-phase
+%     rotation in the BPS metric, and the final per-symbol de-rotation.
+%     The BPS metric itself (squared slicer distance) stays in double, as it
+%     accumulates across taps and would otherwise need a very wide fi type;
+%     each candidate's CORDIC-rotated sample is cast to double only to feed
+%     modem.slicer.
 
     %% ----------------------------------------------------------------
     %  Default types table
@@ -117,7 +122,7 @@ function [v, ThetaPU] = bps_fxp(z, N, NPol, M, B, BlockLen, StepSize, ...
                 corr_re = pilot_re * rx_re - pilot_im * rx_im;
                 corr_im = pilot_re * rx_im + pilot_im * rx_re;
 
-                PhiRef(blk, pol) = cast(atan2(double(corr_im), double(corr_re)), 'like', T.theta);
+                PhiRef(blk, pol) = cordic.vectoring(corr_re, corr_im, CordicIts, T);
             end
         end
     end
@@ -167,9 +172,10 @@ function [v, ThetaPU] = bps_fxp(z, N, NPol, M, B, BlockLen, StepSize, ...
                         s = complex(cast(0, 'like', T.x), cast(0, 'like', T.x));
                     end
 
-                    s_d = complex(double(real(s)), double(imag(s)));
                     for b = 1:B
-                        s_rot_d  = s_d * exp(-1j * double(ThetaTest_fi(b)));
+                        [sr, si] = cordic.rotate(real(s), imag(s), ...
+                                                 -ThetaTest_fi(b), CordicIts, T);
+                        s_rot_d  = complex(double(sr), double(si));
                         s_dec    = modem.slicer(s_rot_d);
 
                         err_re   = real(s_rot_d) - real(s_dec);
@@ -225,12 +231,13 @@ function [v, ThetaPU] = bps_fxp(z, N, NPol, M, B, BlockLen, StepSize, ...
     end  % for i
 
     %% ================================================================
-    %  Phase correction: v(i,pol) = z(i,pol) * exp(-j * ThetaPU(i,pol))
+    %  Phase correction: v(i,pol) = z(i,pol) * exp(-j * ThetaPU(i,pol)) via CORDIC
     %% ================================================================
     for i = 1:Nsym
         for pol = 1:NPol
-            s_d = complex(double(real(z_fi(i, pol))), double(imag(z_fi(i, pol))));
-            v(i, pol) = cast(s_d * exp(1j * double(-ThetaPU(i, pol))), 'like', T.x);
+            [vr, vi] = cordic.rotate(real(z_fi(i, pol)), imag(z_fi(i, pol)), ...
+                                     -ThetaPU(i, pol), CordicIts, T);
+            v(i, pol) = complex(vr, vi);
         end
     end
 end

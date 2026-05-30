@@ -5,3 +5,4 @@
 - Risk Assessment
 - Clk + eq methodology explaining what fxp precision means in each case
 - suitable operating points for clk + eq
+- fix clunky wording about FEC SNR, use RSNR abbreviation

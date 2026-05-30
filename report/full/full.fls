@@ -406,6 +406,7 @@ INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/amsfont
 INPUT full.aux
 INPUT full.run.xml
 OUTPUT full.run.xml
+INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmcsc10.pfb
 INPUT c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb

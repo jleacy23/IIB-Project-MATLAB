@@ -1,4 +1,4 @@
-function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddle, ~, max_freq, T, data_aided, D) %#codegen
+function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddle, CordicIts, max_freq, T, data_aided, D) %#codegen
 %FFT_SEARCH_FXP  Fixed-point FFT-based frequency offset estimator.
 %
 %   [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddle, CordicIts, T)
@@ -76,8 +76,8 @@ function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddl
     if data_aided
         for p = 1:N_pol
             for k = 1:L
-                phi_tr(k, p) = cast(atan2(double(imag(training_fi(k, p))), ...
-                                          double(real(training_fi(k, p)))), 'like', T.theta);
+                phi_tr(k, p) = cordic.vectoring(real(training_fi(k, p)), ...
+                                                imag(training_fi(k, p)), CordicIts, T);
             end
         end
     end
@@ -100,22 +100,22 @@ function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddl
         if data_aided
             %% Training-aided: phi_z(k) = angle(x(k)) - angle(training(k))
             for k = 1:L
-                phi_x_k  = cast(atan2(double(imag(x_fi(k, p))), double(real(x_fi(k, p)))), ...
-                                 'like', T.theta);
+                phi_x_k  = cordic.vectoring(real(x_fi(k, p)), imag(x_fi(k, p)), CordicIts, T);
                 phi_z_k  = phi_x_k - phi_tr(k, p);
 
-                z_pad(k) = complex(cast(cos(double(phi_z_k)), 'like', T.acc), ...
-                                   cast(sin(double(phi_z_k)), 'like', T.acc));
+                % Unit-circle sample via CORDIC rotation of (1,0) by phi_z_k,
+                % synthesised in the wide accumulator domain (FFT datapath).
+                [zr, zi] = cordic.rotate(1.0, 0.0, phi_z_k, CordicIts, T, T.acc);
+                z_pad(k) = complex(zr, zi);
             end
         else
             %% Blind: phi_z(k) = 4*angle(x_data(k)),  x_data = x(L+1..L+D)
             for k = 1:D
-                phi_x_k  = cast(atan2(double(imag(x_fi(L+k, p))), double(real(x_fi(L+k, p)))), ...
-                                 'like', T.theta);
+                phi_x_k  = cordic.vectoring(real(x_fi(L+k, p)), imag(x_fi(L+k, p)), CordicIts, T);
                 phi_z_k  = cast(mod(4.0 * double(phi_x_k), 2*pi) - pi, 'like', T.theta);
 
-                z_pad(k) = complex(cast(cos(double(phi_z_k)), 'like', T.acc), ...
-                                   cast(sin(double(phi_z_k)), 'like', T.acc));
+                [zr, zi] = cordic.rotate(1.0, 0.0, phi_z_k, CordicIts, T, T.acc);
+                z_pad(k) = complex(zr, zi);
             end
         end
         % Bins No+1 .. Nfft are already zero (zero-padding)
@@ -176,20 +176,20 @@ function [y, frequency_offset] = fft_search_fxp(x, training, Rs, Nfft, po2Twiddl
     end
 
     %% ----------------------------------------------------------------
-    %  Phase correction: keep scaled phase in T.theta, then cast back to
-    %  double and apply exp(+j*theta) in floating point.
+    %  Phase correction: accumulate the scaled phase ramp in T.theta and
+    %  apply the per-symbol rotation exp(+j*theta) via CORDIC.
     %  delta_theta already carries the negative sign for derotation.
     %% ----------------------------------------------------------------
     delta_theta = cast(-2.0 * pi * frequency_offset_Hz / (Rs * 1e9 * max_freq), 'like', T.theta);
     y = complex(zeros(Nsym, N_pol, 'like', T.x));
-    x_float = double(x_fi);
     theta_wrap = pi / max_freq;
 
     for p = 1:N_pol
         theta_fi = ZERO_TH;
         for i = 1:Nsym
             theta = double(theta_fi) * max_freq;
-            y(i, p) = cast(x_float(i, p) * exp(1j * theta), 'like', T.x);
+            [yr, yi] = cordic.rotate(real(x_fi(i, p)), imag(x_fi(i, p)), theta, CordicIts, T);
+            y(i, p) = complex(yr, yi);
 
             % Explicit phase wrap in scaled domain. Do not rely on fi
             % overflow, which wraps at numeric range rather than 2*pi.

@@ -1,6 +1,6 @@
 function [v, ThetaPU] = viterbiViterbi_fxp(x, NPol, NTaps, VVFilter, ...
                                                 Pilots, BlockLen, StepSize, ...
-                                                PilotThreshold, ~, T) %#codegen
+                                                PilotThreshold, CordicIts, T) %#codegen
 %vitERBIVITERBI_FXP  Fixed-point Viterbi-Viterbi carrier phase recovery
 %                        with block-based phase update and optional pilot-aided
 %                        cycle-slip correction.
@@ -21,8 +21,11 @@ function [v, ThetaPU] = viterbiViterbi_fxp(x, NPol, NTaps, VVFilter, ...
 %                 StepSize = BlockLen behavior).
 %                 Pilot symbols are treated as regular data by the VV estimator.
 %     PilotThreshold - threshold for pilot-based cycle-slip correction in radians (double scalar)
-%     CordicIts - number of iterations for CORDIC operations (double scalar)
-%                 Defaults to 'fixed16'.
+%     CordicIts - number of CORDIC iterations for every angle estimate and
+%                 every phase rotation (double scalar).  Angular resolution is
+%                 ~atan(2^-CordicIts); in the bit-width sweep this is set equal
+%                 to the swept fractional-bit precision so the angle datapath
+%                 degrades together with the wordlength.
 %
 %   Outputs
 %     v       - phase-corrected signal [N x NPol], type T.x
@@ -40,7 +43,11 @@ function [v, ThetaPU] = viterbiViterbi_fxp(x, NPol, NTaps, VVFilter, ...
 %     - No convmtx: tap-delay indexing throughout.
 %     - One VV ML phase estimate is computed per block from all symbols in
 %       that block, then unwrapped and optionally pilot-corrected.
-%     - atan2 outputs are cast to T.theta immediately after each call.
+%     - All angle estimates (pilot reference and block ML phase) use CORDIC
+%       vectoring (cordic.vectoring); the final per-symbol de-rotation uses
+%       CORDIC rotation (cordic.rotate).  No double-precision atan2/exp is
+%       used in the signal path, so CordicIts genuinely bounds the angle
+%       precision.
 %     - ThetaPrev is updated once per block; the unwrapper anchor therefore
 %       always reflects the last computed block phase.
 %     - UsePilots is a runtime branch; codegen compiles both paths.
@@ -104,7 +111,7 @@ function [v, ThetaPU] = viterbiViterbi_fxp(x, NPol, NTaps, VVFilter, ...
                 corr_re = pilot_re * rx_re - pilot_im * rx_im;
                 corr_im = pilot_re * rx_im + pilot_im * rx_re;
 
-                PhiRef(blk, pol) = cast(atan2(double(corr_im), double(corr_re)), 'like', T.theta);
+                PhiRef(blk, pol) = cordic.vectoring(corr_re, corr_im, CordicIts, T);
             end
         end
     end
@@ -163,7 +170,7 @@ function [v, ThetaPU] = viterbiViterbi_fxp(x, NPol, NTaps, VVFilter, ...
                 end
             end
 
-            theta_ml = cast(atan2(double(sum4_im_blk), double(sum4_re_blk)), 'like', T.theta) ...
+            theta_ml = cordic.vectoring(sum4_re_blk, sum4_im_blk, CordicIts, T) ...
                        * QUARTER - PI_OVER4;
 
             %% ------------------------------------------------
@@ -190,11 +197,12 @@ function [v, ThetaPU] = viterbiViterbi_fxp(x, NPol, NTaps, VVFilter, ...
         end  % for blk
 
         %% ------------------------------------------------------------
-        %  Phase correction: v(i) = x(i) * exp(-j * ThetaPU(i))
+        %  Phase correction: v(i) = x(i) * exp(-j * ThetaPU(i)) via CORDIC.
         %% ------------------------------------------------------------
         for i = 1:N
-            s_d = complex(double(real(x_fi(i, pol))), double(imag(x_fi(i, pol))));
-            v(i, pol) = cast(s_d * exp(1j * double(-ThetaPU(i, pol))), 'like', T.x);
+            [vr, vi] = cordic.rotate(real(x_fi(i, pol)), imag(x_fi(i, pol)), ...
+                                     -ThetaPU(i, pol), CordicIts, T);
+            v(i, pol) = complex(vr, vi);
         end
 
     end  % for pol

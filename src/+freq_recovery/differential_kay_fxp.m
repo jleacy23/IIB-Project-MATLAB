@@ -81,19 +81,19 @@ function [y, frequency_offset] = differential_kay_fxp(x, training, Rs, CordicIts
 
     %% ----------------------------------------------------------------
     %  Apply total correction to the original input in a single pass.
-    %  Keep scaled phase in T.theta, then cast back to double and apply
-    %  exp(+j*theta) in floating point.
+    %  Accumulate the scaled phase ramp in T.theta and apply the per-symbol
+    %  rotation exp(+j*theta) via CORDIC.
     %% ----------------------------------------------------------------
     delta_theta = cast(-2.0 * pi * frequency_offset_Hz / (Rs_Hz * max_freq), 'like', T.theta);
     y = complex(zeros(Nsym, N_pol, 'like', T.x));
-    x_float = double(x_fi);
     theta_wrap = pi / max_freq;
 
     for p = 1:N_pol
         theta_fi = ZERO_TH;
         for i = 1:Nsym
             theta = double(theta_fi) * max_freq;
-            y(i, p) = cast(x_float(i, p) * exp(1j * theta), 'like', T.x);
+            [yr, yi] = cordic.rotate(real(x_fi(i, p)), imag(x_fi(i, p)), theta, CordicIts, T);
+            y(i, p) = complex(yr, yi);
 
             % Add in double so the explicit phase wrap below is not
             % pre-empted by fi-overflow on theta_fi + delta_theta.

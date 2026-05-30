@@ -1,16 +1,16 @@
 # Fdb version 4
-["biber full"] 1780050154.68063 "full.bcf" "full.bbl" "full" 1780089832.36888 0
+["biber full"] 1780129995.53603 "full.bcf" "full.bbl" "full" 1780148607.56818 0
   "../clk_recovery/ref.bib" 1779992321 1635 99a0f261cdfc64aafcdae8831ba000bf ""
   "../energy/ref.bib" 1779992274 993 f84b4165d0ec281362af2a8a255965cd ""
-  "../equalisation/ref.bib" 1779992308 3542 903f521c8a7421158c79e3a0c4487227 ""
+  "../equalisation/ref.bib" 1780129966 4101 caa44d0e4ed7f2030c53d256c77674b1 ""
   "../frequency_recovery/ref.bib" 1779992285 1310 07fa60de58e5b21efdbd702257b029ad ""
-  "full.bcf" 1780089832 110650 b1226982f44502a1ff8e8807c7c00146 "pdflatex"
+  "full.bcf" 1780148607 110841 82a1251db009b9f7260648bda7ef860a "pdflatex"
   "ref.bib" 1779992349 3608 83dc6013e5a54a35b9a13fa8009239bc ""
   (generated)
   "full.bbl"
   "full.blg"
   (rewritten before read)
-["pdflatex"] 1780089830.16518 "c:/Users/joele/Downloads/iib_project/report/full/full.tex" "full.pdf" "full" 1780089832.37033 0
+["pdflatex"] 1780148603.58894 "c:/Users/joele/Downloads/iib_project/report/full/full.tex" "full.pdf" "full" 1780148607.56974 0
   "../frequency_recovery/CR_precision_comparison.png" 1779818578 37872 a79e9e4dc7ba6efc9bb3ea37aebf66ae ""
   "../frequency_recovery/FR_precision_comparison.png" 1779818686 61087 46df9f443f305bf84a1ff3c398c24d2e ""
   "../frequency_recovery/FR_precision_energy.png" 1779363661 67071 4ef1e796f1b21195abc6f1e18814ba74 ""
@@ -65,6 +65,7 @@
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmti10.tfm" 1772596488 1480 aa8e34af0eb6a2941b776984cf1dfdc4 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmti12.tfm" 1772596488 1484 ed72f8f5cf654cda15ecc8e32bfcbee5 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmtt10.tfm" 1772596488 768 1321e9409b4137d6fb428ac9dc956269 ""
+  "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb" 1772596518 34811 78b52f49e893bcba91bd7581cdc144c0 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb" 1772596518 32080 340ef9bf63678554ee606688e7b5339d ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmcsc10.pfb" 1772596518 32001 6aeea3afe875097b1eb0da29acd61e28 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb" 1772596518 30251 6afa5cb1d0204815a708a080681d4674 ""
@@ -211,14 +212,14 @@
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1772596550 94259 aec9939469efac8f0cf917369f632359 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf-var/web2c/pdftex/pdflatex.fmt" 1772596566 2236130 036198fdb3bbb46401ac4d671e71ba73 ""
   "c:/Users/joele/AppData/Roaming/TinyTeX/texmf.cnf" 1772596498 903 164c5b127cd0d6dc91abad2f62421ea2 ""
-  "c:/Users/joele/Downloads/iib_project/report/full/full.tex" 1780089827 83903 b43ac32939df5ca5bbee15b913e688d0 ""
+  "c:/Users/joele/Downloads/iib_project/report/full/full.tex" 1780148602 88925 3329cdee6dfcc3d9542cce53ca6fcb5a ""
   "cfo_sweep_corrected_float.png" 1780034069 54900 1c6e3f4690e90e46f530aab9ff7ab801 ""
   "clk_fxp_sweep.png" 1780086072 46906 ea44d0294029db45949f8bf607af46f0 ""
-  "full.aux" 1780089832 28598 7edccd692116edc8d966139bc4e8f913 "pdflatex"
-  "full.bbl" 1780050165 41004 564209f1a2f1d3787bdf4aadf10b0c41 "biber full"
-  "full.run.xml" 1780089832 2470 b201c3512d6c50d3be3b3780315b62f5 "pdflatex"
-  "full.tex" 1780089827 83903 b43ac32939df5ca5bbee15b913e688d0 ""
-  "full.toc" 1780089832 5478 b08924bdc3fddc86ad0cd83fc887a002 "pdflatex"
+  "full.aux" 1780148607 30998 26d78d4b4c19cb1d07b2c9a146118cb8 "pdflatex"
+  "full.bbl" 1780129997 43784 f14c1b86527c9d241d000f1756e7acdb "biber full"
+  "full.run.xml" 1780148607 2470 b201c3512d6c50d3be3b3780315b62f5 "pdflatex"
+  "full.tex" 1780148602 88925 3329cdee6dfcc3d9542cce53ca6fcb5a ""
+  "full.toc" 1780148607 5872 7f524675f434142c4e0b4604afb53b5a "pdflatex"
   "max_cfo_combined_float.png" 1779957798 54446 ad4dba6dee1cb1ddbbe9c1b3f16057e3 ""
   "seq_fxp_sweep.png" 1780087542 54716 b55c26b0d20b6dc8a9f47cc8a57ef3c0 ""
   (generated)

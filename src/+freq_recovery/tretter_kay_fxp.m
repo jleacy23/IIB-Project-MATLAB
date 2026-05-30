@@ -1,4 +1,4 @@
-function [y, frequency_offset] = tretter_kay_fxp(x, training, Rs, ~, T, data_aided, D, max_freq) %#codegen
+function [y, frequency_offset] = tretter_kay_fxp(x, training, Rs, CordicIts, T, data_aided, D, max_freq) %#codegen
 %TRETTER_KAY_FXP  Fixed-point Tretter/Kay weighted phase-difference estimator.
 %
 %   [y, frequency_offset] = tretter_kay_fxp(x, training, Rs, CordicIts)
@@ -75,8 +75,8 @@ function [y, frequency_offset] = tretter_kay_fxp(x, training, Rs, ~, T, data_aid
         if data_aided
             %% Training-aided: phi_z(k) = angle(x(k)) - angle(training(k))
             for k = 1:L
-                phi_x = cast(atan2(double(imag(x_fi(k, p))), double(real(x_fi(k, p)))), 'like', T.theta);
-                phi_t = cast(atan2(double(imag(training_fi(k, p))), double(real(training_fi(k, p)))), 'like', T.theta);
+                phi_x = cordic.vectoring(real(x_fi(k, p)),        imag(x_fi(k, p)),        CordicIts, T);
+                phi_t = cordic.vectoring(real(training_fi(k, p)), imag(training_fi(k, p)), CordicIts, T);
                 phi_z(k, p) = phi_x - phi_t;
                 if phi_z(k, p) > PI_TH
                     phi_z(k, p) = phi_z(k, p) - TWOPI_TH;
@@ -87,7 +87,7 @@ function [y, frequency_offset] = tretter_kay_fxp(x, training, Rs, ~, T, data_aid
         else
             %% Blind: phi_z(k) = 4 * angle(x_data(k))
             for k = 1:D
-                phi_x = cast(atan2(double(imag(x_fi(L+k, p))), double(real(x_fi(L+k, p)))), 'like', T.theta);
+                phi_x = cordic.vectoring(real(x_fi(L+k, p)), imag(x_fi(L+k, p)), CordicIts, T);
                 phi_z(k, p) = cast(mod(4.0 * double(phi_x), 2*pi) - pi, 'like', T.theta);
             end
         end
@@ -142,19 +142,19 @@ function [y, frequency_offset] = tretter_kay_fxp(x, training, Rs, ~, T, data_aid
     frequency_offset_Hz = frequency_offset_Hz / double(N_pol);
 
     %% ----------------------------------------------------------------
-    %  Phase correction: keep scaled phase in T.theta, then cast back to
-    %  double and apply exp(+j*theta) in floating point.
+    %  Phase correction: accumulate the scaled phase ramp in T.theta and
+    %  apply the per-symbol rotation exp(+j*theta) via CORDIC.
     %% ----------------------------------------------------------------
     delta_theta = cast(-2.0 * pi * frequency_offset_Hz / (Rs_Hz * max_freq), 'like', T.theta);
     y = complex(zeros(Nsym, N_pol, 'like', T.x));
-    x_float = double(x_fi);
     theta_wrap = pi / max_freq;
 
     for p = 1:N_pol
         theta_fi = ZERO_TH;
         for i = 1:Nsym
             theta = double(theta_fi) * max_freq;
-            y(i, p) = cast(x_float(i, p) * exp(1j * theta), 'like', T.x);
+            [yr, yi] = cordic.rotate(real(x_fi(i, p)), imag(x_fi(i, p)), theta, CordicIts, T);
+            y(i, p) = complex(yr, yi);
 
             % Add in double so the explicit phase wrap below is not
             % pre-empted by fi-overflow on theta_fi + delta_theta.

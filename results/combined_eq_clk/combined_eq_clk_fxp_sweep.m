@@ -85,7 +85,7 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
         % --- Monte-Carlo --------------------------------------------
         Ns          = 37500         % symbols per polarisation per trial
         NTrials     = 5
-        SNR_dB_vec  = 0 : 2 : 24
+        SNR_dB_vec  = 0 : 2 : 30
 
         % --- Static-equaliser FFT size ------------------------------
         NFFT     = 128
@@ -99,14 +99,69 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
         Po2Twiddle_vec = [false, true]
         NCD            = [22,   22]
         NTaps          = [1,    1]
-        %  Row 1 = Gardner DPLL gains (unchanged).  Row 2 = Godard PI gains,
-        %  divided by sqrt(NFFT=128) to cancel the net sqrt(N) loop-gain
-        %  introduced by the sqrt(N) metric-input rescale in
-        %  combined_cd_fd_godard_adaptive_fxp.
-        ki             = [1e-6           1e-7; ...
-                          1.64/sqrt(128) 1.64/sqrt(128)]
-        kp             = [1e-4            1e-4; ...
-                          0.164/sqrt(128) 0.164/sqrt(128)]
+        %  Row 1 = Gardner DPLL gains.  Row 2 = Godard PI gains.  Both rows
+        %  are only SEED / fallback values: when TuneGardner / TuneGodard is
+        %  true the corresponding fixed-point tuning stage (tuneGardnerGains /
+        %  tuneGodardGains) overwrites that row per po2 column with the
+        %  (ki,kp) pair that minimises BER on the block's
+        %  Ki*_vec x Kp*_vec grid.  Either tuner can be disabled
+        %  independently to fall back on the hand-set seeds below.
+        ki             = [1e-6      3e-7; ...
+                          3e-1   1]
+        kp             = [1e-3      1e-3; ...
+                          1e-1   3e-3]
+
+        % --- Gain source (sweep vs user-selected) -------------------
+        %  Master switch over BOTH loop-filter gain tuners.
+        %    false: run the fixed-point gain sweeps below (per-block
+        %           TuneGardner / TuneGodard still apply individually).
+        %    true : skip ALL tuning and use the hand-set ki/kp values in the
+        %           properties above exactly as written (row 1 = Gardner,
+        %           row 2 = Godard).  Takes precedence over TuneGardner /
+        %           TuneGodard.
+        UseManualGains = true
+
+        % --- Gardner fixed-point gain tuning ------------------------
+        %  Before the main precision sweep, the Gardner DPLL gains (row 1 of
+        %  ki/kp) are retuned IN FIXED POINT exactly like the Godard stage
+        %  below: for each po2 setting the Cartesian grid
+        %  KiGardner_vec x KpGardner_vec is run through the
+        %  precision-specialised Gardner MEX at the representative
+        %  (TuneSNR_dB) operating point with EVERY stage held at high
+        %  precision (all FLs = TuneFL), so the gains are tuned independently
+        %  of the precision grid that is swept afterwards.  The pair giving
+        %  the lowest BER is written back into
+        %  P.ki(gardner,:) / P.kp(gardner,:).  The grids straddle the
+        %  hand-set seeds (po2=off ki=1e-7/kp=1e-3, po2=on ki=1e-5/kp=1e-4),
+        %  which already work fairly well.  Set TuneGardner=false to skip and
+        %  use the seeds above.
+        TuneGardner   = true
+        KiGardner_vec = [1e-8 3e-8 1e-7 3e-7 1e-6 3e-6 1e-5 3e-5 1e-4]
+        KpGardner_vec = [1e-5 3e-5 1e-4 3e-4 1e-3 3e-3 1e-2 3e-2 1e-1]
+
+        % --- Godard fixed-point gain tuning -------------------------
+        %  Before the main precision sweep, the Godard PI gains (row 2 of
+        %  ki/kp) are retuned IN FIXED POINT: for each po2 setting the
+        %  Cartesian grid KiGodard_vec x KpGodard_vec is run through the
+        %  precision-specialised Godard MEX at the representative
+        %  (TuneSNR_dB) operating point with EVERY stage held at high
+        %  precision (all FLs = TuneFL), so the gains are tuned independently
+        %  of the precision grid that is swept afterwards.  The pair giving
+        %  the lowest BER is written back into
+        %  P.ki(godard,:) / P.kp(godard,:).  Set TuneGodard=false to skip and
+        %  use the hand-set seeds above.
+        TuneGodard    = true
+        KiGodard_vec  = [1e-4 3e-4 1e-3 3e-3 1e-2 3e-2 1e-1 3e-1 1e0]
+        KpGodard_vec  = [1e-3 3e-3 1e-2 3e-2 1e-1 3e-1 1e0 3e0 1e1]
+        TuneSNR_dB    = 20
+
+        % --- Tuning precision ---------------------------------------
+        %  Fractional length applied to ALL pipeline stages (static, adapt,
+        %  clk) during BOTH gain-tuning stages.  Held high so the loop gains
+        %  are chosen without quantisation noise from the swept precisions; a
+        %  dedicated high-precision MEX (a<TuneFL>c<TuneFL>s<TuneFL>) is built
+        %  per block for the tuners.
+        TuneFL        = 30
 
         % --- Adaptive equaliser (per-block convergence) -------------
         MuGardner   = 1e-3
@@ -140,9 +195,9 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
         %                   precision; data path is pinned high).
         %    ClkFL_vec    - T.Clk (Gardner) / T.Godard (modified-Godard PI).
         NIntBits     = 16
-        StaticFL_vec = [6,8]
-        AdaptFL_vec  = [4,6]
-        ClkFL_vec    = [4,6]
+        StaticFL_vec = [30]
+        AdaptFL_vec  = [4,6,8,10,12]
+        ClkFL_vec    = [30]
 
         % --- FEC threshold used to score designs --------------------
         FEC_BER = 2e-2
@@ -212,6 +267,36 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
                     end
                 end
             end
+
+            % --- High-precision tuning MEX -----------------------------
+            %  Both gain tuners run at TuneFL on every stage so the loop
+            %  gains are chosen free of the swept quantisation.  That combo
+            %  (a<TuneFL>c<TuneFL>s<TuneFL>) is not generally part of the grid
+            %  above, so build it once per block here (cache-aware).  Skipped
+            %  entirely when UseManualGains is set, since no tuning runs.
+            tuneFL = P.TuneFL;
+            if P.UseManualGains
+                fprintf('=== Skipping tuning MEX (UseManualGains=true) ===\n');
+            else
+                fprintf('=== Building high-precision tuning MEX (all FLs = %d) ===\n', tuneFL);
+                for blk = 1:NBlk
+                    blkName = P.blocks{blk};
+                    mexBase = combined_eq_clk_fxp_sweep.mexBaseName( ...
+                        blkName, tuneFL, tuneFL, tuneFL);
+                    mexPath = fullfile(repoRoot, 'src', '+eq_clk', ...
+                        [mexBase '.mexw64']);
+                    if isfile(mexPath) && ~P.ForceRebuild
+                        fprintf('  [tune] %s -> cached\n', mexBase);
+                        continue;
+                    end
+                    fprintf('  [tune] %s ', mexBase);
+                    t1 = tic;
+                    combined_eq_clk_fxp_sweep.buildOneMex( ...
+                        P, cfgCoder, blkName, tuneFL, tuneFL, tuneFL, ...
+                        mexBase, repoRoot);
+                    fprintf('(%.0fs)\n', toc(t1));
+                end
+            end
             fprintf('Total build time: %.1fs\n', toc(tStart));
         end
     end
@@ -229,6 +314,19 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
 
         function test_fxp_precision_sweep(testCase)
             P = combined_eq_clk_fxp_sweep.extractParams(testCase);
+
+            % --- Initial fixed-point tuning of the loop-filter gains ---
+            %  Each tuner overwrites its own block's row of P.ki/P.kp in
+            %  place (Gardner = row 1, Godard = row 2).  With UseManualGains
+            %  the tuners are bypassed entirely and the hand-set ki/kp values
+            %  are used as-is.
+            if P.UseManualGains
+                fprintf(['\n=== Gain tuning SKIPPED (UseManualGains=true) ' ...
+                    '— using hand-set ki/kp ===\n']);
+            else
+                P = combined_eq_clk_fxp_sweep.tuneGardnerGains(P);
+                P = combined_eq_clk_fxp_sweep.tuneGodardGains(P);
+            end
 
             NBlk    = numel(P.blocks);
             NPO2    = numel(P.Po2Twiddle_vec);
@@ -312,6 +410,12 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
                     [rxSig, symbols] = ...
                         combined_eq_clk_fxp_sweep.buildChannel( ...
                             P, snr, tr, P.CFO_GHz);
+                    % Plot the normalised pre-equalisation signal once,
+                    % for the very first channel realisation.
+                    if tr == 1 && si == 1
+                        combined_eq_clk_fxp_sweep.plotNormalisedSignal( ...
+                            rxSig, snr, P.CFO_GHz);
+                    end
                     for ci = 1:NCFG
                         b = combined_eq_clk_fxp_sweep.runOnePoint( ...
                                 P, cfgs(ci), rxSig, symbols, P.CFO_GHz);
@@ -423,6 +527,15 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
             P.NTaps         = tc.NTaps;
             P.ki            = tc.ki;
             P.kp            = tc.kp;
+            P.UseManualGains = tc.UseManualGains;
+            P.TuneGardner   = tc.TuneGardner;
+            P.KiGardner_vec = tc.KiGardner_vec;
+            P.KpGardner_vec = tc.KpGardner_vec;
+            P.TuneGodard    = tc.TuneGodard;
+            P.KiGodard_vec  = tc.KiGodard_vec;
+            P.KpGodard_vec  = tc.KpGodard_vec;
+            P.TuneSNR_dB    = tc.TuneSNR_dB;
+            P.TuneFL        = tc.TuneFL;
             P.MuGardner     = tc.MuGardner;
             P.N1Gardner     = tc.N1Gardner;
             P.MuGodard      = tc.MuGodard;
@@ -439,6 +552,177 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
             P.ClkFL_vec     = tc.ClkFL_vec;
             P.FEC_BER       = tc.FEC_BER;
             P.ForceRebuild  = tc.ForceRebuild;
+        end
+
+        function P = tuneGardnerGains(P)
+            % Initial fixed-point tuning of the Gardner DPLL loop gains.
+            %  Mirrors tuneGodardGains: for each po2 setting, sweep the
+            %  KiGardner_vec x KpGardner_vec grid through the
+            %  precision-specialised Gardner MEX at a single representative
+            %  operating point (TuneSNR_dB with every stage at TuneFL) and
+            %  pick the (ki,kp) pair with the lowest BER.  The winning pair is
+            %  written back into P.ki / P.kp for the Gardner block row; the
+            %  seeds are kept if no grid point beats them (or the grid is all
+            %  NaN).  Godard is not tuned here.
+            bi = find(strcmp(P.blocks, 'cd_gardner_cma'), 1);
+            if isempty(bi) || ~P.TuneGardner
+                if ~isempty(bi)
+                    fprintf(['\n=== Gardner gain tuning SKIPPED ' ...
+                        '(TuneGardner=false) — using seed ki/kp ===\n']);
+                end
+                return;
+            end
+
+            staticFL = P.TuneFL;
+            adaptFL  = P.TuneFL;
+            clkFL    = P.TuneFL;
+
+            nCd = P.NCD(bi);
+            nOv = 2 * ceil((nCd - 1) / 2);
+
+            NKi  = numel(P.KiGardner_vec);
+            NKp  = numel(P.KpGardner_vec);
+            NPO2 = numel(P.Po2Twiddle_vec);
+
+            fprintf(['\n=== Gardner DPLL gain tuning (fixed point) ===\n' ...
+                'SNR=%g dB  STAT FL=%d  AEQ FL=%d  CLK FL=%d  ' ...
+                'grid=%dx%d  po2 cols=%d\n'], ...
+                P.TuneSNR_dB, staticFL, adaptFL, clkFL, NKi, NKp, NPO2);
+
+            % Single channel realisation for the whole tuning grid so the
+            % comparison is apples-to-apples.
+            [rxSig, symbols] = combined_eq_clk_fxp_sweep.buildChannel( ...
+                P, P.TuneSNR_dB, 1, P.CFO_GHz);
+
+            for pj = 1:NPO2
+                po2 = logical(P.Po2Twiddle_vec(pj));
+
+                bestBer = Inf;
+                bestKi  = P.ki(bi, pj);
+                bestKp  = P.kp(bi, pj);
+
+                for ii = 1:NKi
+                    for jj = 1:NKp
+                        cfg = struct( ...
+                            'block',      'cd_gardner_cma', ...
+                            'NCD',        nCd, ...
+                            'NOverlap',   nOv, ...
+                            'NTaps',      P.NTaps(bi), ...
+                            'Po2Twiddle', po2, ...
+                            'ki',         P.KiGardner_vec(ii), ...
+                            'kp',         P.KpGardner_vec(jj), ...
+                            'StaticFL',   staticFL, ...
+                            'AdaptFL',    adaptFL, ...
+                            'ClkFL',      clkFL);
+                        ber = combined_eq_clk_fxp_sweep.runOnePoint( ...
+                            P, cfg, rxSig, symbols, P.CFO_GHz);
+                        fprintf('  po2=%d ki=%.2e kp=%.2e -> BER=%.3e\n', ...
+                            po2, cfg.ki, cfg.kp, ber);
+                        if isfinite(ber) && ber < bestBer
+                            bestBer = ber;
+                            bestKi  = cfg.ki;
+                            bestKp  = cfg.kp;
+                        end
+                    end
+                end
+
+                P.ki(bi, pj) = bestKi;
+                P.kp(bi, pj) = bestKp;
+                if isfinite(bestBer)
+                    fprintf(['  -> po2=%d BEST ki=%.2e kp=%.2e ' ...
+                        '(BER=%.3e)\n'], po2, bestKi, bestKp, bestBer);
+                else
+                    fprintf(['  -> po2=%d no valid grid point; ' ...
+                        'keeping seed ki=%.2e kp=%.2e\n'], ...
+                        po2, bestKi, bestKp);
+                end
+            end
+            fprintf('=== Gardner gain tuning complete ===\n');
+        end
+
+        function P = tuneGodardGains(P)
+            % Initial fixed-point tuning of the Godard PI loop gains.
+            %  For each po2 setting, sweep the KiGodard_vec x KpGodard_vec
+            %  grid through the precision-specialised Godard MEX at a single
+            %  representative operating point (TuneSNR_dB with every stage at
+            %  TuneFL) and pick the (ki,kp) pair with the lowest BER.  The
+            %  winning pair is written back into P.ki / P.kp for the Godard
+            %  block row; the seeds are kept if no grid point beats them (or
+            %  the grid is all NaN).  Gardner is not tuned.
+            bi = find(strcmp(P.blocks, 'cd_godard_cma'), 1);
+            if isempty(bi) || ~P.TuneGodard
+                if ~isempty(bi)
+                    fprintf(['\n=== Godard gain tuning SKIPPED ' ...
+                        '(TuneGodard=false) — using seed ki/kp ===\n']);
+                end
+                return;
+            end
+
+            staticFL = P.TuneFL;
+            adaptFL  = P.TuneFL;
+            clkFL    = P.TuneFL;
+
+            nCd = P.NCD(bi);
+            nOv = 2 * ceil((nCd - 1) / 2);
+
+            NKi  = numel(P.KiGodard_vec);
+            NKp  = numel(P.KpGodard_vec);
+            NPO2 = numel(P.Po2Twiddle_vec);
+
+            fprintf(['\n=== Godard PI gain tuning (fixed point) ===\n' ...
+                'SNR=%g dB  STAT FL=%d  AEQ FL=%d  CLK FL=%d  ' ...
+                'grid=%dx%d  po2 cols=%d\n'], ...
+                P.TuneSNR_dB, staticFL, adaptFL, clkFL, NKi, NKp, NPO2);
+
+            % Single channel realisation for the whole tuning grid so the
+            % comparison is apples-to-apples.
+            [rxSig, symbols] = combined_eq_clk_fxp_sweep.buildChannel( ...
+                P, P.TuneSNR_dB, 1, P.CFO_GHz);
+
+            for pj = 1:NPO2
+                po2 = logical(P.Po2Twiddle_vec(pj));
+
+                bestBer = Inf;
+                bestKi  = P.ki(bi, pj);
+                bestKp  = P.kp(bi, pj);
+
+                for ii = 1:NKi
+                    for jj = 1:NKp
+                        cfg = struct( ...
+                            'block',      'cd_godard_cma', ...
+                            'NCD',        nCd, ...
+                            'NOverlap',   nOv, ...
+                            'NTaps',      P.NTaps(bi), ...
+                            'Po2Twiddle', po2, ...
+                            'ki',         P.KiGodard_vec(ii), ...
+                            'kp',         P.KpGodard_vec(jj), ...
+                            'StaticFL',   staticFL, ...
+                            'AdaptFL',    adaptFL, ...
+                            'ClkFL',      clkFL);
+                        ber = combined_eq_clk_fxp_sweep.runOnePoint( ...
+                            P, cfg, rxSig, symbols, P.CFO_GHz);
+                        fprintf('  po2=%d ki=%.2e kp=%.2e -> BER=%.3e\n', ...
+                            po2, cfg.ki, cfg.kp, ber);
+                        if isfinite(ber) && ber < bestBer
+                            bestBer = ber;
+                            bestKi  = cfg.ki;
+                            bestKp  = cfg.kp;
+                        end
+                    end
+                end
+
+                P.ki(bi, pj) = bestKi;
+                P.kp(bi, pj) = bestKp;
+                if isfinite(bestBer)
+                    fprintf(['  -> po2=%d BEST ki=%.2e kp=%.2e ' ...
+                        '(BER=%.3e)\n'], po2, bestKi, bestKp, bestBer);
+                else
+                    fprintf(['  -> po2=%d no valid grid point; ' ...
+                        'keeping seed ki=%.2e kp=%.2e\n'], ...
+                        po2, bestKi, bestKp);
+                end
+            end
+            fprintf('=== Godard gain tuning complete ===\n');
         end
 
         function [rxSig, symbols] = buildChannel(P, SNR_dB, trialSeed, cfo)
@@ -465,6 +749,36 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
             rxSig = channel.apply_timing_error(rxSig, P.SFO_ppm, ...
                 0, P.SpS);
             rxSig = channel.add_awgn(rxSig, SNR_dB);
+
+            % Normalise into the unit box before the receiver, using the
+            % 95th-percentile magnitude as the per-pol scale reference.
+            rxSig = modem.normalise(rxSig, 99.9);
+        end
+
+        function plotNormalisedSignal(rxSig, SNR_dB, cfo)
+            % Scatter of the normalised, pre-equalisation signal (the
+            % receiver input after modem.normalise) for each polarisation.
+            % Samples lie in the unit box [-1,1] on each axis.
+            nPol = size(rxSig, 2);
+            fig  = figure('Name', ...
+                'Normalised pre-eq signal (first run)', ...
+                'Position', [80 80 360 * nPol 360]);
+            for p = 1:nPol
+                ax = subplot(1, nPol, p, 'Parent', fig);
+                plot(ax, real(rxSig(:, p)), imag(rxSig(:, p)), '.', ...
+                    'MarkerSize', 2);
+                axis(ax, 'equal'); grid(ax, 'on'); box(ax, 'on');
+                xlim(ax, [-1.05, 1.05]); ylim(ax, [-1.05, 1.05]);
+                xlabel(ax, 'In-phase'); ylabel(ax, 'Quadrature');
+                title(ax, sprintf('Pol %d', p));
+            end
+            sgtitle(fig, sprintf(['Normalised pre-eq signal ', ...
+                '(SNR = %g dB, CFO = %.2f GHz)'], SNR_dB, cfo));
+
+            outFile = fullfile(fileparts(mfilename('fullpath')), ...
+                'combined_eq_clk_fxp_normalised_input.png');
+            exportgraphics(fig, outFile, 'Resolution', 200);
+            fprintf('Saved normalised pre-eq signal plot to %s\n', outFile);
         end
 
         function ber = runOnePoint(P, cfg, rxSig, symbols, cfo)

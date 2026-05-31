@@ -3,6 +3,7 @@
 - Technical Abstract
 - MCRB appendix
 - Risk Assessment
-- Clk + eq methodology explaining what fxp precision means in each case
 - suitable operating points for clk + eq
-- fix clunky wording about FEC SNR, use RSNR abbreviation
+- add fxp carrier recovery plots to report
+- choose carrier recovery operating point and give energy breakdown
+

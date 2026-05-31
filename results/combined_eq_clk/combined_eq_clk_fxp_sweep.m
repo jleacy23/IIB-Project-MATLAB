@@ -83,8 +83,8 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
         Span     = 10
 
         % --- Monte-Carlo --------------------------------------------
-        Ns          = 37500         % symbols per polarisation per trial
-        NTrials     = 5
+        Ns          = 18750         % symbols per polarisation per trial
+        NTrials     = 15
         SNR_dB_vec  = 0 : 2 : 30
 
         % --- Static-equaliser FFT size ------------------------------
@@ -209,7 +209,7 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
         %         the cache.  Set this after editing any *_fxp.m source (e.g.
         %         the recovery_fxp / Godard loop-filter changes) so stale
         %         cached binaries are regenerated.
-        ForceRebuild = true
+        ForceRebuild = false
     end
 
     %% ================================================================

@@ -73,17 +73,18 @@
 \contentsline {paragraph}{Pilots-Only}{31}{}%
 \contentsline {section}{\numberline {4.4}Methodology}{31}{}%
 \contentsline {paragraph}{Phase recovery comparison.}{31}{}%
-\contentsline {paragraph}{Combined performance comparison.}{32}{}%
-\contentsline {paragraph}{Fixed-point.}{32}{}%
+\contentsline {paragraph}{Frequency recovery comparison.}{32}{}%
+\contentsline {paragraph}{Operation counts.}{32}{}%
 \contentsline {section}{\numberline {4.5}Results \& Discussion}{32}{}%
 \contentsline {subsection}{\numberline {4.5.1}Phase Recovery Performance}{32}{}%
-\contentsline {subsection}{\numberline {4.5.2}Blind vs Data-Aided Operation}{34}{}%
-\contentsline {subsection}{\numberline {4.5.3}Frequency Recovery Performance}{34}{}%
-\contentsline {subsection}{\numberline {4.5.4}Energy Breakdown}{35}{}%
-\contentsline {chapter}{\numberline {5}Full DSP Pipeline}{37}{}%
-\contentsline {section}{\numberline {5.1}Introduction}{37}{}%
-\contentsline {section}{\numberline {5.2}Analogue-Digital Converters (ADCs)}{37}{}%
-\contentsline {section}{\numberline {5.3}Orthogonalisation and Deskew}{37}{}%
-\contentsline {section}{\numberline {5.4}Methodology}{37}{}%
-\contentsline {section}{\numberline {5.5}Results}{37}{}%
-\contentsline {chapter}{Bibliography}{38}{}%
+\contentsline {subsection}{\numberline {4.5.2}Frequency Recovery: Subframe Averaging}{33}{}%
+\contentsline {subsection}{\numberline {4.5.3}Fixed Point}{34}{}%
+\contentsline {chapter}{\numberline {5}Full DSP Pipeline}{35}{}%
+\contentsline {section}{\numberline {5.1}Introduction}{35}{}%
+\contentsline {section}{\numberline {5.2}Analogue-Digital Converters (ADCs)}{35}{}%
+\contentsline {paragraph}{Quantisation-error SNR.}{35}{}%
+\contentsline {paragraph}{Effective number of bits.}{35}{}%
+\contentsline {section}{\numberline {5.3}Orthogonalisation and Deskew}{36}{}%
+\contentsline {section}{\numberline {5.4}Methodology}{36}{}%
+\contentsline {section}{\numberline {5.5}Results}{36}{}%
+\contentsline {chapter}{Bibliography}{37}{}%

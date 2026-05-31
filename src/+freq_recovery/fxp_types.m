@@ -11,7 +11,15 @@ function T = fxp_types(dt) %#codegen
 %     'single'              - all types are single
 %     'fixed16'             - 16-bit word length, 8-bit fraction
 %     'fixed32'             - 32-bit word length, 16-bit fraction
-%     struct('WL',wl,'FL',fl) - custom: uniform word length wl, fraction length fl
+%     struct('WL',wl,'FL',fl) - custom: word length wl, fraction length fl.
+%                               T.theta / T.acc are pinned wide (>= 32-bit,
+%                               >= 16 fraction bits) so a sweep of wl/fl isolates
+%                               signal-path precision without collapsing the
+%                               phase/accumulator range.
+%     struct('WL',wl,'FL',fl,'Uniform',true) - as above but T.theta and T.acc
+%                               take the same wl/fl as T.x, so the swept
+%                               precision applies to the phase and accumulator
+%                               datapaths as well.
 %
 %   Fields returned
 %     T.x      - input / output signal prototype
@@ -21,6 +29,7 @@ function T = fxp_types(dt) %#codegen
     if isstruct(dt)
         wl = dt.WL;
         fl = dt.FL;
+        uniform = isfield(dt, 'Uniform') && dt.Uniform;
 
         % T.x carries the user-specified word/fraction length so that
         % bit-width sweeps measure signal-path precision.
@@ -36,10 +45,16 @@ function T = fxp_types(dt) %#codegen
 
         % T.theta needs >= ceil(log2(2*pi/max_freq)) integer bits for the
         % phase wrap; T.acc must hold sums up to ~D*pi for blind D=512.
-        % Pin both wide so the sweep isolates signal precision rather
-        % than collapsing accumulator/phase range with WL.
-        wl_wide = max(wl, 32);
-        fl_wide = max(fl, 16);
+        % By default both are pinned wide so the sweep isolates signal
+        % precision; with 'Uniform' they instead match T.x so the swept
+        % precision also applies to the phase and accumulator datapaths.
+        if uniform
+            wl_wide = wl;
+            fl_wide = fl;
+        else
+            wl_wide = max(wl, 32);
+            fl_wide = max(fl, 16);
+        end
         F_wide = fimath( ...
             'RoundingMethod',       'Floor', ...
             'OverflowAction',       'Saturate', ...

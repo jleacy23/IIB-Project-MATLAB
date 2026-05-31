@@ -116,12 +116,16 @@ classdef combined_eq_clk_sweep < matlab.unittest.TestCase
         ki_gardner_vec = logspace(-7, -4, 4)
         kp_gardner_vec = logspace(-6, -3, 4)
         %  Godard gains act on the FREQUENCY-DOMAIN metric S, which is
-        %  quadratic in the spectrum.  Since the forward FFT is now
+        %  quadratic in the spectrum.  Since the forward FFT is
         %  1/N-normalised (1/2 per stage), the spectrum scales 1/N and S
         %  scales 1/N^2, so the gains are scaled up by NFFT^2 (= 128^2) to
-        %  keep ki*e / kp*e — and the tau trajectory — invariant.
+        %  keep ki*e / kp*e — and the tau trajectory — invariant.  The
+        %  standalone recovery_godard tuning (test_ClockRecovery, which uses
+        %  the UNNORMALISED built-in fft) gives ki ~ 3.16e-5, kp ~ 1e-6;
+        %  the grids below bracket those values after the 128^2 rescale
+        %  (i.e. ki ~ 0.52, kp ~ 0.016).
         ki_godard_vec  = logspace(-6, -3, 4) * 128^2
-        kp_godard_vec  = logspace(-5, -2, 4) * 128^2
+        kp_godard_vec  = logspace(-7, -4, 4) * 128^2
         NLanesGard     = 32
 
         % --- Coarse FD CFO correction (eq_clk.coarse_cfo_fd) --------
@@ -146,10 +150,10 @@ classdef combined_eq_clk_sweep < matlab.unittest.TestCase
         Cfo_blocks  = {'cd_gardner_cma', 'cd_godard_cma'}
         Cfo_NCD     = [22,   22]
         Cfo_NTaps   = [1,    1]
-        Cfo_ki      = [1e-6       1e-7; ...
-                       1e-4*128^2 1e-4*128^2]
-        Cfo_kp      = [1e-4       1e-4; ...
-                       1e-5*128^2 1e-5*128^2]
+        Cfo_ki      = [1e-6          1e-7; ...
+                       3.16e-5*128^2 3.16e-5*128^2]
+        Cfo_kp      = [1e-4          1e-4; ...
+                       1e-6*128^2    1e-6*128^2]
     end
 
     %% ================================================================
@@ -214,6 +218,9 @@ classdef combined_eq_clk_sweep < matlab.unittest.TestCase
                     cfg.block, cfg.NCD, cfg.NTaps, cfg.Po2Twiddle, ...
                     bestKi, bestKp, min(berGrid(:)));
             end
+
+            % --- Block-output constellations at the tuned (ki, kp) ---
+            combined_eq_clk_sweep.plotTunedConstellations(P, cfgs);
 
             % --- Stage 2: BER vs SNR at CFO = 0 ---------------------
             fprintf('\n=== Design sweep, Stage 2: BER vs SNR ===\n');
@@ -600,8 +607,11 @@ classdef combined_eq_clk_sweep < matlab.unittest.TestCase
             rxSig = channel.add_awgn(rxSig, SNR_dB);
 
             % Normalise into the unit box before the receiver, using the
-            % 95th-percentile magnitude as the per-pol scale reference.
-            rxSig = modem.normalise(rxSig, 95);
+            % 99.9th-percentile magnitude as the per-pol scale reference.
+            % A lower percentile (e.g. 95) hard-clips ~5% of samples, which
+            % distorts the excess-band spectrum the Godard timing metric
+            % depends on; 99.9 clips only ~0.1% (essentially just a scale).
+            rxSig = modem.normalise(rxSig, 99.9);
         end
 
         function [eqSym, cfoBinsApplied] = runBlock(P, cfg, rxSig)
@@ -691,6 +701,58 @@ classdef combined_eq_clk_sweep < matlab.unittest.TestCase
                 totBits = totBits + numel(refBits);
             end
             BER = totErr / totBits;
+        end
+
+        function plotTunedConstellations(P, cfgs)
+            % Plot the block-output constellation for every config at its
+            % tuned (ki, kp), on the dedicated tuning channel realisation
+            % (SNR_dB_tune, CFO_GHz_tune).  The block output is exactly the
+            % symbol-rate sequence scored by computeBER (after the same
+            % residual-CFO removal), so this is the constellation the BER
+            % is measured on.
+            NCFG = numel(cfgs);
+            [rxSig, ~] = combined_eq_clk_sweep.buildChannel( ...
+                P, P.SNR_dB_tune, 0, P.CFO_GHz_tune);
+
+            nCol = ceil(sqrt(NCFG));
+            nRow = ceil(NCFG / nCol);
+            figure('Name', 'Tuned block-output constellations', ...
+                'Position', [100 100 320*nCol 300*nRow]);
+
+            for ci = 1:NCFG
+                cfg = cfgs(ci);
+                try
+                    [eqSym, cfoBins] = ...
+                        combined_eq_clk_sweep.runBlock(P, cfg, rxSig);
+                    eqSym = combined_eq_clk_sweep.removeKnownCFO( ...
+                        eqSym, P.CFO_GHz_tune, cfoBins, P);
+                catch
+                    eqSym = [];
+                end
+
+                subplot(nRow, nCol, ci);
+                if isempty(eqSym) || ~all(isfinite(eqSym(:)))
+                    title(sprintf('%s | po2=%d (failed)', ...
+                        cfg.block, cfg.Po2Twiddle), 'Interpreter', 'none');
+                    axis off;
+                    continue;
+                end
+
+                % First polarisation, amplitude-normalised for display.
+                s = eqSym(:, 1);
+                s = s / sqrt(mean(abs(s).^2));
+                plot(real(s), imag(s), '.', 'MarkerSize', 2);
+                grid on; axis equal;
+                xlim([-2 2]); ylim([-2 2]);
+                xlabel('I'); ylabel('Q');
+                title(sprintf('%s | po2=%d\nki=%.2g  kp=%.2g', ...
+                    cfg.block, cfg.Po2Twiddle, cfg.ki, cfg.kp), ...
+                    'Interpreter', 'none');
+            end
+
+            sgtitle(sprintf(['Block output @ tuned (k_i, k_p)  |  ', ...
+                'SNR = %g dB  |  CFO = %g GHz'], ...
+                P.SNR_dB_tune, P.CFO_GHz_tune));
         end
 
     end

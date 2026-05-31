@@ -12,13 +12,26 @@ function Out = recovery_godard(In, NSymb, N, beta, ki, kp, G)
 %
 %       S = Σ R(k) · R*(k + (1 - 1/η) N),   k ∈ [kLo, kHi].
 %
-%   The correction is a frequency-domain phase ramp
+%   The accumulated timing estimate τ̂_samp is split NCO-style into an
+%   integer and a fractional part,
 %
-%       R_corr(k) = R(k) · exp(-j 2π k τ̂_samp / N),
+%       d_int = round(τ̂_samp),    μ = τ̂_samp - d_int  ∈ [-0.5, 0.5),
 %
-%   and the per-block timing estimate τ̂_samp is produced by a PI loop
-%   filter driven by the small-angle approximation of arg(S) on the
-%   already-corrected block,
+%   so that the correction is a frequency-domain phase ramp carrying only
+%   the bounded fractional part,
+%
+%       R_corr(k) = R(k) · exp(-j 2π k μ / N),
+%
+%   while the integer part d_int is folded into the block read pointer
+%   (the window is read d_int samples earlier).  This keeps the phase-ramp
+%   slope bounded to ±½ sample no matter how far the clock drifts, so the
+%   ramp never wraps samples circularly inside the FFT block — the
+%   frequency-domain analogue of an NCO whose fractional interval feeds a
+%   Farrow interpolator (cf. clk_recovery.recovery).
+%
+%   The per-block timing estimate τ̂_samp is produced by a PI loop filter
+%   driven by the small-angle approximation of arg(S) on the already-
+%   corrected block,
 %
 %       e_b = imag(S_corr),
 %
@@ -78,12 +91,25 @@ function Out = recovery_godard(In, NSymb, N, beta, ki, kp, G)
     tauSamp = 0;
 
     for b = 1:nBlocks
-        inStart = (b - 1) * M + 1;
-        block   = InPad(inStart : inStart + N - 1);
-        R       = fft(block);
+        % --- NCO-style integer/fractional split of the current estimate ---
+        %  Integer part is consumed by the read pointer; only the bounded
+        %  fractional residual mu drives the phase ramp.
+        dInt = round(tauSamp);
+        mu   = tauSamp - dInt;          % residual in [-0.5, 0.5)
 
-        % Apply current cumulative phase-ramp correction
-        R_corr = R .* exp(-1j * 2*pi * k_idx * tauSamp / N);
+        % --- Read window, integer timing folded into the read pointer -----
+        %  rdStart drifts away from the nominal stride as the clock slips;
+        %  indices outside the padded input are zero-filled.
+        rdStart = (b - 1) * M + 1 - dInt;
+        idx     = (rdStart : rdStart + N - 1).';
+        valid   = idx >= 1 & idx <= LPad;
+        block   = zeros(N, 1);
+        block(valid) = InPad(idx(valid));
+
+        R = fft(block);
+
+        % Apply fractional-only phase-ramp correction (bounded slope)
+        R_corr = R .* exp(-1j * 2*pi * k_idx * mu / N);
 
         % Residual error on the corrected block (small-angle proxy for arg)
         S = sum(R_corr(kLo:kHi) .* conj(R_corr(kLo+shift:kHi+shift)));

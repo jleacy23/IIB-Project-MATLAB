@@ -1,4 +1,4 @@
-function y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, UpdateStep, T, PLanes, Mode, Pilots, BlockLen, SubframeBlocks) %#codegen
+function y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, UpdateStep, T, PLanes, Mode, Pilots, BlockLen, SubframeBlocks, RScale) %#codegen
 %equalize_fxp  Fixed-point adaptive butterfly equalization (CMA / pilot-aided).
 %
 %   y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, ...
@@ -37,6 +37,14 @@ function y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, Up
 %                     weights are held across the 32 symbols of a block and
 %                     a single update is applied at the block end.  The
 %                     pilot sits at the first symbol of each block.
+%     RScale        - (optional) CMA radius scale factor (default 1).  The
+%                     base CMA radius for +/-1+/-1j QPSK is R = 2; when the
+%                     receiver input has been amplitude-normalised (e.g. by
+%                     modem.normalise) the equaliser output sits on a
+%                     shrunken constellation, so the CMA error R - |y|^2
+%                     must target R*RScale instead.  Set RScale to the
+%                     post/pre-normalisation signal energy ratio so the CMA
+%                     radius matches the normalised signal scale.
 %     SubframeBlocks - (optional) number of blocks per CPON subframe (= 116
 %                     for the CPON spec).  When > 0 and Mode = 0 (CMA), the
 %                     first block of every subframe is excluded from the CMA
@@ -108,6 +116,9 @@ function y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, Up
     if nargin < 15 || isempty(SubframeBlocks)
         SubframeBlocks = 0;   % 0 -> no subframe-level CMA skip
     end
+    if nargin < 16 || isempty(RScale)
+        RScale = 1;           % 1 -> unscaled R (no input normalisation)
+    end
 
     %% Pilot handling.  Carry the pilot reference at T.y precision so the
     %  data-aided error e = pilot - y is formed in the output datapath type.
@@ -118,7 +129,10 @@ function y = equalize_fxp(x, SpS, NTaps, Mu, SingleSpike, N1, NOut, SignOnly, Up
     %% Cast CMA radius
     %  For +/-1+/-1j QPSK, R = E[|s|^4]/E[|s|^2] = 4/2 = 2, so the error
     %  R_CMA - |y|^2 zeros at |y| = sqrt(2) (the natural QPSK magnitude).
-    R_CMA = cast(2, 'like', T.R_CMA);
+    %  RScale rescales the radius for an amplitude-normalised input: with the
+    %  post/pre-normalisation energy ratio it tracks the shrunken equaliser
+    %  output so the CMA still locks onto the (now smaller) constellation.
+    R_CMA = cast(2 * RScale, 'like', T.R_CMA);
 
     %% Step size kept as double so very small values are not rounded to zero
     mu_dbl = double(Mu);

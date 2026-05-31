@@ -1,124 +1,60 @@
 classdef test_EqClkCombined < matlab.unittest.TestCase
-    %TEST_EQCLKCOMBINED  Verify the four combined equalisation +
-    %   clock-recovery blocks in +eq_clk on an RRC DP-QPSK signal
-    %   impaired with a small amount of chromatic dispersion, PMD,
-    %   constant timing offset and AWGN.  Each block:
-    %     1. combined_adaptive_gardner          - CMA + Gardner DPLL
-    %     2. combined_cd_td_gardner_adaptive    - CD/MF FIR + Gardner + CMA
-    %     3. combined_cd_fd_godard_adaptive     - CD/MF (overlap-save) +
-    %                                             Godard (shared FFT) + CMA
-    %     4. combined_cd_fd_gardner_adaptive    - CD/MF (overlap-save) +
-    %                                             Gardner + CMA
-    %   is exercised in its own test, plotted before/after, and the
-    %   recovered BER (per-pol phase + pol-swap + small lag search) is
-    %   verified against a loose threshold.
+    %TEST_EQCLKCOMBINED  Isolation harness for eq_clk.combined_cd_fd_godard_adaptive.
+    %
+    %   Focused on the production sweep's failing Godard config (NFFT = 128,
+    %   NOverlap = 22, CD + PMD, dual pol, SFO, CFO = 0 with in-block coarse
+    %   CFO, SNR 22) with the candidate fix applied: 3 CMA taps and 99th-pct
+    %   normalisation.  The G-series toggles one suspect knob at a time:
+    %     G0  candidate config as-is (NTaps = 3, normalise 99)
+    %     G1  normalise 95  (clips ~5% of samples - distorts the metric)
+    %     G2  normalise off
+    %     G3  NTaps = 1     (the original failing single-tap baseline)
+    %
+    %   Each test sweeps the PI loop-filter gains and reports the best
+    %   per-quadrant cluster variance (phase-ambiguity invariant) and the
+    %   recovered BER, with a before/after constellation plot.  The in-block
+    %   coarse-CFO integer-bin shift is removed afterwards (mirrors
+    %   combined_eq_clk_sweep.removeKnownCFO) so the constellation resolves.
+    %
+    %   GAIN SCALING.  The combined block uses fft.fft_flp whose forward
+    %   transform is 1/N-normalised, so the Godard metric S ~ 1/N^2.  The base
+    %   gains bracket the standalone recovery_godard optimum (ki ~ 3.16e-5,
+    %   kp ~ 1e-6); they are multiplied by NFFT^2 to keep tau invariant.
 
     properties (Constant)
-        N_pol  = 2
-        Ns     = 2^14         % symbols per polarisation
-        SpS    = 2
-
         % --- System ---
         Rs      = 32          % [GBd]
-        L_km    = 80          % small CD
-        D       = 17          % [ps/(nm*km)]
         CWL     = 1550        % [nm]
-        DGDSpec = 0.1        % small PMD [ps/sqrt(km)]
+        DGDSpec = 0.1         % PMD [ps/sqrt(km)]
         N_pmd   = 1
-        SNR_dB  = 25
-        tau0    = 0       % constant timing offset [symbol periods]
-        SFO_ppm = 40           % sample-frequency offset [ppm] (0 = off)
+        SpS     = 2
+        Ns      = 2^14        % symbols per polarisation
 
         % --- Pulse shaping ---
         Rolloff = 0.25
         Span    = 10
 
-        % --- Adaptive EQ ---
-        NTapsAdapt     = 3
+        % --- Adaptive EQ (held fixed; enough taps to mop up residual ISI
+        %     so the metric reflects the timing loop, not CMA starvation) ---
+        NTapsAdapt     = 7
         Mu             = 1e-3
         SingleSpike    = true
-        N1             = 100       % iteration to reinit y-pol weights
-        NOutAdapt      = 200       % samples to discard after equalisation
+        N1             = 100
+        NOutAdapt      = 200
         SignOnly       = true
-        PLanes         = 32       % adaptive_eq parallel lanes
-        Mode           = 0       % 0 = CMA, 1 = pilot-aided
-        BlockLen       = []      % [] -> defaults to PLanes
-        SubframeBlocks = 0       % 0 disables CMA subframe skip
-        NLanes         = 32       % clk_recovery parallel lanes
+        PLanes         = 32
+        Mode           = 0
+        BlockLen       = []
+        SubframeBlocks = 0
 
-        % --- CD time-domain FIR length (block 2) ---
-        NTapCD     = 31
+        % --- Loop-filter gain sweep (BASE values, unnormalised) ----------
+        %  Standalone recovery_godard optimum is ki ~ 3.16e-5, kp ~ 1e-6;
+        %  these bracket it.  Combined scenarios apply a *NFFT^2 rescale.
+        ki_base = logspace(-5.5, -3.5, 5)
+        kp_base = logspace(-7.0, -5.0, 5)
 
-        % --- CD frequency-domain overlap-save (blocks 3, 4) ---
-        NFFT       = 256
-        NOverlap   = 64
-
-        % --- DPLL / Godard loop-filter gain sweep (log-spaced) ---
-        ki_sweep_gardner = logspace(-7, -4, 4)
-        kp_sweep_gardner = logspace(-6, -3, 4)
-        ki_sweep_godard  = logspace(-6, -3, 4)
-        kp_sweep_godard  = logspace(-5, -2, 4)
-
-        % --- Pass / fail ---
+        % --- Structure sweep ---
         BER_THRESHOLD = 5e-2
-
-        % --- Fixed-point ---
-        %  'fixed32' is the high-precision uniform 32-bit / FL=16 preset
-        %  defined by the per-section fxp_types tables.  Same config used
-        %  for every section (Static / CFO / Clk or Godard / AdaptEq).
-        FxpConfig = 'fixed32'
-    end
-
-    methods (TestClassSetup)
-        function buildFxpMex(testCase)
-            % Build the fixed-point MEX binaries for the two combined
-            % CD-FD + clock-recovery + adaptive-EQ blocks before the fxp
-            % tests run.  Shared P struct keyed against this test class.
-            thisDir  = fileparts(mfilename('fullpath'));
-            repoRoot = fileparts(thisDir);
-            addpath(genpath(fullfile(repoRoot, 'src')));
-            addpath(fullfile(repoRoot, 'build'));
-
-            P = struct();
-            P.FxpConfig_CombGardner = testCase.FxpConfig;
-            P.FxpConfig_CombGodard  = testCase.FxpConfig;
-
-            % --- System / pulse-shaping / FFT --------------------------
-            P.SpS        = testCase.SpS;
-            P.NFFT       = testCase.NFFT;
-            P.NOverlap   = testCase.NOverlap;
-            P.D          = testCase.D;
-            P.L          = testCase.L_km;
-            P.CWL        = testCase.CWL;
-            P.Rs         = testCase.Rs;
-            P.Rolloff    = testCase.Rolloff;
-            P.N_pol      = testCase.N_pol;
-            P.po2Twiddle = false;
-            P.cfoEnable  = false;
-            P.Ns         = testCase.Ns;
-
-            % --- Clock-recovery loop-filter (nominal type values) ------
-            P.CR_ki     = testCase.ki_sweep_gardner(1);
-            P.CR_kp     = testCase.kp_sweep_gardner(1);
-            P.CR_NLanes = testCase.NLanes;
-
-            % --- Adaptive equaliser ------------------------------------
-            P.AEQ_NTaps          = testCase.NTapsAdapt;
-            P.AEQ_Mu             = testCase.Mu;
-            P.AEQ_SingleSpike    = testCase.SingleSpike;
-            P.AEQ_N1             = testCase.N1;
-            P.AEQ_NOut           = testCase.NOutAdapt;
-            P.AEQ_SignOnly       = testCase.SignOnly;
-            P.AEQ_UpdateStep     = 1;
-            P.AEQ_PLanes         = testCase.PLanes;
-            P.AEQ_Mode           = testCase.Mode;
-            P.AEQ_BlockLen       = testCase.PLanes;
-            P.AEQ_SubframeBlocks = testCase.SubframeBlocks;
-
-            cfg = coder.config('mex');
-            build_eq_clk_combined_cd_fd_gardner_adaptive_fxp_mex(P, cfg);
-            build_eq_clk_combined_cd_fd_godard_adaptive_fxp_mex(P, cfg);
-        end
     end
 
     methods (TestMethodSetup)
@@ -128,163 +64,154 @@ classdef test_EqClkCombined < matlab.unittest.TestCase
     end
 
     % ================================================================
+    %  Tests - ordered from most-isolated to most-realistic
+    % ================================================================
     methods (Test)
 
-        function test_block1_adaptive_gardner(testCase)
-            label = 'Block 1: Gardner -> Adaptive CMA';
-            [rxSig, symbols] = genRx(testCase);
-            runFn = @(ki, kp) eq_clk.combined_adaptive_gardner( ...
-                rxSig, testCase.SpS, ki, kp, ...
-                testCase.Ns, testCase.NLanes, true, adaptOpts(testCase));
-            [y, ki_b, kp_b, qVar_b] = runSweep(testCase, runFn, ...
-                testCase.ki_sweep_gardner, testCase.kp_sweep_gardner, label);
-            evaluate(testCase, rxSig, y, symbols, ...
-                sprintf('%s  (best ki=%.2g kp=%.2g qVar=%.2e)', ...
-                label, ki_b, kp_b, qVar_b));
+        % --- G. Production sweep config (NFFT=128) with the candidate fix
+        %     (3 CMA taps, 99.9-pct normalise), plus one knob toggled each --
+        function test_G0_candidate(testCase)
+            sc = sweepReplicaScenario(testCase);
+            sc.label = 'G0. candidate  NFFT128 NOv22 NTaps3 norm99 CD+PMD';
+            sweepCombined(testCase, sc);
         end
 
-        function test_block2_cd_td_gardner_adaptive(testCase)
-            label = 'Block 2: CD/MF FIR -> Gardner -> Adaptive CMA';
-            [rxSig, symbols] = genRx(testCase);
-            runFn = @(ki, kp) eq_clk.combined_cd_td_gardner_adaptive( ...
-                rxSig, testCase.SpS, testCase.NTapCD, ...
-                testCase.D, testCase.L_km, testCase.CWL, testCase.Rs, ...
-                testCase.Rolloff, testCase.Span, ki, kp, ...
-                testCase.Ns, testCase.NLanes, adaptOpts(testCase));
-            [y, ki_b, kp_b, qVar_b] = runSweep(testCase, runFn, ...
-                testCase.ki_sweep_gardner, testCase.kp_sweep_gardner, label);
-            evaluate(testCase, rxSig, y, symbols, ...
-                sprintf('%s  (best ki=%.2g kp=%.2g qVar=%.2e)', ...
-                label, ki_b, kp_b, qVar_b));
+        function test_G1_normalise_95(testCase)
+            sc = sweepReplicaScenario(testCase);
+            sc.normPct = 95;            % old clipping (~5% of samples)
+            sc.label = 'G1. candidate but normalise 95 pct';
+            sweepCombined(testCase, sc);
         end
 
-        function test_block3_cd_fd_godard_adaptive(testCase)
-            label = 'Block 3: CD/MF (overlap-save) + Godard (shared FFT) -> Adaptive CMA';
-            [rxSig, symbols] = genRx(testCase);
-            runFn = @(ki, kp) eq_clk.combined_cd_fd_godard_adaptive( ...
-                rxSig, testCase.SpS, testCase.NFFT, testCase.NOverlap, ...
-                testCase.D, testCase.L_km, testCase.CWL, testCase.Rs, ...
-                testCase.Rolloff, ki, kp, ...
-                testCase.Ns, adaptOpts(testCase));
-            [y, ki_b, kp_b, qVar_b] = runSweep(testCase, runFn, ...
-                testCase.ki_sweep_godard, testCase.kp_sweep_godard, label);
-            evaluate(testCase, rxSig, y, symbols, ...
-                sprintf('%s  (best ki=%.2g kp=%.2g qVar=%.2e)', ...
-                label, ki_b, kp_b, qVar_b));
+        function test_G2_normalise_off(testCase)
+            sc = sweepReplicaScenario(testCase);
+            sc.normPct = 0;             % no clipping at all
+            sc.label = 'G2. candidate but no normalisation';
+            sweepCombined(testCase, sc);
         end
 
-        function test_block4_cd_fd_gardner_adaptive(testCase)
-            label = 'Block 4: CD/MF (overlap-save) -> Gardner -> Adaptive CMA';
-            [rxSig, symbols] = genRx(testCase);
-            runFn = @(ki, kp) eq_clk.combined_cd_fd_gardner_adaptive( ...
-                rxSig, testCase.SpS, testCase.NFFT, testCase.NOverlap, ...
-                testCase.D, testCase.L_km, testCase.CWL, testCase.Rs, ...
-                testCase.Rolloff, ki, kp, ...
-                testCase.Ns, testCase.NLanes, adaptOpts(testCase));
-            [y, ki_b, kp_b, qVar_b] = runSweep(testCase, runFn, ...
-                testCase.ki_sweep_gardner, testCase.kp_sweep_gardner, label);
-            evaluate(testCase, rxSig, y, symbols, ...
-                sprintf('%s  (best ki=%.2g kp=%.2g qVar=%.2e)', ...
-                label, ki_b, kp_b, qVar_b));
-        end
-
-        % -------- Block 3 (fixed-point MEX) --------------------------
-        function test_block3_cd_fd_godard_adaptive_fxp(testCase)
-            label = sprintf('Block 3 (FXP %s): CD/MF (overlap-save) + Godard + Adaptive CMA', ...
-                testCase.FxpConfig);
-            [rxSig, symbols] = genRx(testCase);
-
-            T = eq_clk.combined_cd_fd_godard_adaptive_fxp_types(testCase.FxpConfig);
-            rxSig_fi = cast(rxSig, 'like', T.Static.x);
-
-            runFn = @(ki, kp) godardFxp(testCase, rxSig_fi, T, ki, kp);
-            [y, ki_b, kp_b, qVar_b] = runSweep(testCase, runFn, ...
-                testCase.ki_sweep_godard, testCase.kp_sweep_godard, label);
-            evaluate(testCase, rxSig, y, symbols, ...
-                sprintf('%s  (best ki=%.2g kp=%.2g qVar=%.2e)', ...
-                label, ki_b, kp_b, qVar_b));
-        end
-
-        % -------- Block 4 (fixed-point MEX) --------------------------
-        function test_block4_cd_fd_gardner_adaptive_fxp(testCase)
-            label = sprintf('Block 4 (FXP %s): CD/MF (overlap-save) -> Gardner -> Adaptive CMA', ...
-                testCase.FxpConfig);
-            [rxSig, symbols] = genRx(testCase);
-
-            T = eq_clk.combined_cd_fd_gardner_adaptive_fxp_types(testCase.FxpConfig);
-            rxSig_fi = cast(rxSig, 'like', T.Static.x);
-
-            runFn = @(ki, kp) gardnerFxp(testCase, rxSig_fi, T, ki, kp);
-            [y, ki_b, kp_b, qVar_b] = runSweep(testCase, runFn, ...
-                testCase.ki_sweep_gardner, testCase.kp_sweep_gardner, label);
-            evaluate(testCase, rxSig, y, symbols, ...
-                sprintf('%s  (best ki=%.2g kp=%.2g qVar=%.2e)', ...
-                label, ki_b, kp_b, qVar_b));
+        function test_G3_ntaps1_baseline(testCase)
+            sc = sweepReplicaScenario(testCase);
+            sc.NTaps = 1;               % original failing single-tap baseline
+            sc.label = 'G3. candidate but NTaps=1 (failing baseline)';
+            sweepCombined(testCase, sc);
         end
 
     end
 
     % ================================================================
-    %  Helpers
+    %  Scenario / sweep helpers
     % ================================================================
     methods (Access = private)
 
-        function [bestY, bestKi, bestKp, bestQVar] = runSweep(testCase, ...
-                runFn, ki_vec, kp_vec, label)
-            % Sweep (ki, kp), evaluate per-quadrant variance of the
-            % equaliser output (per polarisation, then averaged), and
-            % return the configuration with the lowest variance.
-            bestY    = [];
-            bestKi   = NaN;
-            bestKp   = NaN;
-            bestQVar = Inf;
-
-            fprintf('\n=== %s: (ki, kp) sweep [%d x %d] ===\n', ...
-                label, numel(ki_vec), numel(kp_vec));
-            for ii = 1:numel(ki_vec)
-                for jj = 1:numel(kp_vec)
-                    ki = ki_vec(ii);
-                    kp = kp_vec(jj);
-                    try
-                        y = runFn(ki, kp);
-                    catch ME
-                        fprintf('  ki=%.2e kp=%.2e -> ERROR: %s\n', ...
-                            ki, kp, ME.message);
-                        continue;
-                    end
-                    if ~all(isfinite(y(:)))
-                        fprintf('  ki=%.2e kp=%.2e -> diverged\n', ki, kp);
-                        continue;
-                    end
-                    yEval = trimWarmup(testCase, y);
-                    qVar  = quadrantVariance(yEval);
-                    fprintf('  ki=%.2e kp=%.2e -> quad-var = %.3e\n', ...
-                        ki, kp, qVar);
-                    if isfinite(qVar) && qVar < bestQVar
-                        bestQVar = qVar;
-                        bestY    = y;
-                        bestKi   = ki;
-                        bestKp   = kp;
-                    end
-                end
-            end
-            fprintf('  --> best (ki, kp) = (%.2e, %.2e)  min quad-var = %.3e\n', ...
-                bestKi, bestKp, bestQVar);
+        function sc = baseScenario(testCase)
+            % Cleanest baseline: single pol, no CD, no PMD, no CFO, SFO only.
+            sc.N_pol     = 1;
+            sc.Rs        = testCase.Rs;
+            sc.D         = 0;
+            sc.L_km      = 80;
+            sc.usePMD    = false;
+            sc.CFO_GHz   = 0;
+            sc.cfoEnable = false;
+            sc.SFO_ppm   = 40;
+            sc.tau0      = 0;
+            sc.SNR_dB    = 30;
+            sc.NFFT      = 256;
+            sc.NOverlap  = 64;
+            sc.NTaps     = testCase.NTapsAdapt;
+            sc.normPct   = 0;       % 0 -> no unit-box normalisation
+            sc.label     = '';
         end
 
-        function yEval = trimWarmup(testCase, y)
-            % Drop the same NOutAdapt-aligned transient used by evaluate(),
-            % keeping the sweep metric on the same converged window.
-            if size(y, 1) > testCase.NOutAdapt
-                yEval = y(testCase.NOutAdapt + 1 : end, :);
-            else
-                yEval = y;
+        function sc = sweepReplicaScenario(testCase)
+            % combined_eq_clk_sweep's Godard tune point (CD + PMD, dual pol,
+            % SFO, CFO = 0 with in-block coarse CFO, NFFT = 128, NOverlap = 22
+            % from NCD = 22, SNR 22) with the candidate fix applied: 3 CMA
+            % taps and 99.9th-pct unit-box normalisation.  G0 runs this as-is;
+            % G1/G2 flip the normalise percentile, G3 drops back to 1 tap.
+            sc = baseScenario(testCase);
+            sc.Rs        = 30.5;
+            sc.D         = 20;
+            sc.L_km      = 80;
+            sc.N_pol     = 2;
+            sc.usePMD    = true;
+            sc.CFO_GHz   = 0;
+            sc.cfoEnable = true;
+            sc.SFO_ppm   = 40;
+            sc.SNR_dB    = 22;
+            sc.NFFT      = 128;
+            sc.NOverlap  = 22;
+            sc.NTaps     = 3;
+            sc.normPct   = 99;
+        end
+
+        function [rxSig, symbols] = genRx(testCase, sc)
+            symbols = (2*randi([0 1], testCase.Ns, sc.N_pol) - 1) ...
+                + 1j*(2*randi([0 1], testCase.Ns, sc.N_pol) - 1);
+
+            rxSig = modem.rrcPulse(symbols, testCase.SpS, ...
+                testCase.Rolloff, testCase.Span);
+
+            if sc.D ~= 0
+                rxSig = channel.add_chromatic_dispersion(rxSig, sc.L_km, ...
+                    testCase.SpS, sc.Rs, sc.D, testCase.CWL);
+            end
+            if sc.usePMD && sc.N_pol == 2
+                rxSig = channel.add_pmd(rxSig, sc.L_km, testCase.SpS, ...
+                    sc.Rs, testCase.DGDSpec, testCase.N_pmd);
+            end
+            if sc.CFO_GHz ~= 0
+                rxSig = channel.lo_freq_shift(rxSig, sc.CFO_GHz * 1000, ...
+                    sc.Rs, testCase.SpS);
+            end
+            rxSig = channel.apply_timing_error(rxSig, sc.SFO_ppm, ...
+                sc.tau0, testCase.SpS);
+            rxSig = channel.add_awgn(rxSig, sc.SNR_dB);
+
+            % Optional unit-box normalisation (CLIPS beyond the pct-th
+            % percentile), mirroring combined_eq_clk_sweep's receiver input.
+            if sc.normPct > 0
+                rxSig = modem.normalise(rxSig, sc.normPct);
             end
         end
 
-        function opts = adaptOpts(testCase)
+        function sweepCombined(testCase, sc)
+            % Run the combined block over the NFFT^2-scaled gain grid.
+            [rxSig, symbols] = genRx(testCase, sc);
+            kiVec = testCase.ki_base * sc.NFFT^2;
+            kpVec = testCase.kp_base * sc.NFFT^2;
+            runFn = @(ki, kp) runCombined(testCase, sc, rxSig, ki, kp);
+            % Combined block discards NOut symbols internally -> output
+            % symbol 1 aligns to reference symbol NOutAdapt+1.
+            runAndReport(testCase, runFn, kiVec, kpVec, rxSig, symbols, ...
+                sc.label, testCase.NOutAdapt + 1);
+        end
+
+        function y = runCombined(testCase, sc, rxSig, ki, kp)
+            [y, cfoBins] = eq_clk.combined_cd_fd_godard_adaptive( ...
+                rxSig, testCase.SpS, sc.NFFT, sc.NOverlap, ...
+                sc.D, sc.L_km, testCase.CWL, sc.Rs, testCase.Rolloff, ...
+                ki, kp, testCase.Ns, adaptOpts(testCase, sc.NTaps), ...
+                sc.cfoEnable, false);
+            % Strip the residual CFO that the in-block coarse correction left
+            % behind (the downstream carrier-recovery's job) so the
+            % constellation resolves instead of forming a ring.  Runs whenever
+            % the block applied a coarse shift (cfoEnable) OR a true CFO is
+            % present: residual = true CFO - the integer-bin estimate applied.
+            % Note coarse_cfo_fd applies a (small) integer-bin shift even when
+            % the true CFO is 0, so this must run for cfoEnable too.  Mirrors
+            % combined_eq_clk_sweep.removeKnownCFO (which runs unconditionally).
+            if sc.cfoEnable || sc.CFO_GHz ~= 0
+                binGHz   = testCase.SpS * sc.Rs / sc.NFFT;
+                residGHz = sc.CFO_GHz - cfoBins * binGHz;
+                n = (0 : size(y, 1) - 1).';
+                y = y .* exp(-1j * 2*pi * (residGHz / sc.Rs) * n);
+            end
+        end
+
+        function opts = adaptOpts(testCase, nTaps)
             opts = struct( ...
-                'NTaps',          testCase.NTapsAdapt, ...
+                'NTaps',          nTaps, ...
                 'Mu',             testCase.Mu, ...
                 'SingleSpike',    testCase.SingleSpike, ...
                 'N1',             testCase.N1, ...
@@ -297,110 +224,118 @@ classdef test_EqClkCombined < matlab.unittest.TestCase
                 'SubframeBlocks', testCase.SubframeBlocks);
         end
 
-        function opts = adaptOptsFxp(testCase, T)
-            % Codegen-friendly AdaptOpts: every field has a concrete type
-            % and Pilots is a fi 0x2 (empty) at T.AdaptEq.y precision.
-            PilotsEmpty = cast(complex(zeros(0, 2)), 'like', T.AdaptEq.y);
-            BLen = testCase.BlockLen;
-            if isempty(BLen)
-                BLen = testCase.PLanes;
+        function runAndReport(testCase, runFn, kiVec, kpVec, ...
+                rxSig, symbols, label, firstRefIdx)
+            [bestY, bestKi, bestKp, bestQVar] = ...
+                runSweep(testCase, runFn, kiVec, kpVec, label);
+            testCase.verifyTrue(~isempty(bestY) && isfinite(bestQVar), ...
+                sprintf('%s: no finite-variance configuration found.', label));
+            evaluate(testCase, rxSig, bestY, symbols, ...
+                sprintf('%s  (best ki=%.3g kp=%.3g qVar=%.2e)', ...
+                label, bestKi, bestKp, bestQVar), firstRefIdx);
+        end
+
+        function [bestY, bestKi, bestKp, bestQVar] = runSweep(testCase, ...
+                runFn, ki_vec, kp_vec, label)
+            bestY = []; bestKi = NaN; bestKp = NaN; bestQVar = Inf;
+            fprintf('\n=== %s: (ki,kp) sweep [%d x %d] ===\n', ...
+                label, numel(ki_vec), numel(kp_vec));
+            for ii = 1:numel(ki_vec)
+                for jj = 1:numel(kp_vec)
+                    ki = ki_vec(ii); kp = kp_vec(jj);
+                    try
+                        y = runFn(ki, kp);
+                    catch ME
+                        fprintf('  ki=%.2e kp=%.2e -> ERROR: %s\n', ...
+                            ki, kp, ME.message);
+                        continue;
+                    end
+                    if isempty(y) || ~all(isfinite(y(:)))
+                        fprintf('  ki=%.2e kp=%.2e -> diverged\n', ki, kp);
+                        continue;
+                    end
+                    yEval = trimWarmup(testCase, downsampleSym(testCase, y));
+                    qVar  = quadrantVariance(yEval);
+                    fprintf('  ki=%.2e kp=%.2e -> quad-var = %.3e\n', ...
+                        ki, kp, qVar);
+                    if isfinite(qVar) && qVar < bestQVar
+                        bestQVar = qVar; bestY = y; bestKi = ki; bestKp = kp;
+                    end
+                end
             end
-            opts = struct( ...
-                'NTaps',          double(testCase.NTapsAdapt), ...
-                'Mu',             double(testCase.Mu), ...
-                'SingleSpike',    logical(testCase.SingleSpike), ...
-                'N1',             double(testCase.N1), ...
-                'NOut',           double(testCase.NOutAdapt), ...
-                'SignOnly',       logical(testCase.SignOnly), ...
-                'UpdateStep',     double(1), ...
-                'PLanes',         double(testCase.PLanes), ...
-                'Mode',           double(testCase.Mode), ...
-                'Pilots',         PilotsEmpty, ...
-                'BlockLen',       double(BLen), ...
-                'SubframeBlocks', double(testCase.SubframeBlocks));
+            fprintf('  --> best (ki,kp) = (%.3g, %.3g)  min quad-var = %.3e\n', ...
+                bestKi, bestKp, bestQVar);
         end
 
-        function y = godardFxp(testCase, rxSig_fi, T, ki, kp)
-            opts = adaptOptsFxp(testCase, T);
-            [yFi, ~] = eq_clk.combined_cd_fd_godard_adaptive_fxp_mex( ...
-                rxSig_fi, double(testCase.SpS), double(testCase.NFFT), ...
-                double(testCase.NOverlap), double(testCase.D), ...
-                double(testCase.L_km), double(testCase.CWL), ...
-                double(testCase.Rs), double(testCase.Rolloff), ...
-                double(ki), double(kp), double(testCase.Ns), ...
-                opts, false, false, T);
-            y = double(yFi);
+        function s = downsampleSym(testCase, y)
+            % The combined block returns symbol-rate output; the standalone
+            % reference returns 2-Sa/sym.  Downsample only the oversampled
+            % case so the metric always sees one sample per symbol.
+            if size(y, 1) > 1.5 * testCase.Ns
+                s = y(1:testCase.SpS:end, :);
+            else
+                s = y;
+            end
         end
 
-        function y = gardnerFxp(testCase, rxSig_fi, T, ki, kp)
-            opts = adaptOptsFxp(testCase, T);
-            [yFi, ~] = eq_clk.combined_cd_fd_gardner_adaptive_fxp_mex( ...
-                rxSig_fi, double(testCase.SpS), double(testCase.NFFT), ...
-                double(testCase.NOverlap), double(testCase.D), ...
-                double(testCase.L_km), double(testCase.CWL), ...
-                double(testCase.Rs), double(testCase.Rolloff), ...
-                double(ki), double(kp), double(testCase.Ns), ...
-                double(testCase.NLanes), opts, false, false, T);
-            y = double(yFi);
+        function yEval = trimWarmup(testCase, y)
+            if size(y, 1) > testCase.NOutAdapt
+                yEval = y(testCase.NOutAdapt + 1 : end, :);
+            else
+                yEval = y;
+            end
         end
 
-        function [rxSig, symbols] = genRx(testCase)
-            % --- Tx: plain DP-QPSK at +/-1 +/-1j, RRC pulse-shaped ----
-            symbols = (2*randi([0 1], testCase.Ns, testCase.N_pol) - 1) ...
-                + 1j*(2*randi([0 1], testCase.Ns, testCase.N_pol) - 1);
-
-            txSig = modem.rrcPulse(symbols, testCase.SpS, ...
-                testCase.Rolloff, testCase.Span);
-
-            % --- Channel: small CD + PMD + timing offset + AWGN -------
-            rxSig = channel.add_chromatic_dispersion(txSig, testCase.L_km, ...
-                testCase.SpS, testCase.Rs, testCase.D, testCase.CWL);
-            rxSig = channel.add_pmd(rxSig, testCase.L_km, testCase.SpS, ...
-                testCase.Rs, testCase.DGDSpec, testCase.N_pmd);
-            rxSig = channel.apply_timing_error(rxSig, testCase.SFO_ppm, ...
-                testCase.tau0, testCase.SpS);
-            rxSig = channel.add_awgn(rxSig, testCase.SNR_dB);
-        end
-
-        function evaluate(testCase, rxSig, eqSym, symbols, label)
+        function evaluate(testCase, rxSig, eqOut, symbols, label, firstRefIdx)
+            eqSym = downsampleSym(testCase, eqOut);
             testCase.verifyTrue(all(isfinite(eqSym(:))), ...
                 sprintf('%s: output contains NaN/Inf.', label));
 
-            % Transient discard is owned by NOutAdapt (-> adaptive_eq.NOut);
-            % align reference symbols to the post-NOut equaliser output.
+            % Drop a common warm-up window so loop/CMA acquisition does not
+            % pollute the BER, then align the reference: eqSym(1) maps to
+            % symbol firstRefIdx (NOutAdapt+1 for the combined block, which
+            % discards NOut internally; 1 for the standalone reference).
+            W = testCase.NOutAdapt;
+            if size(eqSym, 1) > W
+                eqSym    = eqSym(W+1:end, :);
+                firstRef = firstRefIdx + W;
+            else
+                firstRef = firstRefIdx;
+            end
+
             Nout    = size(eqSym, 1);
-            eqEval  = eqSym;
-            refSyms = symbols(testCase.NOutAdapt + 1 : ...
-                              min(testCase.NOutAdapt + Nout, ...
-                                  size(symbols, 1)), :);
-            Nuse    = min(size(eqEval, 1), size(refSyms, 1));
-            eqEval  = eqEval(1:Nuse, :);
+            lastRef = min(firstRef + Nout - 1, size(symbols, 1));
+            refSyms = symbols(firstRef:lastRef, :);
+
+            nPol    = min(size(eqSym, 2), size(refSyms, 2));
+            eqSym   = eqSym(:, 1:nPol);
+            refSyms = refSyms(:, 1:nPol);
+            Nuse    = min(size(eqSym, 1), size(refSyms, 1));
+            eqSym   = eqSym(1:Nuse, :);
             refSyms = refSyms(1:Nuse, :);
 
-            BER = computeBestBER(testCase, refSyms, eqEval);
-            fprintf('%s\n   BER = %.3e   (used %d symbols)\n', ...
-                label, BER, Nuse);
+            BER = computeBestBER(testCase, refSyms, eqSym);
+            fprintf('%s\n   BER = %.3e   (used %d symbols, %d pol)\n', ...
+                label, BER, Nuse, nPol);
 
-            % --- Plot before/after constellations -------------------
-            rxSym = rxSig(1:testCase.SpS:end, :);
-            plotBeforeAfter(testCase, rxSym, eqEval, label, BER);
+            rxSym = rxSig(1:testCase.SpS:end, 1:nPol);
+            plotBeforeAfter(rxSym, eqSym, label, BER);
 
             testCase.verifyLessThan(BER, testCase.BER_THRESHOLD, ...
                 sprintf('%s BER %.2e exceeds threshold %.2e.', ...
                 label, BER, testCase.BER_THRESHOLD));
         end
 
-        function bestBER = computeBestBER(testCase, refSyms, eqSym)
-            % Resolve per-pol phase rotation (16 angles), pol swap, and a
-            % small integer-sample lag (+/- LAG_MAX) ambiguity, return the
-            % aggregate lowest BER over both polarisations.
+        function bestBER = computeBestBER(~, refSyms, eqSym)
+            % Per-pol phase rotation (16 angles), pol swap, and +/-5 sample
+            % lag ambiguity; aggregate lowest BER over all polarisations.
             LAG_MAX = 5;
-            totalErrors = 0;
-            totalBits   = 0;
-            for p = 1:testCase.N_pol
+            nPol = size(eqSym, 2);
+            totalErrors = 0; totalBits = 0;
+            for p = 1:nPol
                 refBitsPol = modem.symbolsToBits(refSyms(:,p));
                 bestPolBER = Inf;
-                for q = 1:testCase.N_pol
+                for q = 1:nPol
                     for lag = -LAG_MAX:LAG_MAX
                         if lag >= 0
                             ref = refBitsPol(2*lag+1:end);
@@ -409,17 +344,14 @@ classdef test_EqClkCombined < matlab.unittest.TestCase
                             ref = refBitsPol(1:end+2*lag);
                             eqQ = eqSym(-lag+1:end, q);
                         end
-                        Nq = min(numel(eqQ), numel(ref)/2);
+                        Nq  = min(numel(eqQ), numel(ref)/2);
                         eqQ = eqQ(1:Nq);
                         ref = ref(1:2*Nq);
                         for kk = 0:15
                             rotated = eqQ .* exp(-1j * kk * pi/8);
-                            decSym  = modem.decideSymbols(rotated);
-                            decBits = modem.symbolsToBits(decSym);
+                            decBits = modem.symbolsToBits(modem.decideSymbols(rotated));
                             polBER  = sum(ref ~= decBits) / numel(ref);
-                            if polBER < bestPolBER
-                                bestPolBER = polBER;
-                            end
+                            if polBER < bestPolBER, bestPolBER = polBER; end
                         end
                     end
                 end
@@ -429,78 +361,58 @@ classdef test_EqClkCombined < matlab.unittest.TestCase
             bestBER = totalErrors / totalBits;
         end
 
-        function plotBeforeAfter(testCase, rxSym, eqSym, titleStr, BER)
-            figure('Name', titleStr, 'Position', [100 100 1200 500]);
-            for p = 1:testCase.N_pol
-                subplot(2, 2, (p-1)*2 + 1);
-                plot(real(rxSym(:,p)), imag(rxSym(:,p)), '.', ...
-                     'MarkerSize', 2);
-                grid on; axis equal;
-                title(sprintf('Before  -  Pol %d', p));
-                xlabel('I'); ylabel('Q');
-
-                subplot(2, 2, (p-1)*2 + 2);
-                plot(real(eqSym(:,p)), imag(eqSym(:,p)), '.', ...
-                     'MarkerSize', 2);
-                grid on; axis equal;
-                title(sprintf('After  -  Pol %d', p));
-                xlabel('I'); ylabel('Q');
-            end
-            sgtitle(sprintf('%s  |  BER = %.2e', titleStr, BER));
-        end
-
     end
 end
 
 
 % =====================================================================
+%  Local functions
+% =====================================================================
+function plotBeforeAfter(rxSym, eqSym, titleStr, BER)
+    nPol = size(eqSym, 2);
+    figure('Name', titleStr, 'Position', [100 100 1100 450*nPol]);
+    for p = 1:nPol
+        subplot(nPol, 2, (p-1)*2 + 1);
+        plot(real(rxSym(:,p)), imag(rxSym(:,p)), '.', 'MarkerSize', 2);
+        grid on; axis equal;
+        title(sprintf('Before - Pol %d', p)); xlabel('I'); ylabel('Q');
+
+        subplot(nPol, 2, (p-1)*2 + 2);
+        e = eqSym(:,p); e = e / sqrt(mean(abs(e).^2));
+        plot(real(e), imag(e), '.', 'MarkerSize', 2);
+        grid on; axis equal; xlim([-2 2]); ylim([-2 2]);
+        title(sprintf('After - Pol %d', p)); xlabel('I'); ylabel('Q');
+    end
+    sgtitle(sprintf('%s  |  BER = %.2e', titleStr, BER), 'Interpreter', 'none');
+end
+
+
 function v = quadrantVariance(sym)
 %QUADRANTVARIANCE  Mean cluster variance about per-quadrant centroids.
-%   For multi-column input the per-polarisation variances are averaged.
-%   Invariant to +/-pi/2 phase ambiguity; grows monotonically as timing
-%   residual smears the clusters.
-
+%   Multi-column input -> mean of per-polarisation variances.  Invariant to
+%   +/-pi/2 phase ambiguity; grows as timing residual smears the clusters.
     if size(sym, 2) > 1
         accV = 0; nValid = 0;
         for p = 1:size(sym, 2)
             vp = quadrantVariance(sym(:, p));
-            if isfinite(vp)
-                accV   = accV + vp;
-                nValid = nValid + 1;
-            end
+            if isfinite(vp), accV = accV + vp; nValid = nValid + 1; end
         end
-        if nValid == 0
-            v = NaN;
-        else
-            v = accV / nValid;
-        end
+        if nValid == 0, v = NaN; else, v = accV / nValid; end
         return;
     end
 
     sym = sym(:);
     P = mean(abs(sym).^2);
-    if P > 0
-        sym = sym / sqrt(P);
-    end
+    if P > 0, sym = sym / sqrt(P); end
 
-    qIdx = (real(sym) > 0) + 2 * (imag(sym) > 0);   % 0..3
-    accum = 0;
-    cnt   = 0;
+    qIdx = (real(sym) > 0) + 2 * (imag(sym) > 0);
+    accum = 0; cnt = 0;
     for q = 0:3
         mask = (qIdx == q);
-        n    = sum(mask);
-        if n < 2
-            continue;
-        end
-        cluster  = sym(mask);
-        centroid = mean(cluster);
-        accum    = accum + sum(abs(cluster - centroid).^2);
-        cnt      = cnt + n;
+        if sum(mask) < 2, continue; end
+        cluster = sym(mask);
+        accum = accum + sum(abs(cluster - mean(cluster)).^2);
+        cnt   = cnt + numel(cluster);
     end
-
-    if cnt == 0
-        v = NaN;
-    else
-        v = accum / cnt;
-    end
+    if cnt == 0, v = NaN; else, v = accum / cnt; end
 end

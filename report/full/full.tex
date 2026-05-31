@@ -15,6 +15,12 @@
 \usepackage{bm}
 \usetikzlibrary{shapes.geometric, arrows.meta, positioning}
 
+% Place chapter titles at the very top of the page (remove default top gap).
+\usepackage{titlesec}
+\titleformat{\chapter}[hang]
+  {\normalfont\Large\bfseries}{\thechapter}{1em}{}
+\titlespacing*{\chapter}{0pt}{0pt}{20pt}
+
 % Look for figures in each chapter's source directory.
 \graphicspath{{../energy/}{../frequency_recovery/}{../equalisation}}
 
@@ -149,7 +155,7 @@ All DSP algorithms in this report are designed, characterised, and compared thro
 \subsection{Fixed-Point Arithmetic}
 The receiver is evaluated with fixed-point arithmetic, as used in ASIC designs. This captures the effect of quantisation error on each implementation's performance, and underpins a bit-accurate energy model that goes beyond algorithmic complexity. All fixed-point modelling uses the MATLAB Fixed-Point Designer toolkit.
 
-Fixed-point values require a well-defined range that they represent. The range of the input signal can vary due to additive noise and dispersive effects so normalisation to the range [-1,1] on the real and imaginary axes is first performed before further processing. The normalisation must balance some points exceeding the range and saturating with points being compressed to the centre. A suitable approach found by trial-and-error is the linear rescaling by the signal magnitude at the 99.9th percentile with larger amplitudes saturating.
+Fixed-point values require a well-defined range that they represent. The range of the input signal can vary due to additive noise and dispersive effects so normalisation to the range [-1,1] on the real and imaginary axes is first performed before further processing. The normalisation must balance some points exceeding the range and saturating with points being compressed to the centre. A suitable approach found by trial-and-error is the linear rescaling by the signal magnitude at the 99th percentile with larger amplitudes saturating.
 
 \section{Energy Estimation}
 The energy-efficiency of a receiver implementation cannot be determined from the receiver energy alone. A simpler architecture may reduce receiver energy but, through a drop in accuracy, incur an SNR penalty that raises the transmit power needed for acceptable operation. This calls for a system-level model of the energy consumption where an SNR penalty can be converted to an equivalent increase in transmitter energy, allowing receiver implementations to be compared by their combined energy.
@@ -264,7 +270,7 @@ This does not give the total energy consumed by the optical network, but a diffe
 \section{Introduction}
 The receiver must compensate two distinct channel impairments and recover the sampling phase before symbol decisions are made. Chromatic dispersion (CD) is static and accurately characterised by the fibre parameters, so it is removed by a fixed filter derived analytically from the channel model. Polarisation-mode dispersion (PMD) varies on millisecond timescales and is unknown a priori, so it is tracked by an adaptive equaliser that also absorbs residual inter-symbol interference (ISI) from the transmit pulse shape. Independently, the receiver samples the incoming waveform with an unsynchronised clock that drifts relative to the transmitter, leaving a fractional timing error that must be estimated and corrected.
 
-The static, adaptive, and clock-recovery blocks share the same data stream and can be arranged in several ways. A Gardner timing error detector (TED) operating in the time domain naturally pairs with a time-domain CD filter or directly with the adaptive equaliser; a Modified Godard TED (Godard hereafter) operates in the frequency domain and can re-use the same FFT as the overlap-save CD equaliser, eliminating the FFT cost of the timing recovery loop entirely. This chapter derives both equaliser stages and both timing recovery algorithms, then combines them into two end-to-end implementations that are compared on BER and energy. Both share an overlap-save CD/matched-filter front end and a single-tap adaptive equaliser, and differ only in the timing recovery: a Gardner digital phase-locked loop (DPLL) operating after the IFFT, or a Modified Godard loop embedded in the frequency domain.
+The static, adaptive, and clock-recovery blocks share the same data stream and can be arranged in several ways. A Gardner timing error detector (TED) operating in the time domain naturally pairs with a time-domain CD filter or directly with the adaptive equaliser; a Modified Godard TED (Godard hereafter) operates in the frequency domain and can re-use the same FFT as the overlap-save CD equaliser, eliminating the FFT cost of the timing recovery loop entirely. This chapter derives both equaliser stages and both timing recovery algorithms, then combines them into two end-to-end implementations that are compared on BER and energy. Both share an overlap-save CD/matched-filter front end and a single-tap adaptive equaliser, differing only in their timing recovery; the two arrangements are defined in \cref{sec:combined_impl}.
 
 Filter lengths and tap counts are sized for the worst-case CPON tolerances of \cref{sec:cpon_tolerances}: $1600$\,ps/nm of CD, $8$\,ps of PMD, and a $30.5$\,GBd symbol rate at a central wavelength of $1550$\,nm.
 
@@ -277,7 +283,7 @@ Filter lengths and tap counts are sized for the worst-case CPON tolerances of \c
 \end{equation}
 where $D$ is the dispersion coefficient, $\lambda$ the central wavelength, $L$ the fibre length, and $c$ the speed of light, then transforming back with an inverse FFT.
 
-\paragraph{Polarisation-mode dispersion} PMD is a frequency-dependent group delay between the two principal states of the fibre caused by random birefringence along the link, simulated as a concatenation of $N_\mathrm{pmd}$ birefringent sections, each applying a differential group delay (DGD) of $\pm\tau/2$ to its two principal states in the frequency domain, with a random unitary rotation (the singular vectors of a complex Gaussian matrix) modelling the mode coupling between sections. The mean DGD scales as $\tau \propto D_\mathrm{PMD}\sqrt{L}$, with $D_\mathrm{PMD}$ the fibre PMD coefficient. PMD must be distinguished from \emph{polarisation mixing}, the essentially frequency-flat unitary rotation of the polarisation pair that arises from any uncompensated rotation between the transmit and local-oscillator reference frames; the adaptive equaliser must track both, but only PMD requires multiple taps.
+\paragraph{Polarisation-mode dispersion} PMD is a frequency-dependent group delay between the two principal states of the fibre, caused by random birefringence along the link. It is simulated as a concatenation of $N_\mathrm{pmd}$ birefringent sections, each applying a differential group delay (DGD) of $\pm\tau/2$ to its two principal states in the frequency domain. The mode coupling between sections is modelled by a random unitary rotation (the singular vectors of a complex Gaussian matrix), and the mean DGD scales as $\tau \propto D_\mathrm{PMD}\sqrt{L}$, with $D_\mathrm{PMD}$ the fibre PMD coefficient. PMD must be distinguished from \emph{polarisation mixing}, the essentially frequency-flat unitary rotation of the polarisation pair that arises from any uncompensated rotation between the transmit and local-oscillator reference frames. The adaptive equaliser must track both, but only PMD requires multiple taps.
 
 \paragraph{RRC pulse shaping} The transmit pulse is a root-raised-cosine (RRC) with roll-off $\beta$ and a finite truncation span; the matched filter at the receiver is identical to it, and the cascade of the two removes ISI and rejects noise. A larger $\beta$ makes the time-domain pulse shorter and easier to truncate, allowing for fewer taps in the matched filter which reduces complexity. A span of 10 symbols with $\beta=0.25$ is reasonable for an access network where bandwidth requirements are less strict and low complexity is critical.
 
@@ -300,7 +306,7 @@ PMD is tracked with a $2\times 2$ multiple-input multiple-output (MIMO) equalise
     x_\mathrm{out} = \mathbf{h}_{xx}^H \mathbf{x}_\mathrm{in} + \mathbf{h}_{xy}^H \mathbf{y}_\mathrm{in}, \quad y_\mathrm{out} = \mathbf{h}_{yx}^H \mathbf{x}_\mathrm{in} + \mathbf{h}_{yy}^H \mathbf{y}_\mathrm{in}.
     \label{eq:adaptive_output}
 \end{equation}
-The error terms are produced blindly using the constant modulus algorithm (CMA) \cite{coherent_receivers}, which exploits the fact that an ideal QPSK constellation lies on a circle of fixed radius. CMA minimises $J = \mathbb{E}\!\left[\left(|x_\mathrm{out}|^2 - R\right)^2\right]$, where the dispersion constant $R=\mathbb{E}[|s|^4]/\mathbb{E}[|s|^2]$ reduces to a constant for QPSK. The stochastic gradient yields
+The error terms are produced blindly using the constant modulus algorithm (CMA) \cite{coherent_receivers}, which exploits the fact that an ideal QPSK constellation lies on a circle of fixed radius. CMA minimises $J = \mathbb{E}\!\left[\left(|x_\mathrm{out}|^2 - R\right)^2\right]$, where the dispersion constant $R=\mathbb{E}[|s|^4]/\mathbb{E}[|s|^2]$; for QPSK all symbols share one modulus, so $R$ is a single fixed radius. The stochastic gradient yields
 \begin{equation}
     e_x = R - |x_\mathrm{out}|^2, \quad e_y = R - |y_\mathrm{out}|^2,
     \label{eq:cma_error}
@@ -336,10 +342,10 @@ A variant of the CMA update replaces the error and output terms by their signs: 
     \operatorname{csgn}(z) = \operatorname{sgn}(\Re z) + j\,\operatorname{sgn}(\Im z).
     \label{eq:csgn}
 \end{equation}
-This removes all multiplications at no performance cost \cite{Cardenas:14}, so it will be employed in the later analysis.
+This removes all multiplications at negligible performance penalty \cite{Cardenas:14}, so it will be employed in the later analysis.
 
 \paragraph{Fixed-point}
-The step size $\mu$ is typically $\approx 10^{-3}$. This means there must be different precisions for the filter weights and the gradient term $e_x\mathbf{x}_\mathrm{in}x_\mathrm{out}$. Choosing $\mu$ as a power of 2 allows the gradient to be quantised to a low precision then bit-shifted before updating the weights.
+The step size $\mu$ is typically $\approx 10^{-3}$. This means there must be different precisions for the filter weights and the gradient term $e_x\mathbf{x}_\mathrm{in}x_\mathrm{out}^*$. Choosing $\mu$ as a power of 2 allows the gradient to be quantised to a low precision then bit-shifted before updating the weights.
 
 \subsection{Matched Filtering}
 The receiver maximises signal-to-noise ratio at the symbol decision instants by filtering the received signal with a matched filter, the time-reversed conjugate of the transmit pulse. For the RRC pulse used here the matched filter is itself an RRC; the cascade of transmit and receive RRCs is a raised cosine that satisfies the Nyquist criterion. Two implementations are possible. The matched filter may be implemented explicitly as a frequency-domain mask multiplied into the overlap-save CD stage at no additional cost: $H_\mathrm{eq}(\omega)$ is replaced by $H_\mathrm{eq}(\omega)H_\mathrm{RRC}(\omega)$ and the same overlap-save block performs CD compensation and matched filtering simultaneously. Alternatively the matched filter can be folded into the taps of the adaptive equaliser, provided the adaptive FIR is long enough to span both the matched-filter response and the channel memory it tracks; this saves the explicit filter but requires a longer adaptive FIR.
@@ -419,10 +425,10 @@ where the summation is restricted to the bins covered by the RRC excess band, wi
     \hat{\tau}_s = -\frac{\eta}{2\pi}\arg(S),
     \label{eq:godard_est}
 \end{equation}
-which is fed into a PI loop filter; the next block applies the accumulated $\tau_s$ as a frequency-domain phase ramp on the FFT output before the IFFT. Because $S$ is formed from the same FFT used by the overlap-save CD/matched-filter stage, the Modified Godard TED adds no additional FFT cost.
+which is fed into a PI loop filter in the same way as for Gardner except the fractional timing error is corrected by a phase ramp in the frequency domain. Because $S$ is formed from the same FFT used by the overlap-save CD/matched-filter stage, the Modified Godard TED adds no additional FFT cost.
 
 \subsection{Computational Complexity}
-The two detectors operate on blocks of different sizes -- Gardner on a block of $P$ output samples at $\eta=2$ (i.e.\ $P/2$ symbols), Modified Godard on an overlap-save block of $N$ FFT bins producing $N - N_\mathrm{CD} + 1$ valid samples (i.e.\ $(N - N_\mathrm{CD} + 1)/\eta$ symbols) -- so the per-block counts are normalised to per-symbol counts in \cref{tab:clk_cost}, counting complex multiplications as 4 RM + 2 RA and complex additions as 2 RA. The Gardner cost is dominated by one cubic Farrow interpolator per output sample, evaluated as four fixed-coefficient 4-tap FIRs on complex data (one per polynomial coefficient $c_0,\dots,c_3$) followed by evaluation of the polynomial in $\mu$, giving 38 RM and 30 RA per output sample. The Godard cost is dominated by the $\beta N / \eta$ complex products of \cref{eq:godard_sum} and the per-block frequency-domain phase ramp ($N$ recursive ramp coefficients and $N$ spectral-bin multiplications, $\approx 8N$ RM); both are amortised over the $(N - N_\mathrm{CD} + 1)/\eta$ valid symbols delivered by the overlap-save block. The FFT and IFFT used by Godard are reused from the overlap-save CD/matched-filter stage and so appear in \cref{tab:cd_cost} rather than here.
+The two detectors operate on blocks of different sizes -- Gardner on a block of $P$ output samples at $\eta=2$ (i.e.\ $P/2$ symbols), Modified Godard on an overlap-save block of $N$ FFT bins producing $N - N_\mathrm{CD} + 1$ valid samples (i.e.\ $(N - N_\mathrm{CD} + 1)/\eta$ symbols) -- so the per-block counts are normalised to per-symbol counts in \cref{tab:clk_cost}, counting complex multiplications as 4 RM + 2 RA and complex additions as 2 RA. The Gardner cost is dominated by one cubic Farrow interpolator per output sample, evaluated as four fixed-coefficient 4-tap FIRs on complex data (one per polynomial coefficient $c_0,\dots,c_3$) followed by evaluation of the polynomial in $\mu$, giving 38 RM and 30 RA per output sample, i.e.\ 76 RM and 60 RA per symbol at $\eta = 2$ (two output samples per symbol) as reported in \cref{tab:clk_cost}. The Godard cost is dominated by the $\beta N / \eta$ complex products of \cref{eq:godard_sum} and the per-block frequency-domain phase ramp ($N$ recursive ramp coefficients and $N$ spectral-bin multiplications, $\approx 8N$ RM); both are amortised over the $(N - N_\mathrm{CD} + 1)/\eta$ valid symbols delivered by the overlap-save block. The FFT and IFFT used by Godard are reused from the overlap-save CD/matched-filter stage and so appear in \cref{tab:cd_cost} rather than here.
 
 \begin{table}[H]
     \centering
@@ -434,7 +440,7 @@ The two detectors operate on blocks of different sizes -- Gardner on a block of 
         Gardner Farrow interpolator                       & $76$ & $60$ \\
         \midrule
         Godard metric $S$ (\cref{eq:godard_sum})          & $\dfrac{4\beta N}{N - N_\mathrm{CD} + 1}$ & $\dfrac{4\beta N}{N - N_\mathrm{CD} + 1}$ \\[8pt]
-        Godard $\arg(S)$ (CORDIC)                         & $\dfrac{\eta}{N - N_\mathrm{CD} + 1}$     & $0$ \\[8pt]
+        Godard $\arg(S)$ (CORDIC)           & $\dfrac{\eta}{N - N_\mathrm{CD} + 1}$     & $0$ \\[8pt]
         Godard FD phase ramp                              & $\dfrac{8N\eta}{N - N_\mathrm{CD} + 1}$   & $\dfrac{4N\eta}{N - N_\mathrm{CD} + 1}$ \\
         \bottomrule
     \end{tabular}
@@ -443,17 +449,21 @@ The two detectors operate on blocks of different sizes -- Gardner on a block of 
 \end{table}
 
 \subsection{Fixed-Point}
-The loop filter used in both clock recovery algorithms requires care when implemented in fixed-point arithmetic. The proportional and integral constants $k_p, k_i$ can be very small so the loop filter output will be quantised to 0 if it shares the same dynamic range as the error estimate. This can be corrected by choosing $k_p, k_i$ to be powers of 2 such that the quantised error terms can be bit-shifted then combined to give the loop-filter output $W[n] = k_p e[n] + k_i\sum_{l=0}^{n-1}e[n-l]$. This requires $W[n]$ to be a high precision accumulator, but the energy consumption from bits changing in the accumulator is determined by the precision of the error terms. To perform energy-efficient timing correction, $W[n]$ is quantised to low precision before being used either in the phase ramp for Godard or Farrow interpolator for Gardner where energy consumption must be minimised. The FFT scales the input by $1/N$ so Godard can end up estimating the timing error from small values. This can be remedied by applying a left bit-shift that approximates multiplying by $\sqrt{N}$, effectively making the forward FFT have unit gain, before quantisation at the precision of the timing error estimate. Then a right bit-shift is applied to undo this before being scaled by $k_i$ and $k_p$ in the loop filter. 
+The loop filter used in both clock recovery algorithms requires care when implemented in fixed-point arithmetic. The proportional and integral constants $k_p, k_i$ can be very small so the loop filter output will be quantised to 0 if it shares the same dynamic range as the error estimate. This can be corrected by choosing $k_p, k_i$ to be powers of 2 such that the quantised error terms can be bit-shifted then combined to give the loop-filter output $W[n] = k_p e[n] + k_i\sum_{l=0}^{n-1}e[n-l]$. This requires $W[n]$ to be a high precision accumulator, but the energy consumption from bits changing in the accumulator is determined by the precision of the error terms. To perform energy-efficient timing correction, $W[n]$ is quantised to low precision before being used either in the phase ramp for Godard or Farrow interpolator for Gardner where energy consumption must be minimised.
 
-\section{Combined Implementations}
+\section{Combined Implementations}\label{sec:combined_impl}
 A common architecture for short-range access-network receivers uses a single butterfly adaptive equaliser to perform all equalisation roles in one $2\times 2$ MIMO structure \cite{Cheng;20}. For a longer network like the one under investigation, however, this filter must be at least $N_\mathrm{CD} = 22$ taps long (\cref{eq:cd_len}), or up to $22 + 2\times10 - 1 = 41$ taps for a conservative equaliser that fully compensates CD and the RRC span.
 
-At those lengths a time-domain FIR is no longer the cheapest implementation, and both the static and the adaptive equalisers become candidates for a frequency-domain implementation. Replacing the static CD/matched-filter FIR with an overlap-save FFT block drops the per-symbol multiplication count from $O(N)$ to $O(\log_2 N)$ (\cref{tab:cd_cost}), and the resulting FFTs are then available for the Modified Godard TED. A frequency-domain adaptive equaliser \cite{Faruk:11} achieves the same per-symbol FFT scaling, but the MIMO structure is wasteful when PMD is negligible. The Modified Godard TED also cannot be placed after it as the output would be at the symbol rate.
+At those lengths a time-domain FIR is no longer the cheapest implementation, and both the static and the adaptive equalisers become candidates for a frequency-domain implementation. Replacing the static CD/matched-filter FIR with an overlap-save FFT block drops the per-symbol multiplication count from $O(N)$ to $O(\log_2 N)$ (\cref{tab:cd_cost}), and the resulting FFTs are then available for the Modified Godard TED. A frequency-domain adaptive equaliser \cite{Faruk:11} achieves the same per-symbol FFT scaling, but the MIMO structure is wasteful when PMD is negligible. The Modified Godard TED also cannot be placed after a frequency-domain adaptive equaliser, as its output would be at the symbol rate.
 
-This motivates two combined implementations. An overlap-save static equaliser performs CD compensation and matched filtering, followed by either Modified Godard (in the frequency domain) or Gardner (after the IFFT) and finally a single-tap adaptive equaliser for polarisation demultiplexing.
+This motivates two combined implementations. An overlap-save static equaliser performs CD compensation and matched filtering, followed by either Modified Godard (in the frequency domain) or Gardner (after the IFFT) and finally an adaptive equaliser with 3 taps for polarisation demultiplexing and additional timing recovery.
 
 \section{Methodology}\label{sec:eqclk_methodology}
-Each combined implementation is evaluated on a DP-QPSK channel sized to the worst-case CPON tolerances of \cref{sec:cpon_tolerances}. The channel comprises 80\,km of fibre at $D = 20$\,ps/(nm\,km) (1600\,ps/nm of CD), $\beta = 0.25$ RRC pulse shaping at $\eta = 2$, PMD with $D_\mathrm{PMD} = 0.1$\,ps/$\sqrt{\mathrm{km}}$ drawn from a fixed seed (held constant across every trial, SNR, and CFO), a 40\,ppm sample-frequency offset, and AWGN at a swept SNR from 0 to 30\,dB. The adaptive equaliser uses a step size of $\mu = 2^{-10}$. Each trial uses $N_s = 18750$ symbols per polarisation, enough for 1.5 samples of timing drift at 40\,ppm to exercise the clock recovery, and BER is estimated by Monte Carlo over 10 trials. The RSNR is found per trial by interpolation of $\log_{10}(\mathrm{BER})$ between adjacent SNR samples and reported as a mean with standard deviation. The PI gains $(k_i, k_p)$ of the Gardner and Modified Godard loops are pre-tuned by a logarithmic grid search, then held for the full sweep. Two design choices are varied across the comparison: the static-equaliser length (22 taps to compensate CD only, or 41 taps to also span the matched-filter response) and whether the FFT/IFFT twiddle factors are rounded to a power of two.
+\paragraph{Channel.} Each combined implementation is evaluated on a DP-QPSK channel sized to the worst-case CPON tolerances of \cref{sec:cpon_tolerances}. The channel comprises 80\,km of fibre at $D = 20$\,ps/(nm\,km) (1600\,ps/nm of CD), $\beta = 0.25$ RRC pulse shaping at $\eta = 2$, PMD with $D_\mathrm{PMD} = 0.1$\,ps/$\sqrt{\mathrm{km}}$ drawn from a fixed seed (held constant across every trial, SNR, and CFO), a 40\,ppm sample-frequency offset, and AWGN at a swept SNR from 0 to 30\,dB. The adaptive equaliser uses a step size of $\mu = 2^{-10}$.
+
+\paragraph{Metric.} Each trial uses $N_s = 18750$ symbols per polarisation, enough for 1.5 samples of timing drift at 40\,ppm to exercise the clock recovery, and BER is estimated by Monte Carlo over 10 trials. The RSNR is found per trial by interpolation of $\log_{10}(\mathrm{BER})$ between adjacent SNR samples and reported as a mean with standard deviation. The PI gains $(k_i, k_p)$ of the Gardner and Modified Godard loops are pre-tuned by a logarithmic grid search, then held for the full sweep.
+
+\paragraph{Swept design choices.} Two design choices are varied across the comparison: the static-equaliser length (22 taps to compensate CD only, or 41 taps to also span the matched-filter response) and whether the FFT/IFFT twiddle factors are rounded to a power of two.
 
 An initial algorithm comparison is performed in floating-point arithmetic to determine the effects of CFO and to give benchmark values for the fixed-point implementation.
 
@@ -469,9 +479,7 @@ with bin spacing $\eta R_s / N$. The estimate is applied as a continuous-valued 
 
 \section{Results \& Discussion}
 \subsection{Combined Performance}
-\Cref{tab:combined_eq_clk_no_cfo} compares the performance of the proposed implementations at floating-point precision in the absence of CFO. The conservative static equaliser length of 41 offers little improvement over 22 taps, so 22 taps can be used to reduce complexity. Rounding the FFT/IFFT twiddle factors to a power of 2 incurs an SNR penalty but is still worth considering, since the receiver's SNR floor may be determined by other DSP blocks.
-
-In reality a CFO can be present in the signal, as the carrier recovery block (\cref{chapter:carrier_recovery}) is downstream of equalisation and clock recovery. The effect of CFO on performance is shown in \cref{fig:cfo_sweep_float}. CFO is clearly problematic for both clock recovery algorithms, with neither able to achieve the 3\,GHz tolerance, but the Godard TED struggles the most. The issue can be seen from \cref{eq:godard_sum}; the summation used to perform the estimate is over specific frequency bins but a CFO shifts the spectrum and the sum no longer captures the intended overlap. The effect of a CFO $\Delta f$ on Gardner is more subtle but can be seen by expressing the signal with CFO as $y[k] = x[k]\exp{(j2\pi \Delta f T_s\eta k)}$ then substituting into \cref{eq:gardner_ted} to give
+\Cref{tab:combined_eq_clk_no_cfo} compares the performance of the proposed implementations at floating-point precision in the absence of CFO. The conservative static equaliser length of 41 offers little improvement over 22 taps, so 22 taps can be used to reduce complexity. Rounding the FFT/IFFT twiddle factors to a power of 2 incurs an SNR penalty but is still worth considering, since the receiver's SNR floor may be determined by other DSP blocks. The effect of CFO on performance is shown in \cref{fig:cfo_sweep_float}. CFO is clearly problematic for both clock recovery algorithms, with neither able to achieve the 3\,GHz tolerance, but the Godard TED struggles the most. The issue can be seen from \cref{eq:godard_sum}; the summation used to perform the estimate is over specific frequency bins but a CFO shifts the spectrum and the sum no longer captures the intended overlap. The effect of a CFO $\Delta f$ on Gardner is more subtle but can be seen by expressing the signal with CFO as $y[k] = x[k]\exp{(j2\pi \Delta f T_s\eta k)}$ then substituting into \cref{eq:gardner_ted} to give
 \begin{equation}
     e[k] = \Re\left\{x^*[2k-1]x[2k]\exp{(j2\pi\Delta f T_s\eta)} - x^*[2k-1]x[2k-2]\exp{(-j2\pi\Delta f T_s\eta)}\right\}.
 \end{equation}
@@ -479,7 +487,7 @@ Taking expectations and noting that the correlation of QPSK symbols is real, we 
 \begin{equation}
     \mathbb{E}\left[e[k]\right] = \cos(2\pi\Delta f T_s\eta)\left\{\mathbb{E}\left[x^*[2k-1]x[2k]\right] - \mathbb{E}\left[x^*[2k-1]x[2k-2]\right]\right\},
 \end{equation}
-so a CFO flattens $\mathbb{E}\left[e[k]\right]$ (known as the S-curve), making it harder for the loop to track errors.
+so a CFO flattens the S-curve (the TED characteristic $\mathbb{E}\left[e\right]$ as a function of timing error), making it harder for the loop to track errors.
 \begin{table}[H]
     \centering
     \small
@@ -520,17 +528,15 @@ so a CFO flattens $\mathbb{E}\left[e[k]\right]$ (known as the S-curve), making i
 \subsection{Fixed-Point Precision}
 So far implementations have been compared in floating-point arithmetic, avoiding the quantisation error present in a real coherent receiver. Each stage will have different precision requirements, so a search over precision combinations is required.
 
-\paragraph{Adaptive equaliser.} \Cref{fig:aeq_fxp} shows how the precision of the adaptive equaliser gradient estimate impacts performance for each implementation while the static equaliser and clock recovery operate at high precision. Unexpectedly,performance improves across all implementations as the precision is reduced down to 4 bits before failing at 2 bits. The reduction in RSNR at lower precision when $2^k$ twiddle factors are used is enough to be significant over the 5 runs; a possible explanation is that at high static equaliser and clock recovery precision, the only additional error introduced is by the twiddle factors 
-\paragraph{Static equaliser.} \Cref{fig:seq_fxp} shows the same precision sweep for the precision of the FFT/IFFT and the static filter when clock recovery and the adaptive equaliser are held at high precision. The precision requirement is slightly higher here but Godard and Gardner perform well down to 8 bits of precision. This can be explaned by the FFT implementation: to avoid overflow each stage of the radix-2 FFT applies a 1/2 scaling with a bit-shift. For an FFT of size 128 this is 7 bit-shifts which at a precision lower than 8 bits means that the least significant bit is guaranteed to be lost at each stage, resulting in a very large quantisation error.
-
-
+\paragraph{Adaptive equaliser.} \Cref{fig:aeq_fxp} shows how the precision of the adaptive equaliser gradient estimate impacts performance for each implementation while the static equaliser and clock recovery operate at high precision. Without $2^k$ twiddle factors the RSNR stays constant down to 4 bits until the FEC limit can no longer be reached at 2 bits. If $2^k$ twiddle factors are used then the compounding quantisation/rounding error limits to 6 bits before the RSNR rises, although the increase is small for Godard.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.65\textwidth]{aeq_fxp_sweep.png}
     \caption{RSNR as the fixed-point precision of adaptive equalisation varies, with static equalisation and clock recovery at high precision.}
     \label{fig:aeq_fxp}
 \end{figure}
-\paragraph{Clock recovery.} \Cref{fig:clk_fxp} shows the sweep for the precision of the timing error estimate and correction (Farrow interpolation or phase ramp). The loop filter is kept at high precision, as are the static and adaptive equalisers. Without the $2^k$ twiddle factors, Godard and Gardner perform the same down to 6 bits of precision before a sharp rise in RSNR at 4 bits, with Gardner failing to reach the FEC limit. Godard clearly outperforms Gardner when $2^k$ twiddle factors are used, as in the floating-point case. The Godard estimator is vulnerable to fixed point errors when computing the estimation metric from \cref{eq:godard_sum} as it requires a sum over $\beta N/\eta = 16$ terms where quantisation error can compound more than in the simple Gardner estimate of \cref{eq:gardner_ted}. However, Gardner is more susceptible to fixed-point precision at the correction stage where the Farrow interpolator performs many more cascaded operations than CORDIC.
+
+\paragraph{Static equaliser.} \Cref{fig:seq_fxp} shows the same precision sweep for the precision of the FFT/IFFT and the static filter when clock recovery and the adaptive equaliser are held at high precision. The precision requirement is slightly higher here but Godard and Gardner perform well down to 8 bits of precision. This can be explained by the FFT implementation: to avoid overflow each stage of the radix-2 FFT applies a 1/2 scaling with a bit-shift. For an FFT of size 128 this is 7 bit-shifts which at a precision lower than 8 bits means that the least significant bit is guaranteed to be lost at each stage, resulting in a very large quantisation error.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.65\textwidth]{seq_fxp_sweep.png}
@@ -538,6 +544,7 @@ So far implementations have been compared in floating-point arithmetic, avoiding
     \label{fig:seq_fxp}
 \end{figure}
 
+\paragraph{Clock recovery.} \Cref{fig:clk_fxp} shows the sweep for the precision of the timing error estimate and correction (Farrow interpolation or phase ramp). The loop filter is kept at high precision, as are the static and adaptive equalisers. Without the $2^k$ twiddle factors, Godard and Gardner perform the same down to 6 bits of precision before a sharp rise in RSNR at 4 bits, with Gardner failing to reach the FEC limit. Godard clearly outperforms Gardner when $2^k$ twiddle factors are used, as in the floating-point case. The Godard estimator is vulnerable to fixed point errors when computing the estimation metric from \cref{eq:godard_sum} as it requires a sum over $\beta N/\eta = 16$ terms where quantisation error can compound more than in the simple Gardner estimate of \cref{eq:gardner_ted}. However, Gardner is more susceptible to fixed-point precision at the correction stage where the Farrow interpolator performs many more cascaded operations than CORDIC.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.65\textwidth]{clk_fxp_sweep.png}
@@ -546,7 +553,7 @@ So far implementations have been compared in floating-point arithmetic, avoiding
 \end{figure}
 
 \paragraph{Low precision operating points.}
-Combining each stage at low precision can introduce cascaded quantisation error which incurs an SNR penalty. \Cref{tab:clk_eq_fxp} shows the RSNR and energy breakdown of each algorithm at the lowest feasible precision combination taken from each individual sweep as well as a slightly higher precision combination for comparison. Godard achieves a lower RSNR than Gardner across all implementations at a lower energy. The choice of Godard implementation then depends on the balance of receiver energy and how the RSNR affects the receiver energy. A suitable low-energy implementation is to use $2^k$ twiddle factors with a precision combination of (8,6,6) as the slight increase in precision significantly improves the RSNR over the (6,4,4) implementation. If a low RSNR is needed then foregoing the $2^k$ twiddle factors at a precision of (6,4,4) is the most attractive as the SNR penalty compared to the higher precision implementation is negligible but saves energy. These two implementations will be taken forward to the full pipeline analysis in \cref{chapter:full_pipeline}.
+Combining each stage at low precision can introduce cascaded quantisation error which incurs an SNR penalty. \Cref{tab:clk_eq_fxp} shows the RSNR and energy breakdown of each algorithm at the lowest feasible precision combination taken from each individual sweep as well as a slightly higher precision combination for comparison. Godard consumes less energy than Gardner while exhibiting similar performance without $2^k$ twiddle factors and outperforming significantly when $2^k$ twiddle factors are used. The choice of Godard implementation then depends on the balance of receiver energy and how the RSNR affects the transmitter energy. A suitable low-energy implementation is to use $2^k$ twiddle factors at the lowest precision combination, as higher precision only slightly reduces the RSNR. If a low RSNR is needed then foregoing the $2^k$ twiddle factors while still at the lowest precision is the most attractive as the higher precision only buys a small RSNR improvement. These two implementations will be taken forward to the full pipeline analysis in \cref{chapter:full_pipeline}.
 \begin{table}[H]
     \centering
     \small
@@ -557,23 +564,24 @@ Combining each stage at low precision can introduce cascaded quantisation error 
         \cmidrule(lr){3-5} \cmidrule(lr){7-10}
         & & \textbf{Stat.} & \textbf{Adapt.} & \textbf{Clk} & & \textbf{$E_\mathrm{stat}$} & \textbf{$E_\mathrm{aeq}$} & \textbf{$E_\mathrm{clk}$} & \textbf{$E_\mathrm{tot}$} \\
         \midrule
-        \multirow{2}{*}{Gardner} & \multirow{2}{*}{No}  & 6 & 4 & 4 & $7.91 \pm 0.68$  & 15.00 & 1.64 & 12.70 & 29.33 \\
-                                 &                      & 8 & 6 & 6 & $4.80 \pm 0.27$  & 17.76 & 1.97 & 15.30 & 35.03 \\
+        \multirow{2}{*}{Gardner} & \multirow{2}{*}{No}  & 8 & 4 & 6 & $4.85 \pm 0.07$  & 35.51 & 3.28 & 30.61 & 69.40 \\
+                                 &                      & 10 & 6 & 8 & $3.99 \pm 0.07$  & 41.50 & 3.94 & 36.31 & 81.75 \\
         \midrule
-        \multirow{2}{*}{Gardner} & \multirow{2}{*}{Yes} & 6 & 4 & 4 & ---              &  2.68 & 1.64 & 12.70 & 17.01 \\
-                                 &                      & 8 & 6 & 6 & $20.60 \pm 2.04$ &  3.09 & 1.97 & 15.30 & 20.37 \\
+        \multirow{2}{*}{Gardner} & \multirow{2}{*}{Yes} & 8 & 4 & 6 & $13.31 \pm 0.33$  & 6.19 & 3.28 & 30.61 & 40.07 \\
+                                 &                      & 10 & 6 & 8 & $11.53 \pm 0.57$ &  7.08 & 3.94 & 36.31 & 47.33 \\
         \midrule
-        \multirow{2}{*}{Godard}  & \multirow{2}{*}{No}  & 6 & 4 & 4 & $\mathbf{4.80 \pm 0.18}$  & 15.00 & 1.64 &  3.18 & \textbf{19.81} \\
-                                 &                      & 8 & 6 & 6 & $4.12 \pm 0.19$  & 17.76 & 1.97 &  3.84 & 23.56 \\
+        \multirow{2}{*}{Godard}  & \multirow{2}{*}{No}  & 8 & 4 & 6 & $\mathbf{4.75 \pm 0.07}$  & 35.51 & 3.28 &  7.68 & \textbf{46.46} \\
+                                 &                      & 10 & 6 & 8 & $4.34 \pm 0.07$  & 41.50 & 3.94 & 9.12 & 54.55 \\
         \midrule
-        \multirow{2}{*}{Godard}  & \multirow{2}{*}{Yes} & 6 & 4 & 4 & $10.02 \pm 0.53$ &  2.68 & 1.64 &  3.18 &  7.49 \\
-                                 &                      & 8 & 6 & 6 & $\mathbf{7.77 \pm 0.47}$  &  3.09 & 1.97 &  3.84 &  \textbf{8.90} \\
+        \multirow{2}{*}{Godard}  & \multirow{2}{*}{Yes} & 8 & 4 & 6 & $\mathbf{8.23 \pm 0.25}$ &  6.19 & 3.28 &  7.68 &  \textbf{17.14} \\
+                                 &                      & 10 & 6 & 8 & $6.87 \pm 0.08$  &  7.08 & 3.94 &  9.12 & 20.13 \\
         \bottomrule
     \end{tabular}
     }
-    \caption{Fixed-point performance and energy of the combined clock recovery and equalisation implementations at low- ($6/4/4$) and high-precision ($8/6/6$) operating points, with and without $2^k$ twiddle factors. The three precisions are those of the static equaliser, adaptive equaliser and clock recovery stages. The Gardner low-precision case with $2^k$ twiddle factors fails to reach the FEC limit at any SNR. Proposed candidates for an energy-efficient receiver are highlighted in bold.}
+    \caption{Fixed-point performance and energy of the combined clock recovery and equalisation implementations at low- ($8/4/6$) and high-precision ($10/6/8$) operating points, with and without $2^k$ twiddle factors. The three precisions are those of the static equaliser, adaptive equaliser and clock recovery stages. The Gardner low-precision case with $2^k$ twiddle factors fails to reach the FEC limit at any SNR. Proposed candidates for an energy-efficient receiver are highlighted in bold.}
     \label{tab:clk_eq_fxp}
 \end{table}
+
 \paragraph{Oversampling rate.} These results assume an oversampling rate of 2. Modern coherent receivers can operate below 2 samples per symbol to reduce the load on analogue-to-digital converters (ADCs) and simplify the DSP \cite{Wang;24}. The Godard scheme allows the full equalisation and clock recovery block to operate at a fractional oversampling rate which reduces the number of operations per symbol. However, Gardner requires 2 samples per symbol so the output of the IFFT would need to be upsampled and the savings from a lower oversampling rate would be smaller.
 % =====================================================================
 \chapter{Carrier Recovery}\label{chapter:carrier_recovery}
@@ -592,7 +600,7 @@ Two common carrier recovery algorithms, Rife \& Boorstyn and Viterbi \& Viterbi,
 A carrier frequency offset (CFO) occurs because the transmitter and local-oscillator lasers are free-running and never exactly aligned in centre frequency. The resulting beat appears as a linear phase ramp on the received samples. It is simulated by multiplying the signal by \(\exp(j\,2\pi\,\Delta f\, T_\mathrm{sym}\, k)\), where \(\Delta f\) is the frequency offset, \(T_\mathrm{sym} = 1/R_s\) the symbol period (carrier recovery operates at one sample per symbol), and \(k\) the symbol index.
 
 \subsection{Isolating CFO}
-All frequency recovery algorithms first require that the phase of the data be removed before estimation. For QPSK symbols \(c[i] = e^{j\frac{\pi}{4} + m[i]\frac{\pi}{2}}\), this can be done by raising each received symbol \(x[i] = c[i]e^{j(2\pi f_d i + \theta[i])} + n[i]\) to the fourth power to give
+All frequency recovery algorithms first require that the phase of the data be removed before estimation. For QPSK symbols \(c[i] = e^{j\left(\frac{\pi}{4} + m[i]\frac{\pi}{2}\right)}\), this can be done by raising each received symbol \(x[i] = c[i]e^{j(2\pi f_d i + \theta[i])} + n[i]\) to the fourth power to give
 \begin{equation}
     z[i] = x^4[i] = e^{j(8\pi f_d i + 4 \theta[i])} + n'[i]
     \label{eq:blind_noise}
@@ -620,7 +628,7 @@ The value of the CFO will appear as the strongest peak in the frequency spectrum
     \delta = -\Re\left[\frac{X_{k+1} - X_{k-1}}{2X_k - X_{k-1} - X_{k+1}}\right].
     \label{eq:fft_refined}
 \end{equation}
-The updated index \(k' = k + \delta\) is then scaled by the sampling rate to find the true CFO. The resolution in \(k\) is \(\epsilon(k) = 1/2N_{FFT}\). The CPON specification provides only \(L = 11\) training symbols, so data-aided operation without zero-padding gives \(\epsilon(\hat{f}_d) \approx 0.05\,R_s\) — too coarse for the downstream phase recovery to correct. Zero-padding the training sequence to a larger \(N_{FFT}\) improves the resolution without requiring additional training data. The normalised mean squared-error (MSE) in the estimated CFO is shown in \cref{fig:fft_mcrb_data} for data-aided operation with 11 training symbols. A CFO estimate is computed for both polarisations and averaged to reduce the MSE. The modified Cramer-Rao bound (MCRB) provides a lower bound on the achievable MSE and is given by \cite{Andrea1994}
+The updated index \(k' = k + \delta\) is then scaled by the sampling rate to find the true CFO. The resolution in \(k\) is \(\epsilon(k) = \frac{1}{2N_{FFT}}\). The CPON specification provides only \(L = 11\) training symbols, so data-aided operation without zero-padding gives \(\epsilon(\hat{f}_d) \approx 0.05\,R_s\) — too coarse for the downstream phase recovery to correct. Zero-padding the training sequence to a larger \(N_{FFT}\) improves the resolution without requiring additional training data. The normalised mean squared-error (MSE) in the estimated CFO is shown in \cref{fig:fft_mcrb_data} for data-aided operation with 11 training symbols. A CFO estimate is computed for both polarisations and averaged to reduce the MSE. The modified Cramer-Rao bound (MCRB) provides a lower bound on the achievable MSE and is given by \cite{Andrea1994}
 \begin{equation}
     \mathrm{MCRB} = \frac{3}{2\pi^2 L^3 \times \mathrm{SNR}}.
 \end{equation}
@@ -631,7 +639,7 @@ Rife \& Boorstyn achieves this bound above a threshold SNR of \(\approx 4\) dB, 
     \caption{Normalised MSE of the Rife \& Boorstyn algorithm with FFT size \(N_{FFT} = 512\) compared to the MCRB for \(L=11\) training symbols.}
     \label{fig:fft_mcrb_data}
 \end{figure}
-Data-aided operation is constrained by the length of the training sequence, but the accuracy of the Rife \& Boorstyn algorithm improves with longer observation lengths, as shown in \cref{fig:fft_mcrb_blind} for non-data-aided operation. The SNR threshold at which this algorithm begins to deviate from the MCRB is initially higher with data-aided operation due to the amplification of noise, but decreases for longer observation lengths.
+Data-aided operation is constrained by the length of the training sequence, but the accuracy of the Rife \& Boorstyn algorithm improves with longer observation lengths, as shown in \cref{fig:fft_mcrb_blind} for non-data-aided operation. The SNR threshold at which this algorithm begins to deviate from the MCRB is initially higher for non-data-aided operation, because the fourth-power operation amplifies noise, but it decreases for longer observation lengths.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.65\textwidth]{MCRB_fft_blind.png}
@@ -649,7 +657,7 @@ over several symbols and averaging to remove the effect of \(\theta\). Estimatin
 \begin{equation}
     \hat{f}_d = \frac{R_s}{2 \pi} \sum_{k=1}^{L} \frac{6k(L-k)}{L(L^2 - 1)} \arg (z[k]z^*[k-1]).
 \end{equation}
-where \(\arg(z[k]z^*[k-1])\) computes the phase difference from \cref{eq:phase_diff} and \(\frac{6k(L-k)}{L(L^2 - 1)}\) is a weighting term that prioritises the contribution of phase differences in the middle of the observed sequence. This estimator is able to achieve the MCRB, but the least-squares approach considers phase differences of non-adjacent symbols, making it vulnerable to phase wrapping that distorts the estimate when the CFO is high enough. When the total phase drift \(\Delta \phi = 2\pi f_d L T_\mathrm{sym}\) across the observation window exceeds \(2\pi\), a wrap shifts the estimated CFO by \(\pm 1/(L T_\mathrm{sym})\). A first-pass coarse CFO correction must therefore be applied before the Kay estimator to keep the residual CFO within the unambiguous range.
+where \(\arg(z[k]z^*[k-1])\) computes the phase difference from \cref{eq:phase_diff} and \(\frac{6k(L-k)}{L(L^2 - 1)}\) is a weighting term that prioritises the contribution of phase differences in the middle of the observed sequence. This estimator is able to achieve the MCRB, but becomes biased at larger CFO and lower SNR as additive noise pushes the phase differences across the wrap boundary \cite{Morelli1998}. A first-pass coarse CFO correction is therefore applied before the Kay estimator to centre the residual phase differences away from this boundary.
 The performance of the differential phase and Kay estimator for data-aided operation is shown in \cref{fig:diffkay_data}. The MCRB is achieved above a threshold SNR of \(\approx 7\) dB. This is higher than for Rife \& Boorstyn, but at a reduced computational cost. Unlike the Rife \& Boorstyn algorithm, the threshold SNR of the differential phase and Kay estimator does not depend on observation length, as shown in \cref{fig:diffkay_blind}.
 \begin{figure}[H]
     \centering
@@ -723,7 +731,7 @@ The theoretical limit on the maximum CFO that can be corrected is given by Nyqui
 Phase noise originates from the finite linewidth of the transmitter and LO lasers, whose phases follow a random walk. It is modelled as a Wiener process: independent Gaussian per-symbol phase increments with variance \(\sigma^2 = 2\pi\,\Delta\nu / R_s\), where \(\Delta\nu\) is the combined laser linewidth, are accumulated and applied as a multiplicative phase \(\exp(j\phi[k])\).
 
 \subsection{Feed-Forward vs PLL Algorithms}
-One of the first techniques investigated for phase recovery was a digital phase-locked loop (PLL) to incrementally correct the phase of each symbol with feedback. This dramatically simplifies the phase estimation and correction due to the use of small-angle approximations. The CPON specification sets the symbol rate at 30.5\,GBd, so at an oversampling rate of 2 the receiver runs at 61\,GSa/s. This is beyond the achievable clock speed of CMOS, so symbols must be processed in blocks of, e.g., 32 symbols, reducing the required clock speed to roughly 1\,GHz. This approach hinders the effectiveness of a PLL, as updates can only be made every 32 symbols. For this reason, feed-forward algorithms that can operate on blocks of data are used instead.
+One of the first techniques investigated for phase recovery was a digital phase-locked loop (PLL) to incrementally correct the phase of each symbol with feedback, which simplifies phase estimation and correction through small-angle approximations. As with the equaliser (\cref{sec:aeq_parallel}), however, the symbol rate far exceeds the achievable CMOS clock speed, so symbols must be processed in blocks --- here the 32-symbol CPON block --- reducing the required clock speed to roughly 1\,GHz. Block processing hinders a PLL, as updates can only be made once per block, so feed-forward algorithms that operate on a whole block at once are used instead.
 
 \subsection{Viterbi \& Viterbi}
 The Viterbi \& Viterbi algorithm is well suited to QPSK and removes data phase with the fourth power operation of \cref{eq:blind_noise}. It then applies a maximum-likelihood filter \(w_{ML}[i]\) to estimate the phase error due to Wiener phase noise from the combined laser linewidth and any residual CFO as
@@ -768,17 +776,19 @@ Only phases are needed, so the entire estimation can be performed with CORDIC. T
 
 \section{Methodology}
 
-\paragraph{Phase recovery comparison.} The two phase recovery algorithms are compared in isolation by simulating an AWGN channel with additive Wiener phase noise, without chromatic dispersion, PMD, or fibre nonlinearity, so that any performance difference is attributable solely to the phase estimation stage. BER is estimated by Monte Carlo simulation over 5 independent realisations for each combination of laser linewidth and SNR, with the phase ambiguity inherent to QPSK resolved by exhaustive search over the four \(\pi/2\) rotations before symbol decisions are made.
+\paragraph{Phase recovery comparison.} The two phase recovery algorithms are compared in isolation by simulating an AWGN channel with Wiener phase noise. BER is estimated by Monte Carlo simulation over 10 independent realisations for each combination of laser linewidth and SNR.
 
-\paragraph{Frequency recovery comparison.} Three frequency recovery configurations are compared by the receiver effort needed to estimate the CFO accurately enough for the downstream phase recovery: data-aided differential phase and Kay, blind Rife \& Boorstyn with \(D = N_{FFT} = 2048\) (the largest power-of-two FFT that fits within a 3712-symbol subframe), and data-aided Rife \& Boorstyn with \(N_{FFT} = 2048\). The channel applies a CFO drawn at random with 1\,MHz Wiener phase noise and AWGN at 20\,dB. Each algorithm produces one CFO estimate per subframe; the per-subframe estimates are averaged and the RMS error over 30 random CFO/noise realisations is recorded as a function of the number of averaged subframes \(N\). For each algorithm the smallest \(N\) that brings the RMS error below the residual CFO the phase recovery can absorb (\(\approx 10\)\,MHz, consistent with its linewidth tolerance in \cref{fig:vv_vs_pilots}) is found. A high fixed-point precision (32-bit word length, 16 fractional bits) is used so that quantisation is not the limiting factor, and all angle estimates and rotations are performed with CORDIC.
+\paragraph{Frequency recovery comparison.} Three frequency recovery configurations are compared by the receiver effort needed to estimate the CFO accurately enough for the downstream phase recovery: data-aided differential phase and Kay, blind Rife \& Boorstyn with \(D = N_{FFT} = 2048\) (the largest power-of-two FFT that fits within a 3712-symbol subframe), and data-aided Rife \& Boorstyn with \(N_{FFT} = 2048\). The channel applies a CFO drawn at random with 1\,MHz Wiener phase noise and AWGN at 20\,dB. Each algorithm produces one CFO estimate per subframe; the per-subframe estimates are averaged and the RMS error over 10 random CFO/noise realisations is recorded as a function of the number of averaged subframes \(N\). For each algorithm the smallest \(N\) reaching two targets is found: the \(\approx 10\)\,MHz residual the phase recovery can absorb (consistent with its linewidth tolerance in \cref{fig:vv_vs_pilots}) and the tighter 1\,MHz phase-noise floor. A high fixed-point precision (32-bit word length, 16 fractional bits) is used so that quantisation is not the limiting factor, and all angle estimates and rotations are performed with CORDIC.
 
-\paragraph{Operation counts.} The receiver effort of each algorithm is reported as the per-subframe real-multiplication (RM) and real-addition (RA) counts of \cref{tab:fft_cost,tab:diffkay_cost}, evaluated for the observation lengths above and multiplied by the number of subframes \(N\) required to reach the 10\,MHz target.
+\paragraph{Operation counts.} The receiver effort of each algorithm is reported as the per-subframe real-multiplication (RM) and real-addition (RA) counts of \cref{tab:fft_cost,tab:diffkay_cost}, evaluated for the observation lengths above and multiplied by the number of subframes \(N\) required to reach each target.
+
+\paragraph{Fixed-point precision.} The selected chain --- data-aided differential phase and Kay frequency recovery followed by pilots-only phase recovery --- is then characterised in fixed point. Precision refers to the number of fractional bits carried in each calculation; the word length is this precision plus a fixed integer part sized to the dynamic range of the quantity. The CFO is normalised to the maximum tolerance so all calculations are contained within [-1,1] while any angles require 3 integer bits to represent $[-\pi, \pi]$ which are included in the total energy consumption of operations. The two stages are swept independently: the phase-recovery precision is swept with the frequency estimate held at high precision, then the frequency-recovery precision is swept with the phase estimate held high. Every fixed-point operation in the swept stage uses that fractional precision --- including the CORDIC angle estimates and rotations, whose iteration count is set equal to the precision, and the frequency estimator's phase and accumulator datapaths. The channel applies a 3\,GHz CFO with 1\,MHz Wiener phase noise, and the frequency estimate is averaged over 12 subframes (the 10\,MHz operating point of \cref{tab:fr_subframe}) before correction. For each precision the pre-FEC BER is found by Monte Carlo over the SNR sweep, and the RSNR is reported as a mean with standard deviation.
+
+\paragraph{Carrier-recovery energy.} At selected precision pairs the receiver energy per bit is evaluated with the arithmetic model of \cref{sec:rx_energy}, each operation taken at the fractional precision of the stage that produces it. The differential-Kay estimate cost (\cref{tab:diffkay_cost}) is amortised over one 3712-symbol subframe; the pilots-only estimate cost (\cref{tab:pilot_cost}) is amortised over one 32-symbol block; and the combined CFO and phase rotation applied to every symbol is charged as a single real multiplication per symbol at the phase-recovery precision.
 
 \section{Results \& Discussion}
 \subsection{Phase Recovery Performance}
-To replace Viterbi \& Viterbi with the simplified pilots-only phase correction, it must exhibit comparable performance over the range of linewidths that could be expected during operation of the network. The BER for each phase recovery algorithm as SNR varies is shown in \cref{fig:vv_vs_pilots}. Both algorithms have almost identical performance (plots overlapping) and are reliable up to 10 MHz, well beyond the maximum of 1 MHz given in the CPON spec.
-
-Since the two phase recovery algorithms perform almost identically over the full linewidth and SNR range, the simpler pilots-only correction is adopted for phase recovery.
+To replace Viterbi \& Viterbi with the simplified pilots-only phase correction, it must exhibit comparable performance over the range of linewidths that could be expected during operation of the network. The BER for each phase recovery algorithm as SNR varies is shown in \cref{fig:vv_vs_pilots}. Both algorithms have almost identical performance (plots overlapping) and are reliable up to 10\,MHz, well beyond the 1\,MHz maximum given in the CPON spec. As they perform almost identically over the full linewidth and SNR range, the simpler pilots-only correction is adopted for phase recovery.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.65\textwidth]{vv_vs_pilots.png}
@@ -789,10 +799,13 @@ Since the two phase recovery algorithms perform almost identically over the full
 \subsection{Frequency Recovery: Subframe Averaging}
 The data-aided algorithms form their CFO estimate from only the 11 CPON training symbols, so a single-subframe estimate is noisy. The estimate can be refined by averaging over several subframes, provided the CFO stays constant over that interval, but this multiplies the receiver effort. \Cref{tab:fr_subframe} reports, for each algorithm, the number of subframes \(N\) that must be averaged to reduce the CFO enough to allow phase recovery to correct the remaining error. Ideally this should be $\approx 1$\,MHz, the same as the phase noise, but from \cref{fig:vv_vs_pilots} it seems that 10\,MHz does not incur a significant RSNR penalty so should also be considered.
 
-Blind Rife \& Boorstyn reaches the 10\,MHz target from a single subframe (residual 0.22\,MHz): its 2048-symbol observation gives a very low-variance estimate, and the data-dependent component of its error averages out across the random data symbols. Data-aided differential phase and Kay needs 12 subframes (residual 0.79\,MHz). Data-aided Rife \& Boorstyn never reaches the target and its error floors at 17\,MHz which suggests reusing the same training symbols biases the estimator.
-
-Tightening the target to 1\,MHz results in an inefficient operation count. Blind Rife \& Boorstyn needs four subframes (\(294\,932\) RM and \(360\,464\) RA), while differential phase and Kay, though still cheaper by operation count, would have to average over 1532 subframes, far longer than the CFO can likely be held constant, and is therefore infeasible. The differential phase and Kay estimator is the clear choice here with a very low operation count.
-
+\Cref{fig:subframe_averaging} compares how the CFO estimation error decreases as more subframes are averaged over for each of the frequency recovery algorithms. The largest FFT size contained within one subframe is 2048, which is used for both Rife \& Boorstyn estimators. Blind Rife \& Boorstyn achieves the 10\,MHz error in one subframe but takes $\approx 10$ subframes to reliably be below 1\,MHz error. The differential phase and Kay estimator takes $\approx 12$ subframes to achieve 10\,MHz error but settles on 1\,MHz error at $\approx 300$ subframes. Data-aided Rife \& Boorstyn levels off at $\approx 16$\,MHz error which suggests that reusing the same training symbol sequence each time biases the estimator. \Cref{tab:fr_subframe} compares the number of operations needed to achieve the CFO error limits. The differential phase and Kay estimator is the clear choice if a residual CFO of 10\,MHz is acceptable as the operation count is far lower than blind Rife \& Boorstyn and 12 subframes should be a short enough window for the CFO to be constant over. At 1\,MHz the computational burden of the differential phase and Kay estimator increases significantly, although still lower than blind Rife \& Boorstyn which is prohibitively expensive, and averaging over 300 subframes increases the risk of the CFO varying and invalidating the average. Thus an energy-efficient receiver should employ the differential phase and Kay estimator with a target of 10\,MHz error.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.65\textwidth]{subframe_averaging.png}
+    \caption{CFO estimation error vs number of averaged subframes for each frequency recovery algorithm at high precision.}
+    \label{fig:subframe_averaging}
+\end{figure}
 \begin{table}[H]
     \centering
     \small
@@ -803,20 +816,41 @@ Tightening the target to 1\,MHz results in an inefficient operation count. Blind
         FR algorithm & Target & \(N\) & RM & RA & RM & RA \\
         \midrule
         Differential phase and Kay      & 10\,MHz & 12   & 78 & 42 & 936      & 504 \\
-        (data-aided, \(L=11\))          & 1\,MHz  & 1532 &    &    & 119\,496 & 64\,344 \\
+        (data-aided, \(L=11\))          & 1\,MHz  & 300 &    &    & 23\,400 & 12\,600 \\
         \midrule
         Rife \& Boorstyn                & 10\,MHz & 1    & 73\,733 & 90\,116 & 73\,733  & 90\,116 \\
-        (blind, \(D=N_{FFT}=2048\))     & 1\,MHz  & 4    &         &         & 294\,932 & 360\,464 \\
-        \midrule
-        Rife \& Boorstyn                          & 10\,MHz & --- & 18\,481 & 25\,637 & --- & --- \\
-        (data-aided, \(L=11\), \(N_{FFT}=2048\))  & 1\,MHz  & --- &         &         & --- & --- \\
+        (blind, \(D=N_{FFT}=2048\))     & 1\,MHz  & 10    &         &         & 737\,330 & 901\,160 \\
         \bottomrule
     \end{tabular}
     \caption{Subframes to average (\(N\)) and resulting operation counts (real multiplications RM, real additions RA) to reach a 10\,MHz and a 1\,MHz RMS CFO estimate. The per-subframe counts are target-independent. Data-aided Rife \& Boorstyn reaches neither target (its error floors at 17\,MHz).}
     \label{tab:fr_subframe}
 \end{table}
 \subsection{Fixed Point}
-The most energy-efficient implementation of the differential phase and Kay estimator combined with pilot-based phase correction must select fixed-point values that balance energy consumption with RSNR.
+The most energy-efficient implementation of the differential phase and Kay estimator combined with pilot-based phase correction must select fixed-point values that balance energy consumption with RSNR. \Cref{fig:dk_precision} shows the impact of the precision of both frequency and phase recovery estimates on RSNR with a CFO of 3\,GHz and a linewidth of 1\,MHz. The differential phase and Kay estimator performs well down to 10 bits of precision before failing. This seems high but is a consequence of the CFO range that the estimator must track. If this stage should correct up to 3\,GHz, then even with the bit-width optimisation mentioned previously the estimator requires $\left\lceil\log_2(3000/10)\right\rceil = 9$ bits to give a resolution of 10 MHz. If the coarse CFO correction of \cref{chapter:equalisation} was included in the analysis then the required range for this stage to track could be reduced and fewer bits would be needed. The pilots-only phase estimate can operate at much lower precision, with no change in performance down to 6 bits and only a small increase in RSNR at 4 bits. This gives a resolution of 1/16 radians in the phase which is $\approx 8\,\%$ of the $\pi/4$ phase error tolerance of QPSK.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.65\textwidth]{dk_precision.png}
+    \caption{RSNR vs CFO estimation precision of the differential phase and Kay estimator when phase correction is held at high precision.}
+    \label{fig:dk_precision}
+\end{figure}
+
+
+
+\paragraph{Low precision operating point.} As in \cref{chapter:equalisation} we now infer a suitable low-precision operating point from \cref{fig:dk_precision}. The lowest precision combination is 4 bits for the phase error estimate and 10 bits for the CFO estimate, 6 and 12 bits are also considered to absorb any cascaded quantisation error. Amortisation of the estimates means that the phase correction dominates the energy consumption. Carrier recovery consumes energy on the order of fJ/bit, much less than equalisation or clock recovery which is on the order of pJ/bit.
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabular}{ccccccc}
+        \toprule
+        CFO precision (bits) & Phase error precision (bits) & RSNR (dB) & $E_\mathrm{fr}$ & $E_\mathrm{pr}$ & $E_\mathrm{apply}$ & $E_\mathrm{total}$ \\
+        \midrule
+        10 & 4 & $10.09\pm0.48$ & 1.68 & 0.48 & 12.12 & 14.28 \\
+        12 & 6 & $9.14\pm0.38$ & 2.39 & 1.00 & 27.27 & 30.66 \\
+        \bottomrule
+    \end{tabular}
+    \caption{RSNR and energy (fJ/bit) of the CFO estimate ($E_\mathrm{fr}$), phase error estimate ($E_\mathrm{pr})$, and the CORDIC rotation to apply both corrections.}
+    \label{tab:cr_cost}
+\end{table}
 
 
 
@@ -824,10 +858,10 @@ The most energy-efficient implementation of the differential phase and Kay estim
 \chapter{Full DSP Pipeline}\label{chapter:full_pipeline}
 \section{Introduction}
 \section{Analogue-Digital Converters (ADCs)}
-The optical front end mixes the received signal with the LO in a pair of $90\degree$ hybrids and balanced photodetectors, producing four baseband photocurrents: the in-phase and quadrature components of each polarisation. A bank of ADCs digitises these waveforms before any digital processing. At the CPON symbol rate of $30.5$\,GBd and the oversampling factor $\eta = 2$ used throughout this report, each converter runs at $\eta R_s \approx 61$\,GSa/s. High-speed converters at these rates are among the most power-hungry components of a coherent receiver, and their resolution sets the precision floor of every downstream DSP block, so the number of bits is a primary energy/performance trade-off.
+The optical front end mixes the received signal with the LO in a pair of $90\degree$ hybrids and balanced photodetectors, producing four baseband photocurrents: the in-phase and quadrature components of each polarisation. A bank of ADCs digitises these waveforms before any digital processing. The resolution of these ADCs sets the quantisation noise floor for the DSP and 
 
 \paragraph{Quantisation-error SNR.}
-A uniform quantiser of $B$ bits spanning a full-scale range $V_\mathrm{FS}$ has a step size $\Delta = V_\mathrm{FS}/2^B$. Provided the input is busy across many codes, the quantisation error $e$ is well modelled as uniformly distributed over $[-\Delta/2,\,\Delta/2]$ and white, with variance
+A uniform quantiser of $B$ bits spanning a full-scale range $V_\mathrm{FS}$ has a step size $\Delta = V_\mathrm{FS}/2^B$. The quantisation error $e$ can be modelled as uniformly distributed over $[-\Delta/2,\,\Delta/2]$ with variance
 \begin{equation}
     \sigma_e^2 = \frac{1}{\Delta}\int_{-\Delta/2}^{\Delta/2} e^2\,\mathrm{d}e = \frac{\Delta^2}{12}.
     \label{eq:quant_var}
@@ -841,25 +875,75 @@ or, in decibels,
     \mathrm{SQNR_{dB}} = 6.02\,B + 1.76.
     \label{eq:sqnr}
 \end{equation}
-Each additional bit therefore buys roughly $6$\,dB of quantisation SNR.
-
-\paragraph{Effective number of bits.}
-A real converter falls short of \cref{eq:sqnr} because of thermal noise, sampling-clock jitter, comparator metastability, and non-linear distortion. These are collapsed into a single figure of merit, the effective number of bits (ENOB), by measuring the signal-to-noise-and-distortion ratio (SINAD) for a full-scale sinusoidal input and inverting \cref{eq:sqnr}:
+A real ADC introduces its own noise and distortion which limits the achievable resolution. Including the SNR from these distortions in \cref{eq:sqnr} gives the effective number of bits, the number of bits in an equivalent ideal ADC, as
 \begin{equation}
-    \mathrm{ENOB} = \frac{\mathrm{SINAD_{dB}} - 1.76}{6.02}.
-    \label{eq:enob}
+    \mathrm{ENOB} = \frac{\mathrm{SNDR_\mathrm{dB}}-1.76}{6.02}.
 \end{equation}
-The ENOB is the resolution of an ideal quantiser that would introduce the same total noise power, and is always smaller than the nominal bit count $B$; at the $\sim 60$\,GSa/s rates required here, state-of-the-art converters achieve only around 5--6 effective bits. Two further considerations apply to the coherent signal of interest. First, the derivation above assumes a full-scale sinusoid: the pulse-shaped DP-QPSK waveform has a non-trivial peak-to-average power ratio, so the input must be backed off from full scale to avoid clipping its peaks, trading a few decibels of loading for reduced clipping distortion --- the same balance captured by the 99.9th-percentile normalisation of \cref{chapter:energy}. Second, it is the ENOB rather than the nominal resolution that should be matched to the fixed-point word lengths of the DSP, since quantising the data more finely than the converter's own noise floor expends energy for no gain in accuracy.
-
+where $\mathrm{SNDR_{dB}}$ is the total SNR from quantisation and distortions in decibels. The energy per sample for a range of ADCs is shown in \cref{fig:adc}. A floor of $\approx 1$ pJ/sample is observed for an SNDR lower than 60 dB, corresponding to an ENOB of 9.6. This is higher than the precisions used so far in the DSP blocks so we assume that 1 pJ/sample is the flat energy cost of the ADC. One sample carries the I/Q part of a QPSK symbol which in turn carries 2 bits of information, hence the the ADC consumes 1 pJ/bit.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{adc.jpeg}
+    \caption{ADC energy per bit (pJ) as SNDR (dB) varies \cite{adc_survey}.}
+    \label{fig:adc}
+\end{figure}
 \section{Orthogonalisation and Deskew}
-The quantisation model above assumes an ideal front end, but in practice the optical hybrid and the electrical paths feeding the ADCs are imperfect, leaving the in-phase and quadrature components mismatched. Three impairments are usually distinguished. A \emph{gain imbalance} scales I and Q unequally; a \emph{quadrature error} arises when the hybrid's phase shift departs from $90\degree$, so that the I and Q axes are no longer orthogonal; and an \emph{I/Q timing skew} results from unequal propagation delays in the two paths, so that the I and Q samples correspond to slightly different instants in time.
+In practice the optical hybrid and the electrical paths feeding the ADCs are imperfect, leaving the in-phase and quadrature components mismatched. A quadrature error arises when the hybrid's phase shift departs from $90\degree$, so that the I and Q axes are no longer orthogonal and an I/Q timing skew results from unequal propagation delays in the two paths, so that the I and Q samples correspond to slightly different instants in time.
 
-Gain and quadrature errors are removed by \emph{orthogonalisation}, classically the Gram--Schmidt orthogonalisation procedure (GSOP) \cite{Mello;21,coherent_receivers}, which rescales the two components to equal power and subtracts the correlated part of one from the other to restore orthogonality. The timing skew is corrected by \emph{deskew}, a fractional-delay interpolation --- for example a Farrow structure like that used for clock recovery in \cref{chapter:equalisation} --- that realigns the I and Q sampling instants. Both are static or slowly varying impairments and are applied immediately after the ADC, ahead of equalisation.
+Quadrature errors are removed by orthogonalisation, usually the Gram--Schmidt orthogonalisation procedure (GSOP) \cite{Mello;21,coherent_receivers}, which rescales the two components to equal power and subtracts the correlated part of one from the other to restore orthogonality. The timing skew is corrected by fractional-delay interpolation that realigns the I and Q sampling instants.
 
-These front-end corrections are not modelled in this report: the simulated channel delivers perfectly orthogonal, deskewed samples to the DSP so that the equalisation, clock-recovery, and carrier-recovery blocks can be characterised in isolation. They are noted here for completeness, since a hardware implementation would have to budget both for their (modest) energy cost and for the residual imbalance they leave behind, which adds to the SNR floor seen by the downstream blocks.
+\subsection{Orthogonalisation}
+Let $r_I[k]$ and $r_Q[k]$ be the in-phase and quadrature samples of one polarisation. GSOP first normalises the in-phase component to unit power,
+\begin{equation}
+    I_\mathrm{out}[k] = \frac{r_I[k]}{\sqrt{P_I}}, \qquad P_I = \mathbb{E}\!\left[r_I^2\right].
+    \label{eq:gsop_i}
+\end{equation}
+The part of $r_Q$ correlated with $r_I$ is then subtracted and the residual normalised to unit power,
+\begin{equation}
+    Q'[k] = r_Q[k] - \frac{\rho_{IQ}}{P_I}\,r_I[k], \qquad
+    Q_\mathrm{out}[k] = \frac{Q'[k]}{\sqrt{P_Q}},
+    \label{eq:gsop_q}
+\end{equation}
+where $\rho_{IQ} = \mathbb{E}\!\left[r_I r_Q\right]$ is the I/Q correlation and $P_Q = \mathbb{E}\!\left[Q'^2\right]$ the residual power. The resulting $I_\mathrm{out}$ and $Q_\mathrm{out}$ are orthogonal and of equal power.
+
+The statistics $P_I$, $\rho_{IQ}$ and $P_Q$ are estimated by averaging over a block of samples and, like the carrier frequency offset, vary far more slowly than the symbol rate; they are therefore computed once per block and reused, amortising their cost to a negligible per-symbol contribution. Folding the normalisation constants into the decorrelation coefficient, \cref{eq:gsop_i,eq:gsop_q} reduce to
+\begin{equation}
+    I_\mathrm{out}[k] = a\,r_I[k], \qquad Q_\mathrm{out}[k] = b\,r_Q[k] + c\,r_I[k],
+\end{equation}
+with the precomputed constants $a = 1/\sqrt{P_I}$, $b = 1/\sqrt{P_Q}$ and $c = -\rho_{IQ}/(P_I\sqrt{P_Q})$. Each output sample then costs $3$ real multiplications and $1$ real addition; running on the oversampled signal scales this by $\eta$, giving the per-symbol counts in \cref{tab:gsop_cost}.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lcc}
+        \toprule
+        Stage & RM / symbol & RA / symbol \\
+        \midrule
+        GSOP application & $3\eta$ & $\eta$ \\
+        \bottomrule
+    \end{tabular}
+    \caption{Per-symbol real multiplication (RM) and real addition (RA) counts for the Gram--Schmidt orthogonalisation, per polarisation. $\eta$ is the receiver oversampling factor. The block statistics $P_I$, $\rho_{IQ}$ and $P_Q$ are estimated infrequently and reused, contributing negligibly per symbol.}
+    \label{tab:gsop_cost}
+\end{table}
+
+\subsection{Deskew}
+The skew is compensated by a Lagrange fractional-delay interpolator of order $N$, implemented as a FIR filter of $N_\mathrm{DS} = N+1$ taps applied independently to each real I and Q component \cite{Mello;21}. The filter coefficients depend only on the (static) per-component delays, so the Lagrange weight computation is performed once at configuration time and amortised to zero per symbol. Each output sample of a real $N_\mathrm{DS}$-tap FIR therefore costs $N_\mathrm{DS}$ real multiplications and $N_\mathrm{DS}-1$ real additions. Per polarisation the in-phase and quadrature components are filtered separately, giving two real FIRs, and the filters run on the oversampled signal so their counts scale by the oversampling factor $\eta$. The resulting per-symbol costs are given in \cref{tab:deskew_cost}.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lcc}
+        \toprule
+        Stage & RM / symbol & RA / symbol \\
+        \midrule
+        Deskew FIRs (2 real FIRs $\times$ $N_\mathrm{DS}$ taps) & $2\eta N_\mathrm{DS}$ & $2\eta(N_\mathrm{DS}-1)$ \\
+        \bottomrule
+    \end{tabular}
+    \caption{Per-symbol real multiplication (RM) and real addition (RA) counts for the deskew interpolator, per polarisation. $N_\mathrm{DS} = N+1$ is the FIR length for a Lagrange interpolator of order $N$, and $\eta$ the receiver oversampling factor. The Lagrange coefficients are precomputed from the static skew and so do not contribute to the per-symbol count.}
+    \label{tab:deskew_cost}
+\end{table}
 
 \section{Methodology}
 \section{Results}
+\subsection{Receiver Energy vs RSNR}
+The 4 candidate implementations for an energy-efficient receiver come from \cref{tab:combined_eq_clk_no_cfo,tab:cr_cost}. The minimum precision for equalisation/clock recovery is an 8 bit static equaliser, 6 bit timing error estimate, and 4 bit adaptive equaliser. The minimum carrier recovery precision is 10 bits for frequency recovery and 4 bits for phase recovery. A higher precision implementation is also given to mitigate the effects of combined quantisation noise across the full pipeline. 
 
 \renewcommand*{\bibfont}{\footnotesize}
 \defbibheading{compact}[\bibname]{%
@@ -869,4 +953,11 @@ These front-end corrections are not modelled in this report: the simulated chann
     \noindent{\Huge\bfseries #1}\par\vspace{1.5em}%
 }
 \printbibliography[heading=compact]
+
+% =====================================================================
+\appendix
+\chapter{Risk Assessment}\label{chapter:risk_assessment}
+The hazards identified at the beginning of this project were computer use and potential use of class 1M lasers. I was not exposed to any class 1M lasers during the project as the work was done on a computer simulation. Hazards associated with computer use were mitigated with correct posture and regular breaks.
+
+
 \end{document}

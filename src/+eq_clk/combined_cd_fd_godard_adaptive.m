@@ -34,8 +34,13 @@ function [y, cfoBinsApplied] = combined_cd_fd_godard_adaptive(In, SpS, ...
 %
 %   The Godard Modified-Godard timing metric is evaluated on the
 %   already-corrected spectrum (CD + MF + current phase ramp).  Its imag
-%   part drives a per-block PI loop filter whose accumulated tau is
-%   applied as the next-block phase ramp.
+%   part drives a per-block PI loop filter whose accumulated tau is split
+%   NCO-style into an integer part (folded into the per-block read pointer)
+%   and a bounded fractional residual (applied as the next-block phase
+%   ramp), so the ramp slope never grows past +/-half a sample.  The
+%   processing is a streaming zero-padded overlap-save (no cyclic frame
+%   extension), so it no longer requires the total drift to be an integer
+%   number of samples.
 
     if nargin < 14 || isempty(cfoEnable)
         cfoEnable = false;
@@ -64,46 +69,49 @@ function [y, cfoBinsApplied] = combined_cd_fd_godard_adaptive(In, SpS, ...
     kHi   = round((1 + Rolloff) / (2*eta) * NFFT);
     k_idx = [0:NFFT/2-1, -NFFT/2:-1].';
 
-    %% Input cyclic extension to integer block count ----------------
-    AuxLen = size(In,1) / (NFFT - NOverlap);
-    if AuxLen ~= ceil(AuxLen)
-        NExtra = ceil(AuxLen)*(NFFT - NOverlap) - size(In,1);
-    else
-        NExtra = NOverlap;
-    end
-    In = [In(end-NExtra/2+1:end,:); In; In(1:NExtra/2,:)];
+    %% Zero-padded streaming overlap-save framing (no cyclic extension) --
+    %  Mirrors the working clk_recovery.recovery_godard: a guard of halfOv
+    %  zeros on each end, blocks read at stride stepLen, halfOv discarded
+    %  per edge.  The accumulated timing is split NCO-style inside the loop
+    %  into an integer part (folded into the per-block read pointer) and a
+    %  bounded fractional residual (the phase ramp).
+    NIn     = size(In, 1);
+    stepLen = NFFT - NOverlap;          % M: valid output samples per block
+    halfOv  = NOverlap / 2;             % G: overlap-save guard per edge
 
-    BlocksV = reshape(In(:,1), NFFT - NOverlap, ...
-                      size(In,1)/(NFFT - NOverlap));
-    if NPol == 2
-        BlocksH = reshape(In(:,2), NFFT - NOverlap, ...
-                          size(In,1)/(NFFT - NOverlap));
-        Blocks = cat(3, BlocksV, BlocksH);
-    else
-        Blocks = BlocksV;
-    end
-
-    nBlk = size(Blocks, 2);
+    InPad   = [zeros(halfOv, NPol); In; zeros(halfOv, NPol)];
+    LPad    = size(InPad, 1);
+    nBlk    = floor((LPad - NFFT) / stepLen) + 1;
 
     %% Overlap-save loop with embedded Godard PI ---------------------
-    Out     = zeros(size(Blocks));
-    Overlap = zeros(NOverlap, 1, NPol);
+    Out = zeros(nBlk * stepLen, NPol);
 
     LF_I    = 0;
     tauSamp = 0;
 
     for i = 1:nBlk
-        InB = [Overlap; Blocks(:,i,:)];
+        % NCO-style integer/fractional split of the timing estimate: the
+        % integer part folds into the read pointer, only the bounded
+        % fractional residual mu drives the phase ramp.
+        dInt = round(tauSamp);
+        mu   = tauSamp - dInt;           % fractional residual in [-0.5, 0.5)
+        ramp = exp(-1j * 2*pi * k_idx * mu / NFFT);
+
+        % Read window with the integer timing folded into the read pointer;
+        % indices outside the padded input are zero-filled.
+        rdStart = (i - 1) * stepLen + 1 - dInt;
+        idx     = (rdStart : rdStart + NFFT - 1).';
+        valid   = idx >= 1 & idx <= LPad;
+        InB     = zeros(NFFT, 1, NPol);
+        for p = 1:NPol
+            InB(valid, 1, p) = InPad(idx(valid), p);
+        end
 
         % Natural-order FFT (matches recovery_godard convention)
         R = fft.fft_flp(InB, false, po2Twiddle);
 
-        % Apply CD + matched filter
-        Rfilt = R .* Hstatic;
-
-        % Apply current cumulative timing phase ramp
-        ramp   = exp(-1j * 2*pi * k_idx * tauSamp / NFFT);
-        R_corr = Rfilt .* ramp;
+        % CD + matched filter + current fractional phase ramp
+        R_corr = (R .* Hstatic) .* ramp;
 
         % Godard metric on the corrected spectrum (per-pol then summed)
         S = 0;
@@ -118,24 +126,18 @@ function [y, cfoBinsApplied] = combined_cd_fd_godard_adaptive(In, SpS, ...
         tauSamp = kp * e + LF_I;
 
         % IFFT and overlap-save save
-        OutFDE  = fft.fft_flp(R_corr, true, po2Twiddle);
-        Overlap = InB(end-NOverlap+1:end, 1, :);
-        OutB    = OutFDE(NOverlap/2+1:end-NOverlap/2, 1, :);
-        Out(:,i,:) = OutB;
+        OutFDE = fft.fft_flp(R_corr, true, po2Twiddle);
+        oStart = (i - 1) * stepLen + 1;
+        Out(oStart : oStart + stepLen - 1, :) = ...
+            reshape(OutFDE(halfOv+1 : halfOv+stepLen, 1, :), stepLen, NPol);
     end
 
-    %% Reassemble output --------------------------------------------
-    OutV = reshape(Out(:,:,1), [], 1);
-    if NPol == 2
-        OutH = reshape(Out(:,:,2), [], 1);
-        z = [OutV OutH];
+    %% Trim to the original input span (output aligns from sample 1) -----
+    if size(Out, 1) > NIn
+        z = Out(1:NIn, :);
     else
-        z = OutV;
+        z = Out;
     end
-
-    DInit = 1 + (NExtra + NOverlap)/2;
-    DFin  = (NExtra - NOverlap)/2;
-    z = z(DInit:end-DFin, :);
 
     %% Adaptive butterfly CMA ---------------------------------------
     if NPol == 1

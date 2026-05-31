@@ -1,8 +1,19 @@
 function diag_pipeline_float(LW_override, CFO_override)
 %DIAG_PIPELINE_FLOAT  Floating-point clone of pipeline_fxp_sweep.runOneTrial
-%   with heavy per-stage instrumentation.  No MEX / no fi: every stage uses
-%   the float reference so we can localise the BER failure to STRUCTURE
-%   (alignment / pilot-ID / CFO / loop tuning) versus FIXED-POINT.
+%   (current Godard pipeline) with per-stage instrumentation, so the BER
+%   failure can be localised to STRUCTURE (equaliser convergence /
+%   alignment / FR / CR) rather than fixed-point precision.
+%
+%   Mirrors the current pipeline:
+%       CPON Tx -> channel -> normalise -> Godard-combined eq (float) ->
+%       pilot lag-align -> differential_kay FR (float) -> pilots_only CR
+%       (float, per-pol) -> BER.   No ADC, no pilot rescaling.
+%
+%   The decisive readout is the verdict block at the end, which compares:
+%     (a) ORACLE BER  - eqOut with EXACT residual-CFO removed + per-pol
+%                       pilot CR (isolates equaliser+alignment quality), and
+%     (b) PIPELINE BER- eqOut -> differential_kay -> pilots_only.
+%   Their relationship pinpoints the broken stage.
 %
 %   Run:  addpath(genpath('src')); diag_pipeline_float
 
@@ -12,23 +23,25 @@ function diag_pipeline_float(LW_override, CFO_override)
 
     %% ---- Parameters (mirror pipeline_fxp_sweep) --------------------
     P.Rs=30.5; P.SpS=2; P.N_pol=2; P.D=20; P.CWL=1550; P.DGDSpec=0.1;
-    P.N_pmd=1; P.PMD_seed=12345; P.L_km=80; P.SFO_ppm=40; P.CFO_GHz=3.0;
+    P.N_pmd=1; P.PMD_seed=42; P.L_km=80; P.SFO_ppm=40; P.CFO_GHz=3;
     P.LW_Hz=1e6; P.Rolloff=0.25; P.Span=10; P.N_sub_target=8;
-    P.NFFT=128; P.NCD=22; P.NLanesGard=32;
-    P.ki=1e-7; P.kp=1e-6;                  % po2-off gains
+    P.NFFT=128; P.NCD=22;
+    P.ki=3e-1; P.kp=1e-1;                  % Godard po2-off gains
+    P.kiGardner=1e-7; P.kpGardner=1e-6; P.NLanesGard=32;   % Gardner po2-off
     P.NTapsAEQ=1; P.MuAEQ=1e-3; P.N1AEQ=500; P.NOutAEQ=1000;
     P.SignOnly=true; P.SingleSpike=true; P.PLanesAEQ=32;
     P.MaxFreq=0.1; P.TrainingLen=11; P.BlockLen_CR=32;
-    P.SUBFRAME_SYMS=3712; P.BLOCK_LEN=32; P.N_BLOCKS=116;
+    P.NormPct=99.9; P.AlignLagMax=64; P.SUBFRAME_SYMS=3712;
 
     if nargin>=1 && ~isempty(LW_override),  P.LW_Hz  = LW_override;  end
     if nargin>=2 && ~isempty(CFO_override), P.CFO_GHz = CFO_override; end
 
-    SNR_dB = 40; trialSeed = 1;
-    fprintf('\n================ FLOAT PIPELINE DIAGNOSTIC ===============\n');
-    fprintf('SNR=%g dB  CFO=%g GHz  trial=%d\n', SNR_dB, P.CFO_GHz, trialSeed);
+    SNR_dB = 20; trialSeed = 1;
+    fprintf('\n============== FLOAT GODARD PIPELINE DIAGNOSTIC ==============\n');
+    fprintf('SNR=%g dB  CFO=%g GHz  LW=%g Hz  trial=%d\n', ...
+        SNR_dB, P.CFO_GHz, P.LW_Hz, trialSeed);
 
-    %% ---- 1. Channel ------------------------------------------------
+    %% ---- 1. Channel (mirror genChannel incl. normalise) ------------
     rng(1000*trialSeed + round(SNR_dB) + 13);
     CPON_BITS_PER_SF = 3586 * P.N_pol * 2;
     nBits = P.N_sub_target * CPON_BITS_PER_SF;
@@ -36,10 +49,8 @@ function diag_pipeline_float(LW_override, CFO_override)
     [txSymbols, pilotsRef, training, nSubTx] = modem.modulate(bits);
     NsymTx = size(txSymbols,1);
     fprintf('\n[1] Tx: %d symbols, %d subframes. pilotsRef=[%dx%d] training=[%dx%d]\n', ...
-        NsymTx, nSubTx, size(pilotsRef,1), size(pilotsRef,2), size(training,1), size(training,2));
-
-    % Sanity: verify pilot/training positions in the *Tx* stream match the
-    % index formula used downstream (pilotTrainingIndices).
+        NsymTx, nSubTx, size(pilotsRef,1), size(pilotsRef,2), ...
+        size(training,1), size(training,2));
     checkTxPilotPlacement(txSymbols, pilotsRef, training, P);
 
     txSig = modem.rrcPulse(txSymbols, P.SpS, P.Rolloff, P.Span);
@@ -51,134 +62,223 @@ function diag_pipeline_float(LW_override, CFO_override)
     rxSig = channel.apply_timing_error(rxSig, P.SFO_ppm, 0, P.SpS);
     rxSig = channel.add_awgn(rxSig, SNR_dB);
     rxSig = channel.add_phase_noise(rxSig, P.Rs*P.SpS, P.LW_Hz);
+    % rxSig = modem.normalise(rxSig, P.NormPct);   % no ADC
 
-    %% ---- 2. Equaliser (FLOAT) -------------------------------------
+    %% ---- 2. Equaliser (FLOAT Godard) ------------------------------
     nOv = 2*ceil((P.NCD-1)/2);
     adaptOpts = struct('NTaps',P.NTapsAEQ,'Mu',P.MuAEQ,'SingleSpike',P.SingleSpike, ...
         'N1',P.N1AEQ,'NOut',P.NOutAEQ,'SignOnly',P.SignOnly,'PLanes',P.PLanesAEQ, ...
         'Mode',0,'Pilots',[],'BlockLen',P.PLanesAEQ,'SubframeBlocks',0);
-    [eqOutFull, cfoBins] = eq_clk.combined_cd_fd_gardner_adaptive(rxSig, P.SpS, ...
+    [eqOutFull, cfoBins] = eq_clk.combined_cd_fd_godard_adaptive(rxSig, P.SpS, ...
         P.NFFT, nOv, P.D, P.L_km, P.CWL, P.Rs, P.Rolloff, P.ki, P.kp, ...
-        NsymTx, P.NLanesGard, adaptOpts, true, false);
-    fprintf('\n[2] Equaliser out: %d symbols. cfoBinsApplied=%.4f (bin=%.4f GHz -> %.4f GHz removed)\n', ...
-        size(eqOutFull,1), cfoBins, P.SpS*P.Rs/P.NFFT, cfoBins*P.SpS*P.Rs/P.NFFT);
+        NsymTx, adaptOpts, true, false);
+    binGHz = P.SpS*P.Rs/P.NFFT;
+    fprintf('\n[2] Equaliser out: %d symbols. cfoBins=%.4f (bin=%.4f GHz -> %.4f GHz removed; residual target %.4f GHz)\n', ...
+        size(eqOutFull,1), cfoBins, binGHz, cfoBins*binGHz, P.CFO_GHz - cfoBins*binGHz);
 
-    %% ---- 3. Drop one subframe; align ------------------------------
-    nDropEq = P.SUBFRAME_SYMS - P.NOutAEQ;
-    eqOut = eqOutFull(nDropEq+1:end, :);
-    nSubUsable = floor(size(eqOut,1)/P.SUBFRAME_SYMS);
-    eqOut = eqOut(1:nSubUsable*P.SUBFRAME_SYMS, :);
-    fprintf('[3] nDropEq=%d -> %d subframes usable (%d symbols)\n', ...
-        nDropEq, nSubUsable, size(eqOut,1));
-
-    %% ---- 3b. ALIGNMENT PROBE (suspect 1) --------------------------
-    % Scan a lag window: for each candidate lag, compute the contrast
-    % between |eqOut| at the assumed pilot positions and elsewhere.
-    % A correct lag => pilots have sqrt(2) magnitude and a distinctive
-    % pattern; wrong lag => indistinguishable from data.
-    fprintf('\n[3b] ALIGNMENT SCAN (|pilot| contrast vs lag):\n');
-    bestLag = 0; bestContrast = -inf;
-    for lag = -40:40
-        c = pilotContrast(eqOutFull, nDropEq, lag, nSubUsable, P);
-        if ~isnan(c) && c > bestContrast, bestContrast = c; bestLag = lag; end
-    end
-    for lag = [-2 -1 0 1 2 bestLag]
-        c = pilotContrast(eqOutFull, nDropEq, lag, nSubUsable, P);
-        fprintf('     lag=%+3d : pilot-pattern correlation = %+.4f %s\n', ...
-            lag, c, tern(lag==bestLag,'<== best',''));
-    end
-    fprintf('     => best lag = %+d (0 means drop logic is correct)\n', bestLag);
-
-    pIdx = pipeline_fxp_sweep.pilotTrainingIndices(nSubUsable, P);
-    nonP = setdiff(1:size(eqOut,1), pIdx);
-    fprintf('     |eqOut(pilot/train)| = %.3f   |eqOut(data)| = %.3f   (ratio %.2f)\n', ...
-        mean(abs(eqOut(pIdx,1))), mean(abs(eqOut(nonP,1))), ...
-        mean(abs(eqOut(pIdx,1)))/mean(abs(eqOut(nonP,1))));
-
-    %% ---- 4. Rescale pilots/training x3 ----------------------------
-    eqOut(pIdx,:) = 3*eqOut(pIdx,:);
-
-    %% ---- 5. Frequency recovery (FLOAT differential_kay) -----------
-    [frOut, frHz] = freq_recovery.differential_kay(eqOut, 3*training, P.Rs, true, 0);
-    fprintf('\n[5] FR estimate = %.4f GHz residual. (CFO removed by eq + FR = %.4f GHz; target %.4f)\n', ...
-        frHz/1e9, cfoBins*P.SpS*P.Rs/P.NFFT + frHz/1e9, P.CFO_GHz);
-    % Residual frequency drift after FR, inferred from pilot phase slope:
-    reportPilotPhaseSlope(frOut, pilotsRef, nSubUsable, P, 'after FR');
-
-    %% ---- 6. Carrier recovery (FLOAT pilots_only) ------------------
-    pilotsAll = 3*repmat(pilotsRef, nSubUsable, 1);
-    [crOut, ThetaPU] = carrier_recovery.pilots_only(frOut, P.N_pol, P.BlockLen_CR, pilotsAll);
-    dth = diff(ThetaPU(1:P.BlockLen_CR:end, 1));
-    dth = mod(dth+pi, 2*pi)-pi;
-    fprintf('\n[6] CR per-block phase step: mean=%.4f rad  std=%.4f rad  max|.|=%.4f\n', ...
-        mean(dth), std(dth), max(abs(dth)));
-    fprintf('     (max|step| near pi/2=%.3f => ambiguity-jump risk)\n', pi/2);
-
-    % Per-POL pilot phase (the CR collapses both pols into ONE estimate).
-    NB = size(pilotsAll,1);
-    thX = nan(NB,1); thY = nan(NB,1); thXY = nan(NB,1);
-    for b = 1:NB
-        bs = (b-1)*P.BlockLen_CR + 1;
-        if bs <= size(frOut,1)
-            thX(b)  = angle(conj(pilotsAll(b,1))*frOut(bs,1));
-            thY(b)  = angle(conj(pilotsAll(b,2))*frOut(bs,2));
-            thXY(b) = angle(sum(conj(pilotsAll(b,:)).*frOut(bs,:)));
-        end
-    end
-    dXY = mod(thX-thY+pi,2*pi)-pi;
-    fprintf('     per-pol phase: std(thetaX)=%.3f std(thetaY)=%.3f  std(thetaX-thetaY)=%.3f rad\n', ...
-        std(thX,'omitnan'), std(thY,'omitnan'), std(dXY,'omitnan'));
-    fprintf('     => if std(thetaX-thetaY) is large, the single shared CR estimate is invalid\n');
-    % Per-pol BER using each pol''s OWN phase estimate (ideal pilot CR per pol):
-    crIdealX = frOut(:,1).*exp(-1j*holdPhase(thX,P.BlockLen_CR,size(frOut,1)));
-    crIdealY = frOut(:,2).*exp(-1j*holdPhase(thY,P.BlockLen_CR,size(frOut,1)));
-    crIdeal  = [crIdealX, crIdealY];
-    bIdeal = berAtOffset(crIdeal, txSymbols, P.SUBFRAME_SYMS);
-    fprintf('     BER with PER-POL pilot phase (ideal per-pol CR) = %.4e\n', bIdeal);
-
-    %% ---- 7. BER (assumed alignment) + lag scan --------------------
-    txOffset = P.SUBFRAME_SYMS;
-    fprintf('\n[7] BER vs small symbol lag (txOffset=%d):\n', txOffset);
-    for lag = [-2 -1 0 1 2]
-        b = berAtOffset(crOut, txSymbols, txOffset+lag);
-        fprintf('     lag=%+d : BER=%.4e %s\n', lag, b, tern(lag==0,'<== pipeline assumption',''));
+    %% ---- 3. Pilot lag-align (same as pipeline) --------------------
+    nDropNom = P.SUBFRAME_SYMS - P.NOutAEQ;
+    fprintf('\n[3] PILOT-COHERENCE vs lag (nominal drop=%d, window +/-%d):\n', ...
+        nDropNom, P.AlignLagMax);
+    [bestLag, Ccurve, lags] = scanCoherence(eqOutFull, nDropNom, pilotsRef, P, P.AlignLagMax);
+    showLagRow(lags, Ccurve, bestLag);
+    % Also test the polarisation-SWAPPED hypothesis (butterfly CMA can swap
+    % pols): if swapped coherence is much higher, the pol assignment is wrong.
+    pilotsSwap = pilotsRef(:, [2 1]);
+    [bestLagSw, CcurveSw] = scanCoherence(eqOutFull, nDropNom, pilotsSwap, P, P.AlignLagMax);
+    fprintf('     max coherence: direct=%.3f (lag %+d) | pol-swapped=%.3f (lag %+d)\n', ...
+        max(Ccurve), bestLag, max(CcurveSw), bestLagSw);
+    if max(CcurveSw) > max(Ccurve) + 0.05
+        fprintf('     *** pol-swapped coherence higher => equaliser likely SWAPPED X/Y\n');
     end
 
-    fprintf('\n================ END DIAGNOSTIC ==========================\n');
+    [eqOut, nSub, swapped] = pipeline_fxp_sweep.alignToSubframe(eqOutFull, nDropNom, pilotsRef, P);
+    fprintf('     => alignToSubframe chose: swapped=%d (direct-only scan best lag was %+d), %d subframes (%d symbols)\n', ...
+        swapped, bestLag, nSub, size(eqOut,1));
+    if nSub < 1, fprintf('     (no usable subframes) ABORT\n'); return; end
+
+    txOffset = P.SUBFRAME_SYMS;   % aligned stream starts at Tx subframe 2
+    pilotsAll = repmat(pilotsRef, nSub, 1);
+
+    %% ---- 4. ORACLE: exact residual-CFO removal + per-pol pilot CR --
+    % Isolates EQUALISER + ALIGNMENT quality (independent of FR).  Tries the
+    % direct and the X/Y-swapped pilot assignment: nothing in the current
+    % pipeline resolves the butterfly-CMA polarisation-swap ambiguity, so a
+    % LOW swapped-oracle with a HIGH direct-oracle pins the bug on pol swap.
+    residGHz = P.CFO_GHz - cfoBins*binGHz;
+    eqCfo    = removeResidCFO(eqOut, residGHz, P.Rs);
+    crOracle = carrier_recovery.pilots_only(eqCfo, P.N_pol, P.BlockLen_CR, pilotsAll);
+    berOracle = berAtOffset(crOracle, txSymbols, txOffset);
+    pilotsAllSw = repmat(pilotsRef(:,[2 1]), nSub, 1);
+    crOracleSw  = carrier_recovery.pilots_only(eqCfo, P.N_pol, P.BlockLen_CR, pilotsAllSw);
+    berOracleSw = berAtOffset(crOracleSw, txSymbols, txOffset);
+    fprintf('\n[4] ORACLE BER (exact CFO removed + per-pol pilot CR):\n');
+    fprintf('      direct pilots = %.4e | X/Y-swapped pilots = %.4e\n', ...
+        berOracle, berOracleSw);
+    if berOracleSw < berOracle - 1e-2
+        fprintf('      *** swapped pilots win => EQUALISER SWAPPED X/Y (pol-swap unresolved)\n');
+    end
+    berOracleBest = min(berOracle, berOracleSw);
+    % Alignment cross-check: scan a WIDE symbol offset on the oracle path.
+    fprintf('    oracle BER vs extra symbol offset around the chosen boundary:\n');
+    for off = [-2 -1 0 1 2 32 -32]
+        e = oracleBerAtLag(eqOutFull, nDropNom+off, cfoBins, binGHz, pilotsRef, P, txSymbols, txOffset);
+        fprintf('      offset %+4d : BER=%.4e %s\n', off, e, tern(off==0,'<== chosen',''));
+    end
+
+    %% ---- 5. PIPELINE: differential_kay FR -> pilots_only CR --------
+    [frOut, frHz] = freq_recovery.differential_kay(eqOut, training, P.Rs, true, 0);
+    fprintf('\n[5] FR: estimate=%.4f GHz  (eq+FR removed=%.4f GHz; channel CFO=%.4f GHz)\n', ...
+        frHz/1e9, cfoBins*binGHz + frHz/1e9, P.CFO_GHz);
+    reportPilotPhaseSlope(eqCfo, pilotsAll, P, 'oracle (CFO-removed)');
+    reportPilotPhaseSlope(frOut,  pilotsAll, P, 'after FR');
+
+    crOut = carrier_recovery.pilots_only(frOut, P.N_pol, P.BlockLen_CR, pilotsAll);
+    berPipe = berAtOffset(crOut, txSymbols, txOffset);
+    fprintf('\n[6] PIPELINE BER (FR then per-pol pilot CR) = %.4e\n', berPipe);
+
+    % Per-pol pilot phase spread after FR (large spread X-vs-Y => pol issue).
+    [stdX, stdY, stdXY] = perPolPhaseSpread(frOut, pilotsAll, P);
+    fprintf('    per-pol pilot phase std after FR: X=%.3f Y=%.3f  X-Y=%.3f rad\n', ...
+        stdX, stdY, stdXY);
+
+    %% ---- Constellation at each stage -----------------------------
+    %  Visual check: after a clean recovery each pol should show 4 tight
+    %  QPSK clusters.  A smeared RING => carrier phase not tracked; a filled
+    %  BLOB => equaliser did not open the eye; clusters at the wrong angle =>
+    %  alignment / pol-swap.
+    stages = { eqOut,    'after EQ (aligned)'; ...
+               eqCfo,    'after exact-CFO removal'; ...
+               crOracle, sprintf('oracle CR (BER=%.2e)', berOracle); ...
+               frOut,    sprintf('after FR (est=%.3f GHz)', frHz/1e9); ...
+               crOut,    sprintf('pipeline CR (BER=%.2e)', berPipe) };
+    plotConstellations(stages, P);
+
+    %% ---- IMPAIRMENT / STAGE ISOLATION ----------------------------
+    %  Re-run channel+eq+align+exact-CFO+per-pol CR with one thing toggled
+    %  from the CURRENT P.  Whichever toggle drops the oracle BER is the
+    %  cause of the closed eye.  'CMA frozen' (Mu=0) separates the adaptive
+    %  equaliser from the static-CD+Godard-timing front end: if frozen is
+    %  ALSO a blob the fault is CD/timing, if frozen is clean it is the CMA.
+    fprintf('\n[ISO] oracle BER (eq+align+exact-CFO+per-pol CR), toggled from current P:\n');
+    Pa = P;                                    Pa.tag = 'baseline (current P)';
+    Pb = P; Pb.PmdOn = false;                  Pb.tag = 'PMD off';
+    Pc = P; Pc.LW_Hz  = 0;                     Pc.tag = 'phase noise off (LW=0)';
+    Pd = P; Pd.MuAEQ  = 0;                     Pd.tag = 'CMA frozen (Mu=0)';
+    Pe = P; Pe.PmdOn = false; Pe.LW_Hz = 0;    Pe.tag = 'PMD off + LW=0';
+    for cell_ = {Pa, Pb, Pc, Pd, Pe}
+        Pi = cell_{1};
+        e  = condBer(Pi, SNR_dB, trialSeed);
+        fprintf('     %-26s : oracle BER = %.4e\n', Pi.tag, e);
+    end
+
+    %% ---- GARDNER cross-check (same channel realisation) ----------
+    %  Swap ONLY the clock-recovery flavour (Godard -> Gardner) on the very
+    %  same rxSig.  If Gardner is clean but Godard is not, the GODARD timing
+    %  loop is the culprit; if both blob, the fault is shared (CMA / CD-FD /
+    %  phase noise / channel), not the timing flavour.
+    fprintf('\n[G] Gardner vs Godard on the SAME channel (oracle BER):\n');
+    [berG, eqCfoG] = oracleFromRx(P, rxSig, NsymTx, txSymbols, pilotsRef, 'gardner');
+    fprintf('     Godard oracle BER = %.4e | Gardner oracle BER = %.4e\n', berOracle, berG);
+    if isfinite(berG) && berG < berOracle - 1e-2
+        fprintf('     *** Gardner clean, Godard not => GODARD timing recovery is the culprit\n');
+    elseif isfinite(berG) && berG > 1e-2
+        fprintf('     *** both fail => NOT the clock-recovery flavour (CMA / CD-FD / phase noise)\n');
+    end
+    plotConstellations({ eqCfo,  'GODARD after exact-CFO'; ...
+                         eqCfoG, 'GARDNER after exact-CFO' }, P);
+
+    %% ---- 7. VERDICT ----------------------------------------------
+    fprintf('\n================ VERDICT =================================\n');
+    if berOracleSw < berOracle - 1e-2 && berOracleSw < 1e-2
+        fprintf('  POL SWAP: direct-oracle BER=%.2e is high but X/Y-swapped\n', berOracle);
+        fprintf('  oracle BER=%.2e is low => the butterfly CMA swapped the\n', berOracleSw);
+        fprintf('  polarisations and NOTHING downstream resolves it.  The pilot\n');
+        fprintf('  align + CR use pilotsRef in fixed X/Y order, so a swap floors\n');
+        fprintf('  the BER.  FIX: make the pilot assignment swap-aware (try both\n');
+        fprintf('  pilot column orders, keep the higher-coherence one for BOTH\n');
+        fprintf('  alignToSubframe and the CR) -- the training sequence (distinct\n');
+        fprintf('  per pol) exists precisely to resolve this.\n');
+    elseif berOracleBest > 1e-2
+        fprintf('  ORACLE BER is HIGH (direct=%.2e, swapped=%.2e) => the\n', berOracle, berOracleSw);
+        fprintf('  EQUALISER output or the ALIGNMENT is broken (not FR/CR).\n');
+        fprintf('  - Check [4] offset scan: if a non-zero offset gives low BER,\n');
+        fprintf('    the lag-align picked the wrong boundary.\n');
+        fprintf('  - Otherwise the single-tap CMA did not converge (NTaps=%d,\n', P.NTapsAEQ);
+        fprintf('    SingleSpike) against the residual CD/PMD.\n');
+    elseif berPipe > 1e-2
+        fprintf('  ORACLE BER is LOW (%.2e) but PIPELINE BER is HIGH (%.2e)\n', berOracleBest, berPipe);
+        fprintf('  => equaliser+alignment are FINE; the FREQUENCY RECOVERY\n');
+        fprintf('  (differential_kay) is the culprit (over/under-correction or\n');
+        fprintf('  a wrap near MaxFreq=%.2f).  Compare [5] FR estimate vs CFO\n', P.MaxFreq);
+        fprintf('  and the pilot-phase slope before/after FR.\n');
+    else
+        fprintf('  BOTH oracle (%.2e) and pipeline (%.2e) BER are LOW.\n', berOracleBest, berPipe);
+        fprintf('  Float structure is healthy => the fxp failure is PRECISION:\n');
+        fprintf('  sweep FRFL/CRFL/AdaptFL upward and check CordicIts=FL is\n');
+        fprintf('  large enough (angular resolution ~atan(2^-FL)).\n');
+    end
+    fprintf('=========================================================\n');
 end
 
-% ---------------------------------------------------------------------
+% =====================================================================
+%  Helpers
+% =====================================================================
 function checkTxPilotPlacement(tx, pilotsRef, training, P)
-    base = 0;  % subframe 1
+    base = 0;
     okTrain = isequal(tx(base+(1:P.TrainingLen),:), training);
-    pilotPos = base + (2:P.N_BLOCKS-0)*0;  %#ok
     okP = true;
-    for b = 2:P.N_BLOCKS
-        if ~isequal(tx(base+(b-1)*P.BLOCK_LEN+1,:), pilotsRef(b,:)), okP=false; break; end
+    for b = 2:size(pilotsRef,1)
+        if ~isequal(tx(base+(b-1)*P.BlockLen_CR+1,:), pilotsRef(b,:)), okP=false; break; end
     end
     okP1 = isequal(tx(base+1,:), pilotsRef(1,:));
-    fprintf('     Tx placement check: training@1..11=%d, pilot@blockstarts=%d, TS1==pilot(1)=%d\n', ...
-        okTrain, okP, okP1);
+    fprintf('     Tx placement: training@1..%d=%d, pilot@blockstarts=%d, TS1==pilot(1)=%d\n', ...
+        P.TrainingLen, okTrain, okP, okP1);
 end
 
-function c = pilotContrast(eqOutFull, nDropEq, lag, nSubUsable, P)
-    % Correlate |eqOut| at assumed pilot positions (shifted by lag) against
-    % the expected on/off pilot mask, normalised.  High => pilots land right.
-    start = nDropEq + 1 + lag;
-    if start < 1, c = NaN; return; end
-    avail = size(eqOutFull,1) - start + 1;
-    nSub  = min(nSubUsable, floor(avail / P.SUBFRAME_SYMS));
-    if nSub < 1, c = NaN; return; end
+function [bestLag, C, lags] = scanCoherence(eqOutFull, nDropNom, pilotsRef, P, win)
+    lags = -win:win;
+    C = nan(size(lags));
+    N = size(eqOutFull,1);
+    for i = 1:numel(lags)
+        start = nDropNom + 1 + lags(i);
+        if start < 1, continue; end
+        nSub = floor((N - start + 1) / P.SUBFRAME_SYMS);
+        if nSub < 1, continue; end
+        C(i) = pipeline_fxp_sweep.pilotCoherence(eqOutFull, start, nSub, pilotsRef, P);
+    end
+    [~, k] = max(C);
+    bestLag = lags(k);
+end
+
+function showLagRow(lags, C, bestLag)
+    pick = [-2 -1 0 1 2 bestLag];
+    for lg = unique(pick, 'stable')
+        i = find(lags==lg, 1);
+        if isempty(i) || isnan(C(i)), continue; end
+        fprintf('     lag=%+3d : coherence=%.4f %s\n', lg, C(i), tern(lg==bestLag,'<== best',''));
+    end
+end
+
+function y = removeResidCFO(x, residGHz, Rs)
+    n = (0:size(x,1)-1).';
+    y = x .* exp(-1j*2*pi*(residGHz/Rs)*n);
+end
+
+function e = oracleBerAtLag(eqOutFull, nDrop, cfoBins, binGHz, pilotsRef, P, txSymbols, txOffset)
+    N = size(eqOutFull,1);
+    start = nDrop + 1;
+    if start < 1, e = NaN; return; end
+    nSub = floor((N - start + 1) / P.SUBFRAME_SYMS);
+    if nSub < 1, e = NaN; return; end
     seg = eqOutFull(start : start + nSub*P.SUBFRAME_SYMS - 1, :);
-    pIdx = pipeline_fxp_sweep.pilotTrainingIndices(nSub, P);
-    mask = false(size(seg,1),1); mask(pIdx) = true;
-    a = abs(seg(:,1)) + abs(seg(:,2));
-    % point-biserial correlation between magnitude and pilot mask
-    c = (mean(a(mask)) - mean(a(~mask))) / (std(a) + eps);
+    seg = removeResidCFO(seg, P.CFO_GHz - cfoBins*binGHz, P.Rs);
+    pilotsAll = repmat(pilotsRef, nSub, 1);
+    cr = carrier_recovery.pilots_only(seg, P.N_pol, P.BlockLen_CR, pilotsAll);
+    e = berAtOffset(cr, txSymbols, txOffset);
 end
 
-function reportPilotPhaseSlope(x, pilotsRef, nSubUsable, P, tag)
-    pilotsAll = repmat(pilotsRef, nSubUsable, 1);
+function reportPilotPhaseSlope(x, pilotsAll, P, tag)
     NB = size(pilotsAll,1);
     th = zeros(NB,1);
     for b = 1:NB
@@ -188,8 +288,117 @@ function reportPilotPhaseSlope(x, pilotsRef, nSubUsable, P, tag)
         end
     end
     dth = mod(diff(th)+pi,2*pi)-pi;
-    fprintf('     [%s] pilot-phase block-to-block: mean=%.4f std=%.4f rad/blk (drift=>residual freq)\n', ...
+    fprintf('     [%s] pilot-phase step block-to-block: mean=%.4f std=%.4f rad/blk\n', ...
         tag, mean(dth), std(dth));
+end
+
+function [stdX, stdY, stdXY] = perPolPhaseSpread(x, pilotsAll, P)
+    NB = size(pilotsAll,1);
+    thX = nan(NB,1); thY = nan(NB,1);
+    for b = 1:NB
+        bs = (b-1)*P.BlockLen_CR + 1;
+        if bs <= size(x,1)
+            thX(b) = angle(conj(pilotsAll(b,1))*x(bs,1));
+            thY(b) = angle(conj(pilotsAll(b,2))*x(bs,2));
+        end
+    end
+    dXY = mod(thX-thY+pi,2*pi)-pi;
+    stdX = std(thX,'omitnan'); stdY = std(thY,'omitnan'); stdXY = std(dXY,'omitnan');
+end
+
+function [berO, eqCfo] = oracleFromRx(P, rxSig, NsymTx, txSymbols, pilotsRef, blockName)
+    % Run the chosen combined eq block on a GIVEN rxSig, then align +
+    % exact-CFO removal + per-pol pilot CR -> oracle BER + CFO-removed const.
+    nOv = 2*ceil((P.NCD-1)/2);
+    ao = struct('NTaps',P.NTapsAEQ,'Mu',P.MuAEQ,'SingleSpike',P.SingleSpike, ...
+        'N1',P.N1AEQ,'NOut',P.NOutAEQ,'SignOnly',P.SignOnly,'PLanes',P.PLanesAEQ, ...
+        'Mode',0,'Pilots',[],'BlockLen',P.PLanesAEQ,'SubframeBlocks',0);
+    switch blockName
+        case 'godard'
+            [eqF, cfoBins] = eq_clk.combined_cd_fd_godard_adaptive(rxSig, P.SpS, ...
+                P.NFFT, nOv, P.D, P.L_km, P.CWL, P.Rs, P.Rolloff, ...
+                P.ki, P.kp, NsymTx, ao, true, false);
+        case 'gardner'
+            [eqF, cfoBins] = eq_clk.combined_cd_fd_gardner_adaptive(rxSig, P.SpS, ...
+                P.NFFT, nOv, P.D, P.L_km, P.CWL, P.Rs, P.Rolloff, ...
+                P.kiGardner, P.kpGardner, NsymTx, P.NLanesGard, ao, true, false);
+        otherwise
+            error('oracleFromRx:block', 'unknown block %s', blockName);
+    end
+    nDropNom = P.SUBFRAME_SYMS - P.NOutAEQ;
+    [eqOut, nSub] = pipeline_fxp_sweep.alignToSubframe(eqF, nDropNom, pilotsRef, P);
+    if nSub < 1, berO = NaN; eqCfo = complex(zeros(0,P.N_pol)); return; end
+    binGHz = P.SpS*P.Rs/P.NFFT;
+    eqCfo  = removeResidCFO(eqOut, P.CFO_GHz - cfoBins*binGHz, P.Rs);
+    cr = carrier_recovery.pilots_only(eqCfo, P.N_pol, P.BlockLen_CR, repmat(pilotsRef, nSub, 1));
+    berO = berAtOffset(cr, txSymbols, P.SUBFRAME_SYMS);
+end
+
+function e = condBer(P, SNR_dB, trialSeed)
+    % Compact channel+eq+align+exact-CFO+per-pol-CR oracle BER for one P.
+    % Honours P.PmdOn (default true) and whatever impairment levels P carries
+    % (CFO/SFO/CD/LW); a 0 level skips that channel stage.
+    rng(1000*trialSeed + round(SNR_dB) + 13);
+    bits = randi([0 1], P.N_sub_target*3586*P.N_pol*2, 1);
+    [tx, pilotsRef, ~, ~] = modem.modulate(bits);
+    NsymTx = size(tx,1);
+    sig = modem.rrcPulse(tx, P.SpS, P.Rolloff, P.Span);
+    sig = channel.add_chromatic_dispersion(sig, P.L_km, P.SpS, P.Rs, P.D, P.CWL);
+    if ~isfield(P,'PmdOn') || P.PmdOn
+        st = rng; rng(P.PMD_seed);
+        sig = channel.add_pmd(sig, P.L_km, P.SpS, P.Rs, P.DGDSpec, P.N_pmd);
+        rng(st);
+    end
+    if P.CFO_GHz ~= 0, sig = channel.lo_freq_shift(sig, P.CFO_GHz*1000, P.Rs, P.SpS); end
+    if P.SFO_ppm ~= 0, sig = channel.apply_timing_error(sig, P.SFO_ppm, 0, P.SpS); end
+    sig = channel.add_awgn(sig, SNR_dB);
+    if P.LW_Hz ~= 0,   sig = channel.add_phase_noise(sig, P.Rs*P.SpS, P.LW_Hz); end
+
+    nOv = 2*ceil((P.NCD-1)/2);
+    ao = struct('NTaps',P.NTapsAEQ,'Mu',P.MuAEQ,'SingleSpike',P.SingleSpike, ...
+        'N1',P.N1AEQ,'NOut',P.NOutAEQ,'SignOnly',P.SignOnly,'PLanes',P.PLanesAEQ, ...
+        'Mode',0,'Pilots',[],'BlockLen',P.PLanesAEQ,'SubframeBlocks',0);
+    [eqF, cfoBins] = eq_clk.combined_cd_fd_godard_adaptive(sig, P.SpS, P.NFFT, nOv, ...
+        P.D, P.L_km, P.CWL, P.Rs, P.Rolloff, P.ki, P.kp, NsymTx, ao, true, false);
+
+    nDropNom = P.SUBFRAME_SYMS - P.NOutAEQ;
+    [eqOut, nSub] = pipeline_fxp_sweep.alignToSubframe(eqF, nDropNom, pilotsRef, P);
+    if nSub < 1, e = NaN; return; end
+    binGHz = P.SpS*P.Rs/P.NFFT;
+    eqCfo  = removeResidCFO(eqOut, P.CFO_GHz - cfoBins*binGHz, P.Rs);
+    cr = carrier_recovery.pilots_only(eqCfo, P.N_pol, P.BlockLen_CR, repmat(pilotsRef, nSub, 1));
+    e = berAtOffset(cr, tx, P.SUBFRAME_SYMS);
+end
+
+function plotConstellations(stages, P)
+    % One figure: rows = pipeline stages, columns = polarisations.
+    nS = size(stages, 1);
+    fig = figure('Name', 'Float pipeline constellations', ...
+        'Position', [60 60 340*P.N_pol 220*nS]);
+    maxPts = 4000;                       % subsample for a readable scatter
+    for si = 1:nS
+        x   = stages{si, 1};
+        lab = stages{si, 2};
+        for pol = 1:P.N_pol
+            ax = subplot(nS, P.N_pol, (si-1)*P.N_pol + pol, 'Parent', fig);
+            v = x(:, pol);
+            if numel(v) > maxPts
+                v = v(round(linspace(1, numel(v), maxPts)));
+            end
+            plot(ax, real(v), imag(v), '.', 'MarkerSize', 3);
+            axis(ax, 'equal'); grid(ax, 'on'); box(ax, 'on');
+            title(ax, sprintf('%s  pol %d', lab, pol), 'Interpreter', 'none');
+        end
+    end
+    drawnow;
+    outFile = fullfile(fileparts(mfilename('fullpath')), ...
+        'diag_pipeline_float_const.png');
+    try
+        exportgraphics(fig, outFile, 'Resolution', 150);
+        fprintf('\nSaved constellations to %s\n', outFile);
+    catch
+        fprintf('\n(could not export constellation PNG)\n');
+    end
 end
 
 function b = berAtOffset(crOut, txSymbols, off)
@@ -217,14 +426,6 @@ function BER = computeBERlocal(decoded, refSyms)
         totErr = totErr + best*numel(refBits); totBits = totBits + numel(refBits);
     end
     BER = totErr/totBits;
-end
-
-function th = holdPhase(thBlk, BlockLen, Nsym)
-    th = zeros(Nsym,1);
-    for b = 1:numel(thBlk)
-        i0 = (b-1)*BlockLen+1; i1 = min(b*BlockLen, Nsym);
-        if i0 <= Nsym, th(i0:i1) = thBlk(b); end
-    end
 end
 
 function s = tern(c,a,b), if c, s=a; else, s=b; end, end

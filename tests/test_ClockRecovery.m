@@ -16,7 +16,7 @@ classdef test_ClockRecovery < matlab.unittest.TestCase
 
     properties (Constant)
         N_pol   = 1              % single polarisation (per-pol operation)
-        Ns      = 2^18           % symbols
+        Ns      = 2^17           % symbols
         SpS     = 2              % target samples per symbol
         SpS_hi  = 16             % high-resolution oversampling
 
@@ -26,6 +26,16 @@ classdef test_ClockRecovery < matlab.unittest.TestCase
 
         % Modified Godard estimator parameters
         N_fft = 128
+
+        % SFO scenario: target TOTAL accumulated drift over the record, in
+        % 2-Sa/sym samples.  Chosen as a deliberately NON-integer (~half-
+        % sample) value that still spans many samples, so the NCO integer
+        % accumulator folds a dozen times.  This is exactly the regime that
+        % broke the old cyclic-frame Godard (which only worked when the
+        % total drift was an integer number of samples) and that the
+        % integer/fractional split must now handle.  The required SFO in ppm
+        % is derived from this and the record length (drift = Ns*SpS*alpha).
+        SFO_drift_samples = 2.76
 
         % DPLL clock recovery parameters
         NLanes_DPLL = 2          % parallel lanes per block in recovery()
@@ -98,9 +108,13 @@ classdef test_ClockRecovery < matlab.unittest.TestCase
                     rxImp = channel.apply_timing_error(rxHi, 0, tau0, SpS_hi_);
                     impLabel = sprintf('Constant Offset tau0 = %.3f T', tau0);
                 case 'sfo'
-                    ppm   = 40;
+                    % Derive ppm from the target non-integer total drift:
+                    % drift_samples = Ns*SpS*alpha, alpha = ppm*1e-6.
+                    driftSamp = testCase.SFO_drift_samples;
+                    ppm   = driftSamp / (Ns_ * SpS_) * 1e6;
                     rxImp = channel.apply_timing_error(rxHi, ppm, 0, SpS_hi_);
-                    impLabel = sprintf('SFO %d ppm', ppm);
+                    impLabel = sprintf('SFO %.3g ppm (%.1f-sample drift)', ...
+                        ppm, driftSamp);
                 otherwise
                     error('Unknown impairment: %s', impairment);
             end
@@ -202,9 +216,13 @@ classdef test_ClockRecovery < matlab.unittest.TestCase
                     rxImp = channel.apply_timing_error(rxHi, 0, tau0, SpS_hi_);
                     impLabel = sprintf('Constant Offset tau0 = %.3f T', tau0);
                 case 'sfo'
-                    ppm   = 40;
+                    % Derive ppm from the target non-integer total drift:
+                    % drift_samples = Ns*SpS*alpha, alpha = ppm*1e-6.
+                    driftSamp = testCase.SFO_drift_samples;
+                    ppm   = driftSamp / (Ns_ * SpS_) * 1e6;
                     rxImp = channel.apply_timing_error(rxHi, ppm, 0, SpS_hi_);
-                    impLabel = sprintf('SFO %d ppm', ppm);
+                    impLabel = sprintf('SFO %.3g ppm (%.1f-sample drift)', ...
+                        ppm, driftSamp);
                 otherwise
                     error('Unknown impairment: %s', impairment);
             end

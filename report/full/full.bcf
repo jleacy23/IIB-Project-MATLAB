@@ -2404,9 +2404,13 @@
     <bcf:citekey order="24" intorder="1">Wang;24</bcf:citekey>
     <bcf:citekey order="25" intorder="1">Jacobsen2007</bcf:citekey>
     <bcf:citekey order="26" intorder="1">Andrea1994</bcf:citekey>
-    <bcf:citekey order="27" intorder="1">Cheng2013PilotCycleSlip</bcf:citekey>
-    <bcf:citekey order="28" intorder="1">Mello;21</bcf:citekey>
-    <bcf:citekey order="28" intorder="2">coherent_receivers</bcf:citekey>
+    <bcf:citekey order="27" intorder="1">Morelli1998</bcf:citekey>
+    <bcf:citekey order="28" intorder="1">Cheng2013PilotCycleSlip</bcf:citekey>
+    <bcf:citekey order="29" intorder="1">adc_survey</bcf:citekey>
+    <bcf:citekey order="30" intorder="1">adc_survey</bcf:citekey>
+    <bcf:citekey order="31" intorder="1">Mello;21</bcf:citekey>
+    <bcf:citekey order="31" intorder="2">coherent_receivers</bcf:citekey>
+    <bcf:citekey order="32" intorder="1">Mello;21</bcf:citekey>
   </bcf:section>
   <!-- SORTING TEMPLATES -->
   <bcf:sortingtemplate name="nty">

@@ -168,12 +168,21 @@ function [y, cfoBinsApplied] = combined_cd_fd_gardner_adaptive_fxp(...
         singlePol = false;
     end
 
+    % CMA radius scale (post/pre input-normalisation energy ratio).  Optional
+    % field: defaults to 1 (unscaled R) when the caller does not supply it, so
+    % AdaptOpts structs built before RScale existed still compile.
+    if isfield(AdaptOpts, 'RScale')
+        rScaleEq = double(AdaptOpts.RScale);
+    else
+        rScaleEq = 1;
+    end
+
     yEq = adaptive_eq.equalize_fxp(zEq, SpS, ...
         AdaptOpts.NTaps, AdaptOpts.Mu, AdaptOpts.SingleSpike, ...
         AdaptOpts.N1, AdaptOpts.NOut, AdaptOpts.SignOnly, ...
         AdaptOpts.UpdateStep, T.AdaptEq, AdaptOpts.PLanes, ...
         AdaptOpts.Mode, AdaptOpts.Pilots, AdaptOpts.BlockLen, ...
-        AdaptOpts.SubframeBlocks);
+        AdaptOpts.SubframeBlocks, rScaleEq);
 
     if singlePol
         y = yEq(:, 1);

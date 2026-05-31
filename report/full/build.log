@@ -1,0 +1,18 @@
+Initial Win CP for (console input, console output, system): (CP437, CP437, CP1252)
+I changed them all to CP1252
+Rc files read:
+  NONE
+Latexmk: This is Latexmk, John Collins, 15 June 2025. Version 4.87.
+Latexmk: applying rule 'biber full'...
+Rule 'biber full':  Reasons for rerun
+Changed files or newly in use/created:
+  ../frequency_recovery/ref.bib
+Category 'changed_user':
+  ../frequency_recovery/ref.bib
+
+------------
+Run number 1 of rule 'biber full'
+------------
+------------
+Running 'biber  "full.bcf"'
+------------

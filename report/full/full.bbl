@@ -695,6 +695,65 @@
       \verb 10.1007/978-3-030-66541-8
       \endverb
     \endentry
+    \entry{Morelli1998}{article}{}{}
+      \name{author}{2}{}{%
+        {{hash=45761e327e0af46837bbf26c69594434}{%
+           family={Morelli},
+           familyi={M\bibinitperiod},
+           given={M.},
+           giveni={M\bibinitperiod}}}%
+        {{hash=618e6978fabbf24e6b0b977d1cc62322}{%
+           family={Mengali},
+           familyi={M\bibinitperiod},
+           given={U.},
+           giveni={U\bibinitperiod}}}%
+      }
+      \strng{namehash}{07498338ed7c9b4760e4b523f4dfad7c}
+      \strng{fullhash}{07498338ed7c9b4760e4b523f4dfad7c}
+      \strng{fullhashraw}{07498338ed7c9b4760e4b523f4dfad7c}
+      \strng{bibnamehash}{07498338ed7c9b4760e4b523f4dfad7c}
+      \strng{authorbibnamehash}{07498338ed7c9b4760e4b523f4dfad7c}
+      \strng{authornamehash}{07498338ed7c9b4760e4b523f4dfad7c}
+      \strng{authorfullhash}{07498338ed7c9b4760e4b523f4dfad7c}
+      \strng{authorfullhashraw}{07498338ed7c9b4760e4b523f4dfad7c}
+      \field{sortinit}{M}
+      \field{sortinithash}{4625c616857f13d17ce56f7d4f97d451}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Eur. Trans. Telecommun.}
+      \field{number}{2}
+      \field{title}{Feedforward frequency estimation for {PSK}: A tutorial review}
+      \field{volume}{9}
+      \field{year}{1998}
+      \field{pages}{103\bibrangedash 116}
+      \range{pages}{14}
+      \verb{doi}
+      \verb 10.1002/ett.4460090203
+      \endverb
+    \endentry
+    \entry{adc_survey}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=afa8a40f6e9782bbc6a7e011eb3729bb}{%
+           family={Murmann},
+           familyi={M\bibinitperiod},
+           given={Boris},
+           giveni={B\bibinitperiod}}}%
+      }
+      \strng{namehash}{afa8a40f6e9782bbc6a7e011eb3729bb}
+      \strng{fullhash}{afa8a40f6e9782bbc6a7e011eb3729bb}
+      \strng{fullhashraw}{afa8a40f6e9782bbc6a7e011eb3729bb}
+      \strng{bibnamehash}{afa8a40f6e9782bbc6a7e011eb3729bb}
+      \strng{authorbibnamehash}{afa8a40f6e9782bbc6a7e011eb3729bb}
+      \strng{authornamehash}{afa8a40f6e9782bbc6a7e011eb3729bb}
+      \strng{authorfullhash}{afa8a40f6e9782bbc6a7e011eb3729bb}
+      \strng{authorfullhashraw}{afa8a40f6e9782bbc6a7e011eb3729bb}
+      \field{sortinit}{M}
+      \field{sortinithash}{4625c616857f13d17ce56f7d4f97d451}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{[Online]. Available: \url{https://github.com/bmurmann/ADC-survey}}
+      \field{title}{{ADC Performance Survey 1997-2026}}
+    \endentry
     \entry{coherent_receivers}{article}{}{}
       \name{author}{1}{}{%
         {{hash=1a67808fa91d6d24e2d13a047c5adfcc}{%

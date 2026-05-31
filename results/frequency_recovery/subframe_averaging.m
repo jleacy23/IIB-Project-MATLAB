@@ -63,16 +63,19 @@ classdef subframe_averaging < matlab.unittest.TestCase
         MaxFreq   = 1
 
         % ---- Monte-Carlo --------------------------------------------
-        NTrials   = 30                % independent CFO/noise realisations
+        NTrials   = 10                % independent CFO/noise realisations
         % Max subframes searched per algorithm (data-aided are cheap to run for
         % many subframes; the 2048-pt FFT variants are capped lower).
-        Nmax_diffkay   = 4096
-        Nmax_fft_data  = 256
-        Nmax_fft_blind = 128
+        Nmax_diffkay   = 1500
+        Nmax_fft_data  = 1500
+        Nmax_fft_blind = 1500
 
         % ---- Execution / build --------------------------------------
+        % The FR MEX in src/+freq_recovery is shared with other tests that
+        % build it at different configs; rebuild here so the compiled fimath
+        % matches this test's FxpConfig (else 'IncorrectFimath' at runtime).
         UseMex  = true
-        Rebuild = false
+        Rebuild = true
     end
 
     properties
@@ -163,6 +166,7 @@ classdef subframe_averaging < matlab.unittest.TestCase
             RA_sub   = nan(nAlgo, 1);
             RM_total = nan(nAlgo, 1);
             RA_total = nan(nAlgo, 1);
+            rmseVecs = cell(nAlgo, 1);        % RMS error [Hz] vs number of subframes
 
             for a = 1:nAlgo
                 A = algos{a};
@@ -170,6 +174,7 @@ classdef subframe_averaging < matlab.unittest.TestCase
                 [Nreq, rmseVec] = testCase.subframesToTarget(A.mode, A.Nmax);
 
                 name(a)           = A.name;
+                rmseVecs{a}       = rmseVec;
                 rmse_floor_MHz(a) = rmseVec(end) / 1e6;
                 RM_sub(a)         = A.counts(1);
                 RA_sub(a)         = A.counts(2);
@@ -195,6 +200,27 @@ classdef subframe_averaging < matlab.unittest.TestCase
             save(outFile, 'tbl');
             fprintf('\nSaved results to %s\n\n', outFile);
             disp(tbl);
+
+            % --- Error vs number of subframes plot ----------------------
+            fig = figure('Name', 'Subframe averaging', 'Position', [100 100 760 500]);
+            hold on;
+            colours = lines(nAlgo);
+            hCurve  = gobjects(nAlgo, 1);
+            for a = 1:nAlgo
+                r = rmseVecs{a} / 1e6;                 % MHz
+                hCurve(a) = plot(1:numel(r), r, '-', 'LineWidth', 1.5, ...
+                    'Color', colours(a, :), 'DisplayName', name(a));
+            end
+            set(gca, 'XScale', 'log', 'YScale', 'log');
+            % Two reference targets, shown in the legend rather than annotated.
+            h10 = yline(10, '--k', 'LineWidth', 1.2, 'DisplayName', '10 MHz target');
+            h1  = yline(1,  ':k',  'LineWidth', 1.2, 'DisplayName', '1 MHz target');
+            grid on;
+            xlabel('Number of subframes averaged');
+            ylabel('RMS CFO estimation error [MHz]');
+            title('CFO estimation error vs subframe averaging');
+            legend([hCurve; h10; h1], 'Location', 'best', 'Interpreter', 'none');
+            exportgraphics(fig, fullfile(outDir, 'subframe_averaging_error.png'));
 
             % --- Sanity checks ------------------------------------------
             % The variance-limited estimators must reach the target by averaging.

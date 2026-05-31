@@ -1,7 +1,7 @@
 \contentsline {chapter}{\numberline {1}Access Networks and Coherent PON}{3}{}%
 \contentsline {section}{\numberline {1.1}Optical Access Networks}{3}{}%
 \contentsline {section}{\numberline {1.2}Coherent PON}{3}{}%
-\contentsline {section}{\numberline {1.3}Specification}{4}{}%
+\contentsline {section}{\numberline {1.3}Specification}{3}{}%
 \contentsline {subsection}{\numberline {1.3.1}Modulation and Symbol Rate}{4}{}%
 \contentsline {subsection}{\numberline {1.3.2}Downstream Frame Structure}{4}{}%
 \contentsline {subsection}{\numberline {1.3.3}Key System Tolerances}{4}{}%
@@ -11,26 +11,26 @@
 \contentsline {section}{\numberline {2.2}Energy Estimation}{6}{}%
 \contentsline {subsection}{\numberline {2.2.1}Receiver Energy}{6}{}%
 \contentsline {paragraph}{Dependence on Word Length}{6}{}%
-\contentsline {paragraph}{Amortisation}{7}{}%
+\contentsline {paragraph}{Amortisation}{6}{}%
 \contentsline {paragraph}{CORDIC}{7}{}%
 \contentsline {paragraph}{Total Energy and Power}{7}{}%
 \contentsline {subsection}{\numberline {2.2.2}Transmitter Energy}{7}{}%
-\contentsline {paragraph}{Minimum Required SNR}{8}{}%
-\contentsline {paragraph}{Noise}{8}{}%
+\contentsline {paragraph}{Minimum Required SNR}{7}{}%
+\contentsline {paragraph}{Noise}{7}{}%
 \contentsline {subsection}{\numberline {2.2.3}Combined Energy}{8}{}%
 \contentsline {chapter}{\numberline {3}Equalisation and Clock Recovery}{10}{}%
 \contentsline {section}{\numberline {3.1}Introduction}{10}{}%
 \contentsline {section}{\numberline {3.2}Equalisation}{10}{}%
 \contentsline {subsection}{\numberline {3.2.1}Channel Impairments}{10}{}%
 \contentsline {paragraph}{Chromatic dispersion}{10}{}%
-\contentsline {paragraph}{Polarisation-mode dispersion}{11}{}%
+\contentsline {paragraph}{Polarisation-mode dispersion}{10}{}%
 \contentsline {paragraph}{RRC pulse shaping}{11}{}%
 \contentsline {subsection}{\numberline {3.2.2}Static Equalisation}{11}{}%
-\contentsline {subsection}{\numberline {3.2.3}Adaptive Equalisation}{12}{}%
+\contentsline {subsection}{\numberline {3.2.3}Adaptive Equalisation}{11}{}%
 \contentsline {paragraph}{Parallelism.}{12}{}%
 \contentsline {paragraph}{Sign-Sign CMA.}{12}{}%
-\contentsline {paragraph}{Fixed-point}{13}{}%
-\contentsline {subsection}{\numberline {3.2.4}Matched Filtering}{13}{}%
+\contentsline {paragraph}{Fixed-point}{12}{}%
+\contentsline {subsection}{\numberline {3.2.4}Matched Filtering}{12}{}%
 \contentsline {subsection}{\numberline {3.2.5}Filter Length}{13}{}%
 \contentsline {subsection}{\numberline {3.2.6}Computational Complexity}{13}{}%
 \contentsline {section}{\numberline {3.3}Clock Recovery}{14}{}%
@@ -40,51 +40,60 @@
 \contentsline {subsection}{\numberline {3.3.4}Fixed-Point}{16}{}%
 \contentsline {section}{\numberline {3.4}Combined Implementations}{16}{}%
 \contentsline {section}{\numberline {3.5}Methodology}{17}{}%
+\contentsline {paragraph}{Channel.}{17}{}%
+\contentsline {paragraph}{Metric.}{17}{}%
+\contentsline {paragraph}{Swept design choices.}{17}{}%
 \contentsline {paragraph}{Coarse CFO correction.}{17}{}%
 \contentsline {paragraph}{Fixed-point.}{17}{}%
 \contentsline {section}{\numberline {3.6}Results \& Discussion}{18}{}%
 \contentsline {subsection}{\numberline {3.6.1}Combined Performance}{18}{}%
 \contentsline {paragraph}{Correcting CFO}{19}{}%
-\contentsline {subsection}{\numberline {3.6.2}Fixed-Point Precision}{20}{}%
+\contentsline {subsection}{\numberline {3.6.2}Fixed-Point Precision}{19}{}%
 \contentsline {paragraph}{Adaptive equaliser.}{20}{}%
 \contentsline {paragraph}{Static equaliser.}{20}{}%
 \contentsline {paragraph}{Clock recovery.}{21}{}%
 \contentsline {paragraph}{Low precision operating points.}{22}{}%
-\contentsline {paragraph}{Oversampling rate.}{23}{}%
-\contentsline {chapter}{\numberline {4}Carrier Recovery}{24}{}%
-\contentsline {section}{\numberline {4.1}Introduction}{24}{}%
-\contentsline {section}{\numberline {4.2}Frequency Recovery}{24}{}%
-\contentsline {subsection}{\numberline {4.2.1}Carrier Frequency Offset}{24}{}%
-\contentsline {subsection}{\numberline {4.2.2}Isolating CFO}{25}{}%
-\contentsline {subsection}{\numberline {4.2.3}Rife \& Boorstyn}{25}{}%
-\contentsline {subsection}{\numberline {4.2.4}Differential Phase and Kay Estimator}{26}{}%
-\contentsline {subsection}{\numberline {4.2.5}Computational Complexity}{28}{}%
-\contentsline {paragraph}{Rife \& Boorstyn}{28}{}%
-\contentsline {paragraph}{Differential phase and Kay}{29}{}%
-\contentsline {subsection}{\numberline {4.2.6}Optimising Bit Width}{29}{}%
-\contentsline {subsection}{\numberline {4.2.7}Maximum CFO}{29}{}%
-\contentsline {section}{\numberline {4.3}Phase Recovery}{30}{}%
-\contentsline {subsection}{\numberline {4.3.1}Phase Noise}{30}{}%
-\contentsline {subsection}{\numberline {4.3.2}Feed-Forward vs PLL Algorithms}{30}{}%
-\contentsline {subsection}{\numberline {4.3.3}Viterbi \& Viterbi}{30}{}%
-\contentsline {subsection}{\numberline {4.3.4}Pilots-Only Correction}{31}{}%
-\contentsline {subsection}{\numberline {4.3.5}Computational Complexity}{31}{}%
-\contentsline {paragraph}{Viterbi \& Viterbi}{31}{}%
-\contentsline {paragraph}{Pilots-Only}{31}{}%
-\contentsline {section}{\numberline {4.4}Methodology}{31}{}%
-\contentsline {paragraph}{Phase recovery comparison.}{31}{}%
-\contentsline {paragraph}{Frequency recovery comparison.}{32}{}%
-\contentsline {paragraph}{Operation counts.}{32}{}%
+\contentsline {paragraph}{Oversampling rate.}{22}{}%
+\contentsline {chapter}{\numberline {4}Carrier Recovery}{23}{}%
+\contentsline {section}{\numberline {4.1}Introduction}{23}{}%
+\contentsline {section}{\numberline {4.2}Frequency Recovery}{23}{}%
+\contentsline {subsection}{\numberline {4.2.1}Carrier Frequency Offset}{23}{}%
+\contentsline {subsection}{\numberline {4.2.2}Isolating CFO}{23}{}%
+\contentsline {subsection}{\numberline {4.2.3}Rife \& Boorstyn}{24}{}%
+\contentsline {subsection}{\numberline {4.2.4}Differential Phase and Kay Estimator}{25}{}%
+\contentsline {subsection}{\numberline {4.2.5}Computational Complexity}{27}{}%
+\contentsline {paragraph}{Rife \& Boorstyn}{27}{}%
+\contentsline {paragraph}{Differential phase and Kay}{28}{}%
+\contentsline {subsection}{\numberline {4.2.6}Optimising Bit Width}{28}{}%
+\contentsline {subsection}{\numberline {4.2.7}Maximum CFO}{28}{}%
+\contentsline {section}{\numberline {4.3}Phase Recovery}{29}{}%
+\contentsline {subsection}{\numberline {4.3.1}Phase Noise}{29}{}%
+\contentsline {subsection}{\numberline {4.3.2}Feed-Forward vs PLL Algorithms}{29}{}%
+\contentsline {subsection}{\numberline {4.3.3}Viterbi \& Viterbi}{29}{}%
+\contentsline {subsection}{\numberline {4.3.4}Pilots-Only Correction}{30}{}%
+\contentsline {subsection}{\numberline {4.3.5}Computational Complexity}{30}{}%
+\contentsline {paragraph}{Viterbi \& Viterbi}{30}{}%
+\contentsline {paragraph}{Pilots-Only}{30}{}%
+\contentsline {section}{\numberline {4.4}Methodology}{30}{}%
+\contentsline {paragraph}{Phase recovery comparison.}{30}{}%
+\contentsline {paragraph}{Frequency recovery comparison.}{31}{}%
+\contentsline {paragraph}{Operation counts.}{31}{}%
+\contentsline {paragraph}{Fixed-point precision.}{31}{}%
+\contentsline {paragraph}{Carrier-recovery energy.}{31}{}%
 \contentsline {section}{\numberline {4.5}Results \& Discussion}{32}{}%
 \contentsline {subsection}{\numberline {4.5.1}Phase Recovery Performance}{32}{}%
-\contentsline {subsection}{\numberline {4.5.2}Frequency Recovery: Subframe Averaging}{33}{}%
-\contentsline {subsection}{\numberline {4.5.3}Fixed Point}{34}{}%
+\contentsline {subsection}{\numberline {4.5.2}Frequency Recovery: Subframe Averaging}{32}{}%
+\contentsline {subsection}{\numberline {4.5.3}Fixed Point}{33}{}%
+\contentsline {paragraph}{Low precision operating point.}{34}{}%
 \contentsline {chapter}{\numberline {5}Full DSP Pipeline}{35}{}%
 \contentsline {section}{\numberline {5.1}Introduction}{35}{}%
 \contentsline {section}{\numberline {5.2}Analogue-Digital Converters (ADCs)}{35}{}%
 \contentsline {paragraph}{Quantisation-error SNR.}{35}{}%
-\contentsline {paragraph}{Effective number of bits.}{35}{}%
 \contentsline {section}{\numberline {5.3}Orthogonalisation and Deskew}{36}{}%
-\contentsline {section}{\numberline {5.4}Methodology}{36}{}%
-\contentsline {section}{\numberline {5.5}Results}{36}{}%
-\contentsline {chapter}{Bibliography}{37}{}%
+\contentsline {subsection}{\numberline {5.3.1}Orthogonalisation}{36}{}%
+\contentsline {subsection}{\numberline {5.3.2}Deskew}{37}{}%
+\contentsline {section}{\numberline {5.4}Methodology}{37}{}%
+\contentsline {section}{\numberline {5.5}Results}{37}{}%
+\contentsline {subsection}{\numberline {5.5.1}Receiver Energy vs RSNR}{37}{}%
+\contentsline {chapter}{Bibliography}{39}{}%
+\contentsline {chapter}{\numberline {A}Risk Assessment}{41}{}%

@@ -1,12 +1,22 @@
-function [y, cfoBinsApplied] = combined_cd_fd_godard_adaptive_fxp(...
+function [y, cfoBinsApplied] = combined_cd_fd_godard_adaptive_fxp_old(...
         In, SpS, NFFT, NOverlap, D, L, CLambda, Rs, Rolloff, ki, kp, ...
         NSymb, AdaptOpts, cfoEnable, po2Twiddle, T) %#codegen
-%COMBINED_CD_FD_GODARD_ADAPTIVE_FXP  Fixed-point CD-FD + RRC matched filter
-%   (overlap-save) with optional coarse CFO correction and embedded
-%   Modified-Godard timing recovery sharing the same FFT and overlap,
-%   followed by butterfly CMA.
+%COMBINED_CD_FD_GODARD_ADAPTIVE_FXP_OLD  ARCHIVED circular-wrap version.
+%   Fixed-point CD-FD + RRC matched filter (overlap-save) with optional
+%   coarse CFO correction and embedded Modified-Godard timing recovery
+%   sharing the same FFT and overlap, followed by butterfly CMA.
 %
-%   [y, cfoBinsApplied] = combined_cd_fd_godard_adaptive_fxp(In, SpS, ...
+%   *** ARCHIVED ***  This is the original implementation that cyclically
+%   extends the whole input frame (gluing the tail to the head) and applies
+%   the full accumulated tau as the frequency-domain phase ramp.  Because
+%   the processing is circular, it only converges when the total timing
+%   drift across the record is an integer number of samples.  It has been
+%   superseded by combined_cd_fd_godard_adaptive_fxp, which uses a streaming
+%   zero-padded overlap-save with an NCO-style integer/fractional split
+%   (integer part folded into the read pointer, bounded fractional residual
+%   in the ramp).  Kept for reference / comparison only.
+%
+%   [y, cfoBinsApplied] = combined_cd_fd_godard_adaptive_fxp_old(In, SpS, ...
 %       NFFT, NOverlap, D, L, CLambda, Rs, Rolloff, ki, kp, NSymb, ...
 %       AdaptOpts, cfoEnable, po2Twiddle, T)
 %
@@ -70,26 +80,27 @@ function [y, cfoBinsApplied] = combined_cd_fd_godard_adaptive_fxp(...
     kHi   = round((1 + Rolloff) / (2*eta) * NFFT);
     k_idx = [0:NFFT/2-1, -NFFT/2:-1].';
 
-    %% Zero-padded streaming overlap-save framing (no cyclic extension).
-    %  Mirrors the working clk_recovery.recovery_godard: a guard of halfOv
-    %  zeros on each end, blocks read at stride stepLen, halfOv discarded per
-    %  edge.  The accumulated timing estimate is split NCO-style inside the
-    %  loop into an integer part (folded into the per-block read pointer) and
-    %  a bounded fractional residual (the phase ramp), so the ramp slope
-    %  never grows past +/-half a sample and never wraps samples circularly
-    %  inside the FFT.  This removes the old cyclic-frame seam that only
-    %  closed when the total drift was an integer number of samples.
+    %% Input cyclic extension to integer block count
     NIn     = size(InS, 1);
-    stepLen = NFFT - NOverlap;          % M: valid output samples per block
-    halfOv  = NOverlap / 2;             % G: overlap-save guard per edge
+    stepLen = NFFT - NOverlap;
+    AuxLen  = NIn / stepLen;
+    if AuxLen ~= ceil(AuxLen)
+        NExtra = ceil(AuxLen) * stepLen - NIn;
+    else
+        NExtra = NOverlap;
+    end
+    halfEx = NExtra / 2;
+    halfOv = NOverlap / 2;
 
-    InPad = [complex(zeros(halfOv, NPol, 'like', T.Static.x)); ...
-             InS; ...
-             complex(zeros(halfOv, NPol, 'like', T.Static.x))];
-    LPad    = size(InPad, 1);
-    nBlocks = floor((LPad - NFFT) / stepLen) + 1;
+    InPad = cast([InS(end - halfEx + 1 : end, :); ...
+                  InS; ...
+                  InS(1 : halfEx, :)], 'like', T.Static.x);
 
-    OutPad = complex(zeros(nBlocks * stepLen, NPol, 'like', T.Static.acc));
+    NPadded = size(InPad, 1);
+    InPad2  = [complex(zeros(NOverlap, NPol, 'like', T.Static.x)); InPad];
+    nBlocks = NPadded / stepLen;
+
+    OutPad = complex(zeros(NPadded, NPol, 'like', T.Static.acc));
 
     %% ================================================================
     %  3. Overlap-save loop with embedded Godard PI
@@ -122,39 +133,25 @@ function [y, cfoBinsApplied] = combined_cd_fd_godard_adaptive_fxp(...
     R_corr_all = complex(zeros(NFFT, NPol, 'like', T.Static.acc));
 
     for i = 1:nBlocks
-        % --- NCO-style integer/fractional split of the timing estimate -
-        %  The integer part folds into the read pointer (below); only the
-        %  bounded fractional residual mu drives the phase ramp.  Computed in
-        %  double, then cast to T.Godard.tw (unit-magnitude complex twiddle).
-        %  This cast is the SPECIFIED-precision quantiser of the applied FD
-        %  timing correction (the swept ClkFL precision): the wide
-        %  accumulator integrates the tiny gains, and only the per-bin
-        %  correction actually applied to the spectrum is rounded to
+        % --- Build the per-block phase ramp from current tauSamp -------
+        %  Computed in double, then cast to T.Godard.tw (unit-magnitude
+        %  complex twiddle).  This cast is the SPECIFIED-precision quantiser
+        %  of the applied FD timing correction (the swept ClkFL precision):
+        %  the wide accumulator integrates the tiny gains, and only the
+        %  per-bin correction actually applied to the spectrum is rounded to
         %  T.Godard.tw.  Matches the fft_search_fxp exp-in-double pattern.
-        tau_full = double(tauSamp);
-        dInt     = round(tau_full);          % integer part -> read pointer
-        mu_d     = tau_full - dInt;          % fractional residual in [-0.5, 0.5)
-        ramp_d   = exp(-1j * 2*pi * k_idx * mu_d / NFFT);
-        ramp     = cast(ramp_d, 'like', T.Godard.tw);
-
-        % Read pointer with the integer timing folded in.  As the clock
-        % slips this drifts away from the nominal stride; indices outside
-        % the padded input are zero-filled.
-        rdStart = (i - 1) * stepLen + 1 - dInt;
+        tau_d  = double(tauSamp);
+        ramp_d = exp(-1j * 2*pi * k_idx * tau_d / NFFT);
+        ramp   = cast(ramp_d, 'like', T.Godard.tw);
 
         % --- Per-polarisation FFT, CD/MF mask, phase ramp --------------
         for pol = 1:NPol
-            InB = complex(zeros(NFFT, 1, 'like', T.Static.x));
-            for m = 1:NFFT
-                srcIdx = rdStart + m - 1;
-                if srcIdx >= 1 && srcIdx <= LPad
-                    InB(m) = InPad(srcIdx, pol);
-                end
-            end
+            wStart = (i - 1) * stepLen + 1;
+            InB    = InPad2(wStart : wStart + NFFT - 1, pol);
 
             X = fft.fft_fxp(InB, false, po2Twiddle, Tfft);
 
-            % Apply CD + matched filter + current fractional phase ramp
+            % Apply CD + matched filter + current phase ramp
             for k = 1:NFFT
                 Rfilt   = X(k) * Hstatic_fi(k);
                 R_corr_all(k, pol) = cast(Rfilt * cast(ramp(k), 'like', T.Static.acc), ...
@@ -197,13 +194,10 @@ function [y, cfoBinsApplied] = combined_cd_fd_godard_adaptive_fxp(...
         tauSamp(:) = kp_fi * e_lf + LF_I;
     end
 
-    %% Trim to the original input span (output aligns from sample 1, as in
-    %  clk_recovery.recovery_godard).
-    if size(OutPad, 1) > NIn
-        z = OutPad(1:NIn, :);
-    else
-        z = OutPad;
-    end
+    %% Remove cyclic extension
+    DInit = 1 + (NExtra + NOverlap) / 2;
+    DFin  = (NExtra - NOverlap) / 2;
+    z     = OutPad(DInit : end - DFin, :);
 
     %% ================================================================
     %  4. Adaptive butterfly equaliser

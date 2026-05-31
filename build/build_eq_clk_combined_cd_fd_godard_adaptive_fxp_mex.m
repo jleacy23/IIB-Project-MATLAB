@@ -21,7 +21,7 @@ function build_eq_clk_combined_cd_fd_godard_adaptive_fxp_mex(P, cfg)
 %                                             sub-fields Static/CFO/Godard/AdaptEq
 %
 %   Optional fields in P (defaults match the float reference)
-%     P.AEQ_Mode, P.AEQ_BlockLen, P.AEQ_SubframeBlocks
+%     P.AEQ_Mode, P.AEQ_BlockLen, P.AEQ_SubframeBlocks, P.AEQ_RScale
 
     srcDir = fullfile(fileparts(mfilename('fullpath')), '..', 'src');
     fxp    = P.FxpConfig_CombGodard;
@@ -44,6 +44,7 @@ function build_eq_clk_combined_cd_fd_godard_adaptive_fxp_mex(P, cfg)
     if isfield(P, 'AEQ_Mode'),           ModeAEQ   = P.AEQ_Mode;           else, ModeAEQ   = 0;             end
     if isfield(P, 'AEQ_BlockLen'),       BLenAEQ   = P.AEQ_BlockLen;       else, BLenAEQ   = P.AEQ_PLanes;  end
     if isfield(P, 'AEQ_SubframeBlocks'), SubBlkAEQ = P.AEQ_SubframeBlocks; else, SubBlkAEQ = 0;             end
+    if isfield(P, 'AEQ_RScale'),         RScaleAEQ = P.AEQ_RScale;         else, RScaleAEQ = 1;             end
 
     AdaptOptsProto = struct( ...
         'NTaps',          double(P.AEQ_NTaps), ...
@@ -57,7 +58,8 @@ function build_eq_clk_combined_cd_fd_godard_adaptive_fxp_mex(P, cfg)
         'Mode',           double(ModeAEQ), ...
         'Pilots',         p_proto, ...
         'BlockLen',       double(BLenAEQ), ...
-        'SubframeBlocks', double(SubBlkAEQ));
+        'SubframeBlocks', double(SubBlkAEQ), ...
+        'RScale',         double(RScaleAEQ));
 
     AdaptOptsType = coder.typeof(AdaptOptsProto);
     AdaptOptsType.Fields.Pilots = Pilots_type;

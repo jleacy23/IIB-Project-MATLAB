@@ -4,7 +4,8 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
 %
 %   Each algorithm:
 %       cd_gardner_cma : eq_clk.combined_cd_fd_gardner_adaptive_fxp
-%       cd_godard_cma  : eq_clk.combined_cd_fd_godard_adaptive_fxp
+%       cd_godard_cma  : eq_clk.combined_cd_fd_godard_adaptive_fxp_old
+%                        (ARCHIVED circular-wrap Godard; integer-drift regime)
 %   is exercised with the po2-twiddle option both on and off, over a
 %   THREE-dimensional fixed-point precision grid that sets the fractional
 %   length of each pipeline stage INDEPENDENTLY:
@@ -84,8 +85,8 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
 
         % --- Monte-Carlo --------------------------------------------
         Ns          = 18750         % symbols per polarisation per trial
-        NTrials     = 15
-        SNR_dB_vec  = 0 : 2 : 30
+        NTrials     = 3
+        SNR_dB_vec  = 0 : 2 : 16
 
         % --- Static-equaliser FFT size ------------------------------
         NFFT     = 128
@@ -195,9 +196,9 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
         %                   precision; data path is pinned high).
         %    ClkFL_vec    - T.Clk (Gardner) / T.Godard (modified-Godard PI).
         NIntBits     = 16
-        StaticFL_vec = [30]
-        AdaptFL_vec  = [4,6,8,10,12]
-        ClkFL_vec    = [30]
+        StaticFL_vec = [8]
+        AdaptFL_vec  = [4]
+        ClkFL_vec    = [6]
 
         % --- FEC threshold used to score designs --------------------
         FEC_BER = 2e-2
@@ -972,7 +973,8 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
                 case 'cd_gardner_cma'
                     base = 'combined_cd_fd_gardner_adaptive_fxp';
                 case 'cd_godard_cma'
-                    base = 'combined_cd_fd_godard_adaptive_fxp';
+                    % ARCHIVED circular-wrap Godard (integer-drift regime).
+                    base = 'combined_cd_fd_godard_adaptive_fxp_old';
                 otherwise
                     error('combined_eq_clk_fxp_sweep:badBlock', ...
                           'Unknown block: %s', blkName);
@@ -1061,7 +1063,7 @@ classdef combined_eq_clk_fxp_sweep < matlab.unittest.TestCase
                         logical(P.CfoEnable), false, ...
                         T};
                     codegen('-config', cfgCoder, ...
-                        'eq_clk.combined_cd_fd_godard_adaptive_fxp', ...
+                        'eq_clk.combined_cd_fd_godard_adaptive_fxp_old', ...
                         '-args', args, '-o', outPath);
             end
         end

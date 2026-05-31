@@ -810,6 +810,73 @@
       \verb 10.23919/OECC/PSC53152.2022.9849904
       \endverb
     \endentry
+    \entry{Wang;24}{article}{}{}
+      \name{author}{8}{}{%
+        {{hash=99277f81aaa83a0380d3a84140ef9fe2}{%
+           family={Wang},
+           familyi={W\bibinitperiod},
+           given={Haide},
+           giveni={H\bibinitperiod}}}%
+        {{hash=e8dad2b9d6a29318fab699eac093bc41}{%
+           family={Zhou},
+           familyi={Z\bibinitperiod},
+           given={Ji},
+           giveni={J\bibinitperiod}}}%
+        {{hash=f7a0c7197172367032da3b41161fbbe7}{%
+           family={Yang},
+           familyi={Y\bibinitperiod},
+           given={Jinyang},
+           giveni={J\bibinitperiod}}}%
+        {{hash=1628ccf321bdc199b441a4cc3eeb045c}{%
+           family={Zeng},
+           familyi={Z\bibinitperiod},
+           given={Jianrui},
+           giveni={J\bibinitperiod}}}%
+        {{hash=f024e8ffc21967eac1d50be991950db0}{%
+           family={Liu},
+           familyi={L\bibinitperiod},
+           given={Weiping},
+           giveni={W\bibinitperiod}}}%
+        {{hash=07fb6b0fe0735d6ed0d849d7999f7452}{%
+           family={Yu},
+           familyi={Y\bibinitperiod},
+           given={Changyuan},
+           giveni={C\bibinitperiod}}}%
+        {{hash=99b3b2e56c8f5ffeb95b882b3da68136}{%
+           family={Li},
+           familyi={L\bibinitperiod},
+           given={Fan},
+           giveni={F\bibinitperiod}}}%
+        {{hash=21b5cbd98636c03794093013d3f196fc}{%
+           family={Li},
+           familyi={L\bibinitperiod},
+           given={Zhaohui},
+           giveni={Z\bibinitperiod}}}%
+      }
+      \strng{namehash}{2a0e933bc8d51f09033b5b31b9417ca8}
+      \strng{fullhash}{c48cbb147742b2188de5d1fc93d863d5}
+      \strng{fullhashraw}{c48cbb147742b2188de5d1fc93d863d5}
+      \strng{bibnamehash}{2a0e933bc8d51f09033b5b31b9417ca8}
+      \strng{authorbibnamehash}{2a0e933bc8d51f09033b5b31b9417ca8}
+      \strng{authornamehash}{2a0e933bc8d51f09033b5b31b9417ca8}
+      \strng{authorfullhash}{c48cbb147742b2188de5d1fc93d863d5}
+      \strng{authorfullhashraw}{c48cbb147742b2188de5d1fc93d863d5}
+      \field{sortinit}{W}
+      \field{sortinithash}{4315d78024d0cea9b57a0c6f0e35ed0d}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Journal of Optical Communications and Networking}
+      \field{number}{1}
+      \field{title}{Non-integer-oversampling digital signal processing for coherent passive optical networks}
+      \field{volume}{16}
+      \field{year}{2024}
+      \field{pages}{4\bibrangedash 11}
+      \range{pages}{8}
+      \verb{doi}
+      \verb 10.1364/JOCN.496749
+      \endverb
+      \keyw{Passive optical networks;Equalizers;Optical signal processing;Optical network units;Optical receivers;Optical mixing;MIMO communication}
+    \endentry
     \entry{Zhang;24}{article}{}{}
       \name{author}{20}{}{%
         {{hash=405a8b70e17b3d4e1a84d0a84fa4459d}{%

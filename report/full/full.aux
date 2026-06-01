@@ -214,7 +214,7 @@
 \abx@aux@cite{0}{Wang;24}
 \abx@aux@segm{0}{0}{Wang;24}
 \@writefile{toc}{\contentsline {paragraph}{Low precision operating points.}{22}{}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {3.5}{\ignorespaces Fixed-point performance and energy of the combined clock recovery and equalisation implementations at low- ($8/4/6$) and high-precision ($10/6/8$) operating points, with and without $2^k$ twiddle factors. The three precisions are those of the static equaliser, adaptive equaliser and clock recovery stages. The Gardner low-precision case with $2^k$ twiddle factors fails to reach the FEC limit at any SNR. Proposed candidates for an energy-efficient receiver are highlighted in bold.}}{22}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3.5}{\ignorespaces Fixed-point performance and energy of the combined clock recovery and equalisation implementations at low- ($8/4/6$) and high-precision ($10/6/8$) operating points, with and without $2^k$ twiddle factors. The three precisions are those of the static equaliser, adaptive equaliser and clock recovery stages. Proposed candidates for an energy-efficient receiver are highlighted in bold.}}{22}{}\protected@file@percent }
 \newlabel{tab:clk_eq_fxp}{{3.5}{22}{Low precision operating points.}{table.3.5}{}}
 \newlabel{tab:clk_eq_fxp@cref}{{[table][5][3]3.5}{[1][21][]22}{}{}{}}
 \@writefile{toc}{\contentsline {paragraph}{Oversampling rate.}{22}{}\protected@file@percent }
@@ -344,10 +344,10 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {5.3.1}Orthogonalisation}{36}{}\protected@file@percent }
 \newlabel{eq:gsop_i}{{5.5}{36}{Orthogonalisation}{equation.5.5}{}}
 \newlabel{eq:gsop_i@cref}{{[equation][5][5]5.5}{[1][36][]36}{}{}{}}
-\newlabel{eq:gsop_q}{{5.6}{36}{Orthogonalisation}{equation.5.6}{}}
-\newlabel{eq:gsop_q@cref}{{[equation][6][5]5.6}{[1][36][]36}{}{}{}}
 \abx@aux@cite{0}{Mello;21}
 \abx@aux@segm{0}{0}{Mello;21}
+\newlabel{eq:gsop_q}{{5.6}{37}{Orthogonalisation}{equation.5.6}{}}
+\newlabel{eq:gsop_q@cref}{{[equation][6][5]5.6}{[1][36][]37}{}{}{}}
 \@writefile{lot}{\contentsline {table}{\numberline {5.1}{\ignorespaces Per-symbol real multiplication (RM) and real addition (RA) counts for the Gram--Schmidt orthogonalisation, per polarisation. $\eta $ is the receiver oversampling factor. The block statistics $P_I$, $\rho _{IQ}$ and $P_Q$ are estimated infrequently and reused, contributing negligibly per symbol.}}{37}{}\protected@file@percent }
 \newlabel{tab:gsop_cost}{{5.1}{37}{Orthogonalisation}{table.5.1}{}}
 \newlabel{tab:gsop_cost@cref}{{[table][1][5]5.1}{[1][37][]37}{}{}{}}
@@ -355,15 +355,48 @@
 \@writefile{lot}{\contentsline {table}{\numberline {5.2}{\ignorespaces Per-symbol real multiplication (RM) and real addition (RA) counts for the deskew interpolator, per polarisation. $N_\mathrm  {DS} = N+1$ is the FIR length for a Lagrange interpolator of order $N$, and $\eta $ the receiver oversampling factor. The Lagrange coefficients are precomputed from the static skew and so do not contribute to the per-symbol count.}}{37}{}\protected@file@percent }
 \newlabel{tab:deskew_cost}{{5.2}{37}{Deskew}{table.5.2}{}}
 \newlabel{tab:deskew_cost@cref}{{[table][2][5]5.2}{[1][37][]37}{}{}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {5.4}Methodology}{37}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {5.5}Results}{37}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.5.1}Receiver Energy vs RSNR}{37}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {chapter}{Bibliography}{39}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {chapter}{\numberline {A}Risk Assessment}{41}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5.4}Methodology}{38}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Channel and transmitter.}{38}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Front end.}{38}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Receiver chain.}{38}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Precision sweep.}{38}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Metrics.}{38}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5.5}Results}{39}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.5.1}Receiver Energy vs RSNR}{39}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5.2}{\ignorespaces RSNR (dB) vs receiver energy (pJ/bit) for each implementation at ENOB = 6. EQ/CLK is the equalisation/clock recovery block with precisions shown for [static equaliser, timing error estimate, adaptive equaliser]. CR is the carrier recovery block with precisions shown for [frequency recovery, phase recovery].}}{39}{}\protected@file@percent }
+\newlabel{fig:RSNR_energy}{{5.2}{39}{Receiver Energy vs RSNR}{figure.5.2}{}}
+\newlabel{fig:RSNR_energy@cref}{{[figure][2][5]5.2}{[1][39][]39}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.5.2}Receiver Energy Breakdown}{40}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5.3}{\ignorespaces Energy breakdown of the receiver for highlighted operating points in \cref  {fig:RSNR_energy}.}}{40}{}\protected@file@percent }
+\newlabel{fig:rx_energy_breakdown}{{5.3}{40}{Receiver Energy Breakdown}{figure.5.3}{}}
+\newlabel{fig:rx_energy_breakdown@cref}{{[figure][3][5]5.3}{[1][39][]40}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.5.3}Transmitter vs Receiver Energy}{40}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {5.3}{\ignorespaces Transmitter, receiver, and combined system energy per bit and the corresponding power consumption for the highlighted operating points of \cref  {fig:RSNR_energy}. All points use a carrier-recovery precision of $[14,8]$; the equaliser precision is given as $[\text  {Static},\text  {Clk},\text  {Adaptive}]$ fractional bits and $2^k$ denotes power-of-two FFT twiddles.}}{41}{}\protected@file@percent }
+\newlabel{tab:tx_rx_energy}{{5.3}{41}{Transmitter vs Receiver Energy}{table.5.3}{}}
+\newlabel{tab:tx_rx_energy@cref}{{[table][3][5]5.3}{[1][40][]41}{}{}{}}
+\@writefile{toc}{\contentsline {chapter}{\numberline {6}Conclusion}{42}{}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\newlabel{chapter:risk_assessment}{{A}{41}{Receiver Energy vs RSNR}{chapter.1}{}}
-\newlabel{chapter:risk_assessment@cref}{{[chapter][1][]A}{[1][41][]41}{}{}{}}
+\newlabel{chapter:conclusion}{{6}{42}{Transmitter vs Receiver Energy}{chapter.6}{}}
+\newlabel{chapter:conclusion@cref}{{[chapter][6][]6}{[1][42][]42}{}{}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6.1}Summary of Findings}{42}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6.2}Challenges}{43}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6.3}Limitations and Further Work}{43}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{Bibliography}{44}{}\protected@file@percent }
+\abx@aux@cite{0}{Andrea1994}
+\abx@aux@segm{0}{0}{Andrea1994}
+\@writefile{toc}{\contentsline {chapter}{\numberline {A}Modified Cramer-Rao Bound for Frequency Estimation}{45}{}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{appendix:mcrb}{{A}{45}{Limitations and Further Work}{chapter.1}{}}
+\newlabel{appendix:mcrb@cref}{{[chapter][1][]A}{[1][45][]45}{}{}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {A.1}The Cramer-Rao and Modified Cramer-Rao Bounds}{45}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {A.2}Use in CFO Estimation}{45}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {B}Risk Assessment}{46}{}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{chapter:risk_assessment}{{B}{46}{Use in CFO Estimation}{chapter.2}{}}
+\newlabel{chapter:risk_assessment@cref}{{[chapter][2][]B}{[1][46][]46}{}{}{}}
 \abx@aux@read@bbl@mdfivesum{FE4E697A0BE8AE0123C17F2DA43CD369}
 \abx@aux@defaultrefcontext{0}{CPON_PMD_2025}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{Cardenas:14}{nty/global//global/global/global}
@@ -389,4 +422,4 @@
 \abx@aux@defaultrefcontext{0}{Wang;24}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{Zhang;24}{nty/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{Zhou;10}{nty/global//global/global/global}
-\gdef \@abspage@last{42}
+\gdef \@abspage@last{48}

@@ -24,12 +24,19 @@ function process_pipeline_fxp_sweep(varargin)
 %          trials).
 %     2. pipeline_rel_rsnr_energy.png
 %          Scatter of each combo's actual RSNR (dB) against its absolute
-%          total receiver energy (pJ/bit), at the highest ENOB.
+%          total receiver energy (pJ/bit), at the highest ENOB, with a
+%          horizontal line at the analytical Gray-QPSK SNR floor for the FEC
+%          BER (the lowest RSNR an ideal receiver could reach).
 %     3. pipeline_energy_breakdown.png
 %          Stacked bar of the per-bit energy of each combo at the highest
 %          ENOB, grouped into four functional blocks: front end
 %          (ADC + GSOP + deskew), equalisation (static + adaptive), clock
 %          recovery (Godard), and carrier recovery (frequency + phase).
+%     4. pipeline_combined_energy.png
+%          Table (for the highlighted combos) of transmitter, receiver and
+%          combined energy per bit plus the corresponding power consumption,
+%          at the highest ENOB.  Transmitter energy comes from each combo's
+%          RSNR via the shot-noise PON model; power = E_bit * Rs * log2(M).
 %
 %   Energy model
 %     Per-symbol real-multiplication (RM) and real-addition (RA) counts come
@@ -49,6 +56,17 @@ function process_pipeline_fxp_sweep(varargin)
 %     are assumed to run at the highest ENOB (n = max(ENOB_vec)).  The ADCs
 %     contribute a flat EADC pJ per bit (default 1), independent of ENOB.
 %
+%   Combined transmitter + receiver energy (figure 4)
+%     The minimum required SNR (RSNR) of each combo sets the minimum
+%     transmitter power for the shot-noise-limited downstream PON link of
+%     report/full/full.tex chapter 2 (eq:snr_shot, eq:tx_bit_energy),
+%     evaluated with energy.transmitter_shot.  The transmitted optical
+%     energy is converted to wall-plug energy by the overall transmitter
+%     efficiency eta_T (~10%, eq for eta_T in the same chapter).  Figure 4
+%     tabulates this transmitter energy, the lumped total receiver energy,
+%     their combined system energy E_sys per bit, and the corresponding
+%     power consumption (P = E_bit * Rs * log2(M)).
+%
 %   Name/Value options
 %     'MatFile'     - path to the .mat (default: alongside this script)
 %     'FECBER'      - FEC threshold used to score designs (default 2e-2)
@@ -58,8 +76,16 @@ function process_pipeline_fxp_sweep(varargin)
 %     'DeskewOrder' - Lagrange interpolator order N for the deskew FIR
 %                     (N_DS = N + 1 taps; default 4 -> 5-tap FIR)
 %     'MaxENOB'     - only plot ENOB values up to this (default 8); also
-%                     sets the "highest ENOB" used for figures 2 and 3
-%     'SavePlots'   - true to write the three PNGs alongside the .mat
+%                     sets the "highest ENOB" used for figures 2-4
+%     'LossdB'      - flat OLT-to-ONU power loss Gamma [dB] (default 35,
+%                     the CPON loss budget)
+%     'TxSNRdB'     - back-to-back transmitter SNR [dB] setting the OLT
+%                     noise floor NSR_0 (default 35, the CPON value)
+%     'Lambda_nm'   - optical carrier wavelength [nm] (default 1550)
+%     'SplitterK'   - 1:K passive splitter ratio (default 32; cancels in
+%                     the per-bit transmitter energy)
+%     'TxEff'       - overall transmitter efficiency eta_T (default 0.10)
+%     'SavePlots'   - true to write the four PNGs alongside the .mat
 %                     (default true)
 
     here = fileparts(mfilename('fullpath'));
@@ -71,6 +97,15 @@ function process_pipeline_fxp_sweep(varargin)
     p.addParameter('EADC_pJ',     1);
     p.addParameter('DeskewOrder', 4);
     p.addParameter('MaxENOB',     8);
+    p.addParameter('LossdB',      35);
+    p.addParameter('TxSNRdB',     35);
+    p.addParameter('Lambda_nm',   1550);
+    p.addParameter('SplitterK',   32);
+    p.addParameter('TxEff',       0.10);
+    p.addParameter('HighlightXY', [65.5507,  6.86044; ...
+                                   48.7261,  7.61747; ...
+                                   25.6350, 18.29160; ...
+                                   22.3962, 19.12580]);
     p.addParameter('SavePlots',   true);
     p.parse(varargin{:});
     matFile     = p.Results.MatFile;
@@ -80,6 +115,12 @@ function process_pipeline_fxp_sweep(varargin)
     eadcPJ      = p.Results.EADC_pJ;
     deskewOrder = p.Results.DeskewOrder;
     maxEnob     = p.Results.MaxENOB;
+    lossdB      = p.Results.LossdB;
+    txSNRdB     = p.Results.TxSNRdB;
+    lambda_nm   = p.Results.Lambda_nm;
+    splitterK   = p.Results.SplitterK;
+    txEff       = p.Results.TxEff;
+    highlightXY = p.Results.HighlightXY;
     savePlots   = p.Results.SavePlots;
 
     if ~isfile(matFile)
@@ -117,9 +158,12 @@ function process_pipeline_fxp_sweep(varargin)
         % each group separately.
         eqTier = tierName(fl(1:3), [8 6 4],  [10 8 6]);
         crTier = tierName(fl(4:5), [10 4],   [12 6]);
-        labels{d}   = sprintf('po2=%d, eq=%s, cr=%s [%d/%d/%d | %d/%d]', ...
+        labels{d}   = sprintf('2^k=%d, eq=%s, cr=%s [%d/%d/%d | %d/%d]', ...
             po2, eqTier, crTier, fl(1), fl(2), fl(3), fl(4), fl(5));
-        shortLab{d} = sprintf('po2=%d\\newlineeq:%s cr:%s', po2, eqTier, crTier);
+        % Bar-chart tick label: 2^k twiddle flag + the actual precision
+        % vectors (eq = [Static Clk Adapt], cr = [FR CR]).
+        shortLab{d} = sprintf('2^{k}=%d\\newlineeq:[%d %d %d] cr:[%d %d]', ...
+            po2, fl(1), fl(2), fl(3), fl(4), fl(5));
     end
     colors = lines(nDesign);
 
@@ -233,20 +277,76 @@ function process_pipeline_fxp_sweep(varargin)
             E_aeq(d), E_fr(d) + E_cr(d), E_total(d));
     end
 
-    %% --- Figure 2: relative RSNR vs relative energy (highest ENOB) -------
+    %% --- Figure 2: RSNR vs receiver energy (highest ENOB) ----------------
     eIdx     = find(ENOB == eMax, 1);
     rsnrAtMax = rsnrMean(:, eIdx);
+
+    % --- Identify the combos to highlight by (energy, RSNR) coordinate ----
+    %  Each requested point is matched to its nearest converging combo; the
+    %  highlighted combos are coloured / labelled and are the ONLY ones with
+    %  energy bar charts (figures 3 and 4).  All other combos are plotted as
+    %  plain black x markers in the scatter only.
+    nHi          = size(highlightXY, 1);
+    highlightIdx = zeros(nHi, 1);
+    for j = 1:nHi
+        dist = hypot(E_total(:) - highlightXY(j, 1), ...
+                     rsnrAtMax(:) - highlightXY(j, 2));
+        dist(~isfinite(rsnrAtMax(:))) = inf;
+        [dmin, didx] = min(dist);
+        if isfinite(dmin)
+            highlightIdx(j) = didx;
+        else
+            warning('process_pipeline_fxp_sweep:noHighlight', ...
+                'No converging combo near highlight point (%.4g, %.4g).', ...
+                highlightXY(j, 1), highlightXY(j, 2));
+        end
+    end
+    highlightIdx = highlightIdx(highlightIdx > 0);
+    isHi = false(nDesign, 1);
+    isHi(highlightIdx) = true;
+    hiColors = lines(numel(highlightIdx));
+
+    fprintf('\n--- Highlighted combos (nearest to requested points) ---\n');
+    for j = 1:numel(highlightIdx)
+        d = highlightIdx(j);
+        fprintf('  (%.2f, %.2f)  %s\n', E_total(d), rsnrAtMax(d), labels{d});
+    end
+
     f2 = figure('Name', 'Pipeline: RSNR vs receiver energy', ...
         'Position', [100 100 760 520]);
     ax2 = axes(f2); hold(ax2, 'on'); grid(ax2, 'on'); box(ax2, 'on');
+    % Non-highlighted converging combos: plain black x (one legend entry).
+    otherDone = false;
     for d = 1:nDesign
-        if ~isfinite(rsnrAtMax(d))
-            continue;                       % non-converging combo — skip
+        if ~isfinite(rsnrAtMax(d)) || isHi(d)
+            continue;
         end
-        plot(ax2, E_total(d), rsnrAtMax(d), 'o', 'MarkerSize', 9, ...
-            'MarkerFaceColor', colors(d, :), 'MarkerEdgeColor', 'k', ...
+        if ~otherDone
+            plot(ax2, E_total(d), rsnrAtMax(d), 'x', 'Color', 'k', ...
+                'MarkerSize', 8, 'LineWidth', 1.2, 'DisplayName', 'Other');
+            otherDone = true;
+        else
+            plot(ax2, E_total(d), rsnrAtMax(d), 'x', 'Color', 'k', ...
+                'MarkerSize', 8, 'LineWidth', 1.2, 'HandleVisibility', 'off');
+        end
+    end
+    % Highlighted combos: coloured markers, labelled in the legend.
+    for j = 1:numel(highlightIdx)
+        d = highlightIdx(j);
+        plot(ax2, E_total(d), rsnrAtMax(d), 'o', 'MarkerSize', 10, ...
+            'MarkerFaceColor', hiColors(j, :), 'MarkerEdgeColor', 'k', ...
             'DisplayName', labels{d});
     end
+    % Analytical QPSK floor: the SNR at which an ideal receiver hits the FEC
+    % BER (the lowest RSNR achievable; combos sit above it by their
+    % implementation penalty).
+    snrTheory = qpskTheorySNR(fecBer, P.SpS);
+    yline(ax2, snrTheory, '--k', ...
+        sprintf('QPSK theory (%.2f dB)', snrTheory), ...
+        'LineWidth', 1.3, 'FontSize', 9, ...
+        'LabelHorizontalAlignment', 'left', ...
+        'LabelVerticalAlignment', 'bottom', ...
+        'DisplayName', 'QPSK theory');
     xlabel(ax2, 'Total receiver energy (pJ/bit)');
     ylabel(ax2, sprintf('RSNR at BER = %.0e (dB)', fecBer));
     title(ax2, sprintf(['Energy-vs-performance trade-off ', ...
@@ -274,14 +374,13 @@ function process_pipeline_fxp_sweep(varargin)
                 'Clock recovery', ...
                 'Carrier recovery (freq + phase)'};
 
-    keep    = isfinite(rsnrAtMax);          % only converging combos
-    segsK   = segs(keep, :);
-    labK    = shortLab(keep);
-    nKeep   = nnz(keep);
+    segsK   = segs(highlightIdx, :);        % only the highlighted combos
+    labK    = shortLab(highlightIdx);
+    nKeep   = numel(highlightIdx);
 
     if nKeep == 0
-        warning('process_pipeline_fxp_sweep:noConverge', ...
-            'No combo converges at ENOB = %d; skipping energy bar.', eMax);
+        warning('process_pipeline_fxp_sweep:noHighlight', ...
+            'No highlighted combo to chart; skipping energy bar.');
     else
         % A single group as a row vector would be drawn as separate bars, so
         % pad with an invisible NaN group to force the stacked-matrix path.
@@ -310,6 +409,65 @@ function process_pipeline_fxp_sweep(varargin)
             exportgraphics(f3, out, 'Resolution', 200);
             fprintf('Saved %s\n', out);
         end
+    end
+
+    %% --- Combined transmitter + receiver energy & power (table) ----------
+    %  The RSNR sets the minimum transmitter power for the shot-noise PON
+    %  link of report chapter 2; energy.transmitter_shot returns the optical
+    %  energy/bit, divided by the overall transmitter efficiency txEff to get
+    %  wall-plug energy.  Power consumption is P = E_bit * Rs * log2(M):
+    %  the report's P_rx = Rs * E_rx,s with E_rx,s = E_bit * log2(M), and the
+    %  per-ONU Tx wall-plug power is likewise E_tx * Rs * log2(M).
+    B_Hz     = P.Rs * 1e9;                 % symbol rate (GBd -> Hz)
+    lambda_m = lambda_nm * 1e-9;
+    nsr0     = 10^(-txSNRdB / 10);         % OLT back-to-back noise floor
+    E_tx = nan(nDesign, 1);
+    for d = 1:nDesign
+        if ~isfinite(rsnrAtMax(d)), continue; end
+        snrLin = 10^(rsnrAtMax(d) / 10);
+        if 1/snrLin <= nsr0
+            % RSNR at/above the OLT noise floor: unreachable at any power.
+            fprintf(['  RSNR %.1f dB >= Tx SNR floor %.0f dB for %s ', ...
+                '-> infeasible Tx energy\n'], rsnrAtMax(d), txSNRdB, labels{d});
+            continue;
+        end
+        E_tx(d) = 1e12 * energy.transmitter_shot(snrLin, B_Hz, lambda_m, ...
+            lossdB, nsr0, splitterK, M, txEff);     % J/bit -> pJ/bit
+    end
+    E_sys = E_tx + E_total;                % combined system energy (pJ/bit)
+
+    % Power = energy/bit [J] * Rs[Hz] * log2(M)  -> Watts.
+    pwrFac = 1e-12 * B_Hz * log2(M);       % pJ/bit -> W
+    sysIdx = highlightIdx;                  % the charted combos
+    nSys   = numel(sysIdx);
+    Combo   = labels(sysIdx);
+    E_Tx_pJ  = E_tx(sysIdx);
+    E_Rx_pJ  = E_total(sysIdx);
+    E_Sys_pJ = E_sys(sysIdx);
+    P_Tx_W   = E_tx(sysIdx)    * pwrFac;
+    P_Rx_W   = E_total(sysIdx) * pwrFac;
+    P_Sys_W  = E_sys(sysIdx)   * pwrFac;
+
+    Tbl = table(Combo, E_Tx_pJ, E_Rx_pJ, E_Sys_pJ, P_Tx_W, P_Rx_W, P_Sys_W);
+    fprintf(['\n--- Combined Tx + Rx energy/bit and power at ENOB = %d ', ...
+        '(loss %g dB, TxSNR %g dB, eta_T %.2f) ---\n'], ...
+        eMax, lossdB, txSNRdB, txEff);
+    disp(Tbl);
+
+    % Render the table as a figure to replace the old combined-energy bar.
+    f4 = figure('Name', 'Pipeline: combined energy & power', ...
+        'Color', 'w', 'Position', [140 140 1000 90 + 28 * max(nSys, 1)]);
+    colNames = {'Combo', 'E_tx (pJ/bit)', 'E_rx (pJ/bit)', ...
+        'E_sys (pJ/bit)', 'P_tx (W)', 'P_rx (W)', 'P_sys (W)'};
+    cellData = [Combo(:), ...
+        num2cell(round([E_Tx_pJ, E_Rx_pJ, E_Sys_pJ], 2)), ...
+        num2cell(round([P_Tx_W, P_Rx_W, P_Sys_W], 4))];
+    uitable(f4, 'Data', cellData, 'ColumnName', colNames, ...
+        'Units', 'normalized', 'Position', [0.01 0.01 0.98 0.98]);
+    if savePlots
+        out = fullfile(here, 'pipeline_combined_energy.png');
+        exportgraphics(f4, out, 'Resolution', 200);
+        fprintf('Saved %s\n', out);
     end
 end
 
@@ -437,4 +595,20 @@ function snr = fecSnrFromBer(snrVec, berVec, fecBer)
         end
     end
     snr = NaN;
+end
+
+
+% =====================================================================
+function snr = qpskTheorySNR(fecBer, SpS)
+%QPSKTHEORYSNR  Sim-axis SNR [dB] at which ideal Gray-coded QPSK reaches the
+%   FEC BER.  The Gray-QPSK bit-error rate is
+%       BER = 0.5 * erfc( sqrt( (Es/N0) / 2 ) ),
+%   so the symbol SNR at the FEC threshold is
+%       Es/N0 = 2 * erfcinv(2*BER)^2.
+%   channel.add_awgn calls awgn(..., 'measured') on the SpS-oversampled
+%   waveform, so the swept SNR axis is the per-sample SNR; the matched filter
+%   recovers a 10*log10(SpS) gain, giving Es/N0 = SNR_axis * SpS.  The floor
+%   is therefore referred back to the per-sample axis.
+    EsN0 = 2 * erfcinv(2 * fecBer)^2;          % linear symbol SNR
+    snr  = 10*log10(EsN0) - 10*log10(SpS);     % per-sample (sim) axis [dB]
 end

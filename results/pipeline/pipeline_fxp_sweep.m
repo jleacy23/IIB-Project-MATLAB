@@ -178,7 +178,7 @@ classdef pipeline_fxp_sweep < matlab.unittest.TestCase
         %  true : force a fresh codegen of EVERY fxp MEX at startup,
         %         ignoring the cache.  Set this after editing any *_fxp.m
         %         source so the stale cached binaries are regenerated.
-        ForceRebuild = false
+        ForceRebuild = true
 
         % --- Precision design: two independently-swept groups ----------
         %  Po2_vec is the power-of-two FFT-twiddle flag (0/1) for the eq
@@ -191,18 +191,20 @@ classdef pipeline_fxp_sweep < matlab.unittest.TestCase
         % Equalisation + clock recovery: [StaticFL, ClkFL, AdaptFL].
         EqClkDesigns = [ ...
             8,  6, 4; ...      % low  precision
-            10, 8, 6           % high precision
+            10, 8, 6; ...
+            12, 10, 8           % high precision
             ]
         % Carrier recovery: [FRFL, CRFL] (frequency + phase recovery).
         CarrierDesigns = [ ...
             10, 4; ...         % low  precision
-            12, 6              % high precision
+            12, 6; ...
+            14, 8              % high precision
             ]
         % --- Outer ADC ENOB sweep -------------------------------------
         %  channel.adc effective number of bits.  The full config list is
         %  the Cartesian product
         %  ENOB_vec x Po2_vec x rows(EqClkDesigns) x rows(CarrierDesigns).
-        ENOB_vec = [4,6,8]
+        ENOB_vec = [6]
 
         % --- CPON subframe constant (must match modem.modulate) --------
         SUBFRAME_SYMS = 3712

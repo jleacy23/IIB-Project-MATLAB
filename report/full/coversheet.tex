@@ -1,0 +1,45 @@
+% =====================================================================
+% Department of Engineering cover sheet (converted from coversheet.docx)
+% Requires: graphicx, xcolor (provided by the tikz package in full.tex)
+% =====================================================================
+\begin{titlepage}
+\thispagestyle{empty}
+\definecolor{deptblue}{HTML}{17365D}
+
+% --- University of Cambridge crest ---------------------------------
+\noindent\includegraphics[width=6cm]{cambridge_logo.png}
+
+\vspace{0.4cm}
+\noindent{\sffamily\Large\bfseries\color{deptblue}Department of Engineering}
+
+% --- Title box (against right margin) ------------------------------
+\vspace{3.5cm}
+\begin{flushright}
+\begin{tikzpicture}
+  \node[draw, dashed, rounded corners=14pt, line width=0.6pt,
+        minimum width=11.4cm, minimum height=5cm,
+        text width=10.5cm, align=center,
+        font=\fontsize{19}{26}\selectfont\bfseries]
+       {Energy-Efficient 200\,Gbit/s\\ Transceivers for\\ Optical Access Networks};
+\end{tikzpicture}
+\end{flushright}
+
+% --- Author / supervisor / date (against right margin) -------------
+\vspace{1.5cm}
+\begin{flushright}
+\begin{tabular}{rl}
+  \large Author Name: & \large Joe Leacy \\[0.8em]
+  \large Supervisor:  & \large Seb Savory \\[0.8em]
+  \large Date:        & \large 01/06/2026 \\
+\end{tabular}
+\end{flushright}
+
+% --- Declaration (at the very bottom of the page) ------------------
+\vfill
+\noindent I hereby declare that, except where specifically indicated, the work
+submitted herein is my own original work.
+
+\vspace{1.5cm}
+\noindent Signed \underline{\makebox[6cm][l]{\,Joe Leacy}}\hfill
+date \underline{\makebox[6cm][l]{\,01/06/2026}}
+\end{titlepage}

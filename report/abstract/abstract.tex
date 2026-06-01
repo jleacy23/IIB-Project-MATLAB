@@ -1,0 +1,46 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{parskip}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{cleveref}
+\usepackage{gensymb}
+\usepackage{biblatex}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{bm}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning}
+
+% Place chapter titles at the very top of the page (remove default top gap).
+\usepackage{titlesec}
+\titleformat{\chapter}[hang]
+  {\normalfont\Large\bfseries}{\thechapter}{1em}{}
+\titlespacing*{\chapter}{0pt}{0pt}{20pt}
+
+% Look for figures in each chapter's source directory.
+\graphicspath{{../energy/}{../frequency_recovery/}{../equalisation}}
+
+% Both chapters carry their own bibliography file.  biblatex merges them;
+% duplicate keys (if any) are resolved by biber to the first definition.
+\addbibresource{../energy/ref.bib}
+\addbibresource{../frequency_recovery/ref.bib}
+\addbibresource{../equalisation/ref.bib}
+\addbibresource{../clk_recovery/ref.bib}
+\addbibresource{ref.bib}
+
+\title{Energy-Efficient 200 Gbit/s Transceivers for Optical Access Networks}
+\author{Joe Leacy}
+
+\begin{document}
+
+\begin{abstract}
+Optical access networks form the final link between an operator's exchange and the end user, and the bandwidth they must carry is growing rapidly with video, cloud, and mobile traffic. Passive optical networks (PONs), in which a single line terminal serves many subscribers through passive splitters, keep this last mile inexpensive, and coherent detection is a promising way to push them to higher data rates by recovering both the amplitude and phase of the optical field. Coherent reception, however, depends on energy-intensive digital signal processing (DSP), and because a receiver is deployed at every subscriber its energy efficiency is a primary design constraint. This project investigates the algorithm and arithmetic-precision choices that reduce the energy of a coherent passive optical network (CPON) receiver while still meeting its performance requirements.
+
+A complete DP-QPSK receiver pipeline (chromatic-dispersion equalisation, timing recovery, adaptive equalisation, and carrier recovery) was implemented in both floating and fixed point, with each stage compiled to a bit-accurate executable model. The model estimates energy from the real operation counts and word lengths of each block and, by measuring the bit-error rate directly, captures the effect of quantisation rather than assuming it; the required SNR (RSNR) to reach the forward-error-correction threshold is used as a common figure of merit, so that the cost of a lower-energy implementation can be expressed as an SNR penalty and weighed against its energy saving. At each stage the algorithms common in long-haul systems were compared against simpler alternatives suited to a short-reach, energy-constrained link. For timing recovery, a Modified Godard detector that reuses the equaliser's FFT was shown to perform as well as a Gardner loop while avoiding the cost of a separate interpolator. For frequency recovery, a data-aided differential-phase-and-Kay estimator reached an acceptable residual offset with far fewer operations than a Rife \& Boorstyn FFT search, and for phase recovery a pilots-only correction matched the performance of the Viterbi \& Viterbi algorithm at a fraction of the cost. The minimum viable fixed-point precision of each stage was found and the combined operating points evaluated end to end. The static equaliser was found to dominate the receiver energy, making equaliser precision and power-of-two twiddle-factor rounding the most effective means of reducing it, and converting each implementation's RSNR into a transmitter energy through a shot-noise network model indicated that the receiver dominates the combined system energy at the operating points considered. These results are presented as a comparison between implementations rather than as absolute figures, given the simplifications in the energy and network models.
+\end{abstract}
+
+\end{document}
